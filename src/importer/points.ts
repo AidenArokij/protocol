@@ -11,6 +11,8 @@ import { cleanLines, type ParsedLaw, type ParseIssue } from './lawText';
 
 export interface PointsOptions {
   subpoints?: 'list';
+  /** «titles»: within a chapter, a capitalised title right after a finished sentence is a sub-heading too. */
+  subheadings?: 'titles';
 }
 
 /** Joins a line to the text before it: a heading without a full stop («Замечание (устное)») gets one. */
@@ -20,8 +22,8 @@ const joinLine = (text: string, line: string) => (/[.:;,!?—–-]$/.test(text) 
 const CHAPTER = /^(?:Глава|Раздел)\s+([IVXLC]+|\d+)\s*(?:[.|]\s*(.*))?$/i;
 /** «1. ОБЩИЕ ПОЛОЖЕНИЯ БОЛЬНИЦЫ»: a numbered heading in capitals. */
 const CAPS_CHAPTER = /^(\d+)\.\s+([^a-zа-яё]{3,80})$/;
-/** «1.1. …», «1.1 …», «1.1 | …», «1. …» — a bare «15 – …» is no point. */
-const POINT = /^(\d{1,3}\.\d{1,3}(?:\.\d{1,3})*\.?|\d{1,3}\.)(?:\s+\|?\s*|\s*\|\s*)(\S.*)$/;
+/** «1.1. …», «1.1 …», «1.1 | …», «1. …», «Статья 1.1. …» (МВД Тверского) — a bare «15 – …» is no point. */
+const POINT = /^(?:Статья\s+)?(\d{1,3}\.\d{1,3}(?:\.\d{1,3})*\.?|\d{1,3}\.)(?:\s+\|?\s*|\s*\|\s*)(\S.*)$/;
 const ITEM = /^([а-яё]|\d+)\)\s+(.*)$/;
 /** «2. Обязанности лидера»: in project rules written in «1.1» points, the title of the section numbered 2. */
 const NUMBERED_SECTION = /^(\d{1,2})\.\s+([^.;!?]{2,80}?)\s*:?$/;
@@ -34,6 +36,11 @@ const TOC = /^(?:Оглавление|Содержание)$/i;
 const JUNK = /^(?:Нажмите, чтобы раскрыть\.\.\.|Спойлер:.*|\.)$/;
 /** The signature of the head of the СК at the end of its regulations. */
 const SIGNATURE = /^Председатель$/;
+/** «Часть 1. Отдел собственной безопасности (ОСБ)»: a sub-heading inside a chapter (МВД Тверского). */
+const PART = /^Часть\s+\d+\.\s+[^.;]{2,80}$/;
+/** «| Генерал | Начальник МВД |»: a row of a table, which the app shows as «Генерал — Начальник МВД». */
+const TABLE_ROW = /^\|(.+\|.+)\|$/;
+const tableRow = (line: string) => line.replace(TABLE_ROW, (_, cells: string) => cells.split('|').map((cell) => cell.trim()).join(' — '));
 /** A short line that reads as a title: no sentence end, not a list item. */
 const TITLE_LIKE = /^[^•\-—・\d][^.;,]{2,69}$/;
 
@@ -106,13 +113,21 @@ export function parsePointsText(text: string, documentId: string, options: Point
   const sectionTitles = new Map<string, string>();
   const chapterOf = new Map<Article, Chapter>();
 
-  /** Title-like lines at the end of the last point, which belong to what follows it; within a chapter, only «…:» sub-headings. */
+  /**
+   * Title-like lines at the end of the last point, which belong to what follows it; within a chapter, only
+   * «…:» and «Часть 1. …» sub-headings; with `subheadings: 'titles'`, also one capitalised title right after a finished
+   * sentence or a numbered line («Отделы МВД» under «- Подполковник полиции МВД;», «Субординация» under «18. Генерал»).
+   * Elsewhere such a line is the point's own («Строгий выговор 2/3»).
+   */
   const popTitles = (colonOnly: boolean): string[] => {
     const popped: string[] = [];
     const parts = article?.parts ?? [];
     while (parts.length > 1) {
       const last = parts[parts.length - 1];
-      if (last.number || last.points.length || !TITLE_LIKE.test(last.text) || (colonOnly && !last.text.endsWith(':'))) break;
+      const part = PART.test(last.text);
+      const afterSentence = options.subheadings === 'titles' && !popped.length && /^[А-ЯЁ]/.test(last.text) && /[.;!?]$|^\d+\.\s/.test(parts[parts.length - 2].text);
+      if (last.number || last.points.length || !(part || TITLE_LIKE.test(last.text))) break;
+      if (colonOnly && !part && !afterSentence && !last.text.endsWith(':')) break;
       popped.unshift(parts.pop()!.text);
     }
     return popped;
@@ -134,7 +149,8 @@ export function parsePointsText(text: string, documentId: string, options: Point
     return { title: title.replace(/:$/, ''), subheading, preface: rest };
   };
 
-  for (const line of lines) {
+  for (const raw of lines) {
+    const line = tableRow(raw);
     let m: RegExpMatchArray | null;
     if (ended) {
       footer.push(line);
@@ -186,6 +202,8 @@ export function parsePointsText(text: string, documentId: string, options: Point
       }
       const subheading = popTitles(true).at(-1);
       if (subheading) group = subheading.replace(/:$/, '');
+      // «ГЛАВА II …» / «Обязанности сотрудника» / «Статья 2.1»: the title under the chapter's heading is its first group's.
+      if (options.subheadings === 'titles' && !article && chapter?.preface.length === 1 && TITLE_LIKE.test(chapter.preface[0])) group = chapter.preface.pop();
       // A charter's point 4.1 opens chapter IV even where only the table of contents names it (ГИБДД);
       // only the next chapter, so a point numbered out of place (8.2 inside IV) stays where it stands.
       const first = Number(number.split('.')[0]);

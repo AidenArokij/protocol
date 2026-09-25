@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parseLawText, type LawFormat } from './lawText';
+import type { PointsOptions } from './points';
 
 const root = join(import.meta.dirname, '..', '..');
-const parse = (id: string, format: LawFormat = 'points') =>
-  parseLawText(readFileSync(join(root, 'data', 'tverskoi', 'sources', `${id}.txt`), 'utf8'), id, format);
+const parse = (id: string, format: LawFormat = 'points', options: PointsOptions = {}) =>
+  parseLawText(readFileSync(join(root, 'data', 'tverskoi', 'sources', `${id}.txt`), 'utf8'), id, format, options);
 const point = (id: string, number: string, chapter?: string) => {
   const found = parse(id).articles.find((a) => a.number === number && (chapter === undefined || a.chapter === chapter));
   if (!found) throw new Error(`${id} п. ${number} not parsed`);
@@ -14,7 +15,7 @@ const point = (id: string, number: string, chapter?: string) => {
 
 /** Points of the charters, regulations and rules written in points, and articles of those written in articles. */
 const COUNTS: [string, LawFormat, number][] = [
-  ['ch-mvd', 'points', 80], ['ch-gibdd', 'points', 126], ['ch-fso', 'points', 97], ['ch-hospital', 'points', 224], ['ch-news', 'points', 157],
+  ['ch-mvd', 'points', 250], ['ch-gibdd', 'points', 126], ['ch-fso', 'points', 97], ['ch-hospital', 'points', 224], ['ch-news', 'points', 157],
   ['sk-main', 'points', 39], ['sk-gsu', 'points', 51], ['sk-inspections', 'points', 20], ['sk-ranks', 'points', 12],
   ['rules-main', 'points', 96], ['rules-gov', 'points', 117], ['rules-crime', 'points', 49],
   ['ch-army', 'law', 60], ['ch-army-discipline', 'law', 37], ['ch-army-guard', 'law', 44],
@@ -30,15 +31,33 @@ describe('charters, regulations and project rules (real Тверской forum t
     }
   });
 
-  it('a charter in chapters and points (МВД): the table of contents is not taken for chapters', () => {
-    const mvd = parse('ch-mvd');
-    expect(mvd.chapters).toHaveLength(13);
+  it('a charter in chapters and «Статья 1.1.» (МВД): the table of contents is not taken for chapters', () => {
+    const mvd = parse('ch-mvd', 'points', { subheadings: 'titles' });
+    expect(mvd.chapters).toHaveLength(17);
     expect(mvd.chapters[0]).toMatchObject({ number: 'I', title: 'ОБЩИЕ ПОЛОЖЕНИЯ' });
-    const tasks = point('ch-mvd', '1.2');
+    const tasks = mvd.articles.find((a) => a.number === '1.2')!;
     expect(tasks).toMatchObject({ chapter: 'I', title: '' });
-    expect(tasks.parts.map((p) => p.text).slice(0, 3)).toEqual(['Основными задачами МВД являются:', '• охрана общественного порядка;', '• патрулирование;']);
-    // Where points are «1.1», «1. Генерал» is an item of a list (the ranks), not a point.
+    expect(tasks.parts.map((p) => p.text).slice(0, 3)).toEqual(['Основными задачами МВД являются:', '- охрана общественного порядка;', '- патрулирование;']);
+    // Where points are «1.1», «1. Рядовой» is an item of a list (the ranks), not a point.
     expect(mvd.articles.every((a) => a.number.includes('.'))).toBe(true);
+  });
+
+  it('sub-headings inside a chapter group the points under them (МВД)', () => {
+    const mvd = parse('ch-mvd', 'points', { subheadings: 'titles' });
+    const at = (number: string) => mvd.articles.find((a) => a.number === number)!;
+    // The title right under a chapter's heading, one after a finished sentence, after a numbered line, and «Часть 1. …».
+    expect(at('2.1').group).toBe('Обязанности сотрудника');
+    expect(at('6.5').group).toBe('Отделы МВД');
+    expect(at('6.4').parts.map((p) => p.text)).toEqual(['Старший состав МВД образуют:', '- Полковник полиции МВД;', '- Подполковник полиции МВД;']);
+    expect(at('15.2').group).toBe('Субординация');
+    expect(at('7.4').group).toBe('Часть 1. Отдел собственной безопасности (ОСБ)');
+    expect(mvd.chapters.every((c) => !c.preface.length)).toBe(true);
+    // A row of a table reads as a line.
+    expect(at('6.8.2').parts.map((p) => p.text).slice(1, 3)).toEqual(['Специальное звание — Должность', 'Генерал-майор — Начальник отдела']);
+  });
+
+  it('without the option a title after a sentence stays the point’s own (больница: «Строгий выговор 2/3»)', () => {
+    expect(point('ch-hospital', '5.12').parts.at(-1)!.text).toBe('Строгий выговор 2/3');
   });
 
   it('a number written twice in one chapter keeps its place in the ids (ГИБДД 4.2.1)', () => {
