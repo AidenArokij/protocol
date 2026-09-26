@@ -157,7 +157,7 @@ async function openDoc(id){
   const content = document.getElementById('content');
   let html = `<div class="doc-header">
     <h2>${doc.title}</h2>
-    <div class="status-line">Статус: <b>${doc.status}</b>${doc.url ? ` · <a href="${doc.url}" target="_blank" style="color:var(--accent)">открыть источник</a>` : ''}</div>
+    <div class="status-line">Статус: <b>${doc.status}</b>${doc.url ? ` · <a href="#" class="src-link" data-url="${doc.url}" style="color:var(--accent)">открыть источник</a>` : ''}</div>
     ${doc.note ? `<div class="doc-note">${doc.note}</div>` : ''}
   </div>`;
   html += chunks.map(c => `
@@ -168,6 +168,13 @@ async function openDoc(id){
     </div>`).join('');
   content.innerHTML = html;
   content.scrollTop = 0;
+  const link = content.querySelector('.src-link');
+  if (link){
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      invoke('plugin:opener|open_url', { url: link.dataset.url }).catch(() => {});
+    });
+  }
 }
 
 let searchTimer = null;
