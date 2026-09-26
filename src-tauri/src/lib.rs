@@ -1,5 +1,7 @@
 mod db;
 mod commands;
+mod settings;
+mod ai;
 
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Shortcut, ShortcutState};
@@ -32,6 +34,9 @@ pub fn run() {
             commands::get_documents,
             commands::get_chunks,
             commands::search,
+            commands::has_api_key,
+            commands::save_api_key,
+            commands::ask_ai,
         ])
         .plugin(tauri_plugin_opener::init())
         .plugin(

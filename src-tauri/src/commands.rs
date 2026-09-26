@@ -36,3 +36,31 @@ pub fn search(state: tauri::State<AppState>, server: String, query: String) -> V
     let conn = state.conn.lock().unwrap();
     db::search(&conn, &server, &query)
 }
+
+#[tauri::command]
+pub fn has_api_key() -> bool {
+    crate::settings::has_api_key()
+}
+
+#[tauri::command]
+pub fn save_api_key(key: String) -> Result<(), String> {
+    crate::settings::save_api_key(key)
+}
+
+#[tauri::command]
+pub async fn ask_ai(
+    state: tauri::State<'_, AppState>,
+    server: String,
+    question: String,
+) -> Result<String, String> {
+    let api_key = crate::settings::load_api_key()
+        .ok_or_else(|| "Ключ Gemini не задан. Откройте настройки и вставьте ключ.".to_string())?;
+
+    // Сначала обычный поиск по базе — ИИ увидит только то, что реально нашлось.
+    let hits = {
+        let conn = state.conn.lock().unwrap();
+        db::search(&conn, &server, &question)
+    };
+
+    crate::ai::ask_gemini(&api_key, &question, &hits).await
+}

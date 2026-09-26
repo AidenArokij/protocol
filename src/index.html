@@ -21,6 +21,23 @@ header svg{width:22px;height:24px;flex:none;}
 header svg path{fill:none;stroke:var(--accent);stroke-width:2.2;}
 header h1{font-family:var(--serif);font-size:1.05rem;margin:0;font-weight:700;}
 header .meta{margin-left:auto;font-size:.74rem;color:var(--muted);}
+.gear-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:2px;width:28px;height:28px;cursor:pointer;font-size:.9rem;}
+.gear-btn:hover{color:var(--accent);border-color:var(--accent);}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;z-index:50;}
+.modal{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:20px 22px;width:400px;max-width:90vw;}
+.modal h3{font-family:var(--serif);margin:0 0 10px;}
+.modal-hint{font-size:.78rem;color:var(--muted);margin:0 0 10px;line-height:1.5;}
+.modal-status{font-size:.8rem;color:var(--ok);margin:0 0 8px;min-height:1em;}
+.modal input{width:100%;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:2px;color:var(--text);font-family:var(--sans);margin-bottom:12px;}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+.modal-actions button{padding:7px 14px;border-radius:2px;border:1px solid var(--accent);background:var(--accent);color:var(--panel);font-family:var(--sans);font-weight:700;cursor:pointer;}
+.modal-actions .ghost-btn{background:none;color:var(--muted);border-color:var(--line);font-weight:400;}
+
+.ai-btn{background:var(--accent);border:1px solid var(--accent);color:var(--panel);border-radius:2px;padding:7px 12px;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+.ai-btn:hover{opacity:.88;}
+.ai-answer{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:16px 18px;font-size:.9rem;line-height:1.65;}
+.ai-answer p{margin:0 0 8px;}
 
 #serverScreen{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;}
 .server-cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;max-width:700px;}
@@ -70,7 +87,22 @@ header .meta{margin-left:auto;font-size:.74rem;color:var(--muted);}
 <svg viewBox="0 0 30 34"><path d="M15 1 L28 6 V16 C28 24 22 30 15 33 C8 30 2 24 2 16 V6 Z"/><path d="M15 8 V26 M9 12 H21" stroke-width="1.4"/></svg>
 <h1>ПРОТОКОЛ</h1>
 <span class="meta" id="serverBadge"></span>
+<button id="btnSettings" class="gear-btn" title="Настройки">⚙</button>
 </header>
+
+<div id="settingsModal" class="modal-overlay">
+  <div class="modal">
+    <h3>Настройки — ключ ИИ (Gemini)</h3>
+    <p class="modal-hint">Ключ хранится только на этом компьютере, в отдельном файле — не в самой программе и не в интернете. У каждого игрока должен быть свой ключ, это бесплатно.</p>
+    <button id="btnGetKey" class="ghost-btn" style="margin-bottom:10px;width:100%;">Получить бесплатный ключ на aistudio.google.com →</button>
+    <p id="settingsStatus" class="modal-status"></p>
+    <input id="apiKeyInput" type="password" placeholder="Вставьте ключ сюда (AIza...)">
+    <div class="modal-actions">
+      <button id="btnSaveKey">Сохранить</button>
+      <button id="btnCloseSettings" class="ghost-btn">Закрыть</button>
+    </div>
+  </div>
+</div>
 
 <section id="serverScreen">
   <div>
@@ -86,6 +118,7 @@ header .meta{margin-left:auto;font-size:.74rem;color:var(--muted);}
   <div class="toolbar">
     <button id="btnChangeServer">← сменить сервер</button>
     <input id="search" type="text" placeholder="Опишите вопрос своими словами или впишите номер статьи...">
+    <button id="btnAskAi" class="ai-btn">🤖 Спросить ИИ</button>
   </div>
   <div class="body">
     <div id="sidebar"></div>
@@ -211,6 +244,49 @@ document.getElementById('btnChangeServer').addEventListener('click', () => {
   document.getElementById('serverScreen').style.display = 'flex';
   document.getElementById('search').value = '';
   activeDocId = null;
+});
+
+// ---------- Настройки (ключ Gemini) ----------
+document.getElementById('btnSettings').addEventListener('click', async () => {
+  const has = await invoke('has_api_key');
+  document.getElementById('settingsStatus').textContent = has
+    ? '✓ Ключ уже сохранён. Можно вставить новый, чтобы заменить.'
+    : 'Ключ ещё не задан — без него кнопка «Спросить ИИ» не будет работать.';
+  document.getElementById('settingsModal').style.display = 'flex';
+});
+document.getElementById('btnGetKey').addEventListener('click', () => {
+  invoke('plugin:opener|open_url', { url: 'https://aistudio.google.com/apikey' }).catch(() => {});
+});
+document.getElementById('btnCloseSettings').addEventListener('click', () => {
+  document.getElementById('settingsModal').style.display = 'none';
+});
+document.getElementById('btnSaveKey').addEventListener('click', async () => {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+  await invoke('save_api_key', { key });
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('settingsStatus').textContent = '✓ Сохранено.';
+});
+
+// ---------- Спросить ИИ ----------
+function formatAiAnswer(text){
+  return text.split('\n').filter(l => l.trim()).map(line => {
+    const isHeading = /^(КРАТКО|ПОЧЕМУ|ЧТО МОЖНО|ЧТО НЕЛЬЗЯ|ИСТОЧНИКИ)\s*:/i.test(line.trim());
+    return isHeading ? `<h4>${line}</h4>` : `<p>${line}</p>`;
+  }).join('');
+}
+
+document.getElementById('btnAskAi').addEventListener('click', async () => {
+  const q = document.getElementById('search').value.trim();
+  if (!q) return;
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="empty-hint">ИИ ищет по базе и формирует ответ…</div>';
+  try {
+    const answer = await invoke('ask_ai', { server: currentServer, question: q });
+    content.innerHTML = `<div class="ai-answer">${formatAiAnswer(answer)}</div>`;
+  } catch (err) {
+    content.innerHTML = `<div class="empty-hint">Не получилось спросить ИИ.<br>${err}<br><br>Проверьте ключ через кнопку ⚙ в шапке.</div>`;
+  }
 });
 
 boot();
