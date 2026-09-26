@@ -5,7 +5,7 @@ description = "PROTOCOL — AI-помощник для GTA 5 RP (Russia Online)"
 edition = "2021"
 
 [lib]
-name = "mvd_helper_lib"
+name = "protocol_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -14,6 +14,10 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 tauri = { version = "2", features = [] }
 tauri-plugin-global-shortcut = "2"
+rusqlite = { version = "0.31", features = ["bundled", "modern_sqlite"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dirs = "5"
 
 [profile.release]
 opt-level = "s"

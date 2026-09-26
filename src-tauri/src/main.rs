@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    mvd_helper_lib::run()
+    protocol_lib::run()
 }
