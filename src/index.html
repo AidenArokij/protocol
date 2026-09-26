@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ПРОТОКОЛ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=PT+Sans:wght@400;700&display=swap">
+<style>
+:root{
+  --serif:'PT Serif',Georgia,'Times New Roman',serif;
+  --sans:'PT Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --bg:#EDEAE2; --panel:#F7F5EF; --text:#25262B; --muted:#6B6F76;
+  --accent:#8C7A4E; --line:#D9D4C7; --tag:#E7E2D2;
+  --header-bg:#1C1D20; --header-line:#3A3B3E; --header-accent:#B7A46F;
+  --header-text:#EDEAE0; --header-muted:#9C9C97;
+  --ok-fg:#4C6B4F; --ok-bg:#E7EEE3;
+  --danger-fg:#8C3B34; --danger-bg:#F2E4E1;
+  --warn-fg:#86682E; --warn-bg:#F1EAD4;
+  --info-fg:#3E5C74; --info-bg:#E4EBEF;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#1B1C1F; --panel:#242529; --text:#E8E6DE; --muted:#9C9C97;
+    --accent:#B79A5E; --line:#38393D; --tag:#2C2D30;
+    --ok-fg:#7FA382; --ok-bg:#25332A;
+    --danger-fg:#C97C72; --danger-bg:#3A2623;
+    --warn-fg:#CDB27A; --warn-bg:#332C1E;
+    --info-fg:#7FA6C2; --info-bg:#1E2C36;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1B1C1F; --panel:#242529; --text:#E8E6DE; --muted:#9C9C97;
+  --accent:#B79A5E; --line:#38393D; --tag:#2C2D30;
+  --ok-fg:#7FA382; --ok-bg:#25332A;
+  --danger-fg:#C97C72; --danger-bg:#3A2623;
+  --warn-fg:#CDB27A; --warn-bg:#332C1E;
+  --info-fg:#7FA6C2; --info-bg:#1E2C36;
+}
+html{scroll-padding-top:60px;}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;}
+
+/* ---------- Шапка-«бланк» — фиксированная тёмно-бордовая, вне зависимости от темы ---------- */
+header{
+  background:var(--header-bg); color:var(--header-text);
+  padding:18px 16px 0; padding-top:calc(18px + env(safe-area-inset-top,0px));
+  position:sticky; top:0; z-index:10;
+  border-bottom:3px solid var(--header-accent);
+  box-shadow:0 2px 14px rgba(0,0,0,.2);
+}
+.masthead{max-width:920px;margin:0 auto;display:flex;align-items:flex-start;gap:12px;padding-bottom:12px;}
+.emblem{flex:none;width:30px;height:34px;margin-top:2px;}
+.emblem path{fill:none;stroke:var(--header-accent);stroke-width:2.2;}
+.masthead-text{flex:1;min-width:0;}
+h1{font-family:var(--serif);font-weight:700;font-size:1.32rem;margin:0 0 3px;color:var(--header-text);letter-spacing:.01em;}
+.sub{font-family:var(--sans);font-size:.78rem;color:var(--header-muted);letter-spacing:.02em;}
+.tabs-wrap{position:relative;max-width:920px;margin:0 auto;}
+.tabs{display:flex;gap:18px;overflow-x:auto;scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tabs-wrap::after{content:'';position:absolute;top:0;right:0;bottom:0;width:26px;background:linear-gradient(to right, transparent, var(--header-bg));pointer-events:none;}
+.tabs .tab-btn{
+  font-family:var(--sans);font-size:.86rem;font-weight:700;color:var(--header-muted);
+  background:none;border:none;border-bottom:3px solid transparent;
+  padding:9px 2px 10px;white-space:nowrap;cursor:pointer;border-radius:0;
+}
+.tabs .tab-btn.active{color:var(--header-text);border-bottom-color:var(--header-accent);}
+.tabs .tab-btn:hover{color:var(--header-text);}
+.updated{opacity:.75;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.chip{font-family:var(--sans);font-size:.78rem;font-weight:600;padding:5px 12px;border-radius:2px;border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;}
+.chip.active{background:var(--accent);border-color:var(--accent);color:var(--panel);}
+.chip:hover{border-color:var(--accent);color:var(--accent);}
+
+main{max-width:920px;margin:0 auto;padding:26px 16px 60px;}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;animation:fadeIn .2s;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+section{margin-bottom:26px;}
+
+h2{
+  font-family:var(--serif);font-weight:700;font-size:1.14rem;color:var(--text);
+  border-left:3px solid var(--accent);padding:2px 0 2px 12px;margin:30px 0 14px;
+}
+h3{font-family:var(--serif);font-weight:700;font-size:1rem;color:var(--accent);margin:0 0 7px;}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:16px 18px;margin-bottom:14px;}
+.card ol,.card ul{margin:6px 0 4px;padding-left:22px;}
+.card li{margin-bottom:5px;font-size:.92rem;}
+.card p{font-size:.92rem;}
+
+.tag{display:inline-block;background:var(--tag);color:var(--text);font-family:var(--sans);font-size:.72rem;padding:2px 9px;border-radius:2px;margin-left:6px;border:1px solid var(--line);}
+
+.badge{display:inline-block;padding:1px 9px;border-radius:2px;font-size:.72rem;font-weight:700;border:1px solid currentColor;background:none;}
+.badge-red{color:var(--danger-fg);}
+.badge-green{color:var(--ok-fg);}
+.badge-blue{color:var(--info-fg);}
+.badge-amber{color:var(--warn-fg);}
+
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:.87rem;}
+th{background:var(--header-bg);color:var(--tag);font-family:var(--sans);font-weight:700;padding:9px 10px;text-align:left;}
+td{padding:8px 10px;border-bottom:1px solid var(--line);}
+tr:nth-child(even) td{background:color-mix(in srgb, var(--panel) 55%, var(--bg));}
+.overflow{overflow-x:auto;}
+
+.warning,.warn{background:var(--warn-bg);color:var(--text);border-left:3px solid var(--warn-fg);padding:10px 14px;margin:10px 0;border-radius:2px;font-size:.88rem;}
+.danger{background:var(--danger-bg);color:var(--text);border-left:3px solid var(--danger-fg);padding:10px 14px;margin:10px 0;border-radius:2px;font-size:.88rem;}
+.info{background:var(--info-bg);color:var(--text);border-left:3px solid var(--info-fg);padding:10px 14px;margin:10px 0;border-radius:2px;font-size:.88rem;}
+
+.script{
+  position:relative;background:var(--tag);border:1px solid var(--line);
+  padding:20px 20px 18px 34px;margin:12px 0;border-radius:2px;
+  font-family:var(--serif);font-style:italic;font-size:.97rem;line-height:1.75;
+}
+.script::before{content:"«";position:absolute;left:8px;top:6px;font-family:var(--serif);font-size:2.1rem;color:var(--accent);font-style:normal;line-height:1;}
+
+code{background:var(--tag);padding:1px 6px;border-radius:2px;font-size:.82rem;}
+
+#search,#sitInput{width:100%;padding:10px 12px;font-size:.92rem;font-family:var(--sans);border:1px solid var(--line);border-radius:2px;background:var(--panel);color:var(--text);}
+#search:focus,#sitInput:focus{outline:none;border-color:var(--accent);}
+#sitInput{margin-top:10px;resize:vertical;}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+
+.tab-btn{
+  font-family:var(--sans);font-size:.82rem;font-weight:700;padding:8px 14px;
+  border-radius:2px;border:1px solid var(--accent);background:var(--accent);color:var(--panel);cursor:pointer;
+}
+.tab-btn:hover{opacity:.88;}
+.tab-btn.ghost{background:none;color:var(--muted);border-color:var(--line);font-weight:400;}
+.tab-btn.ghost:hover{border-color:var(--accent);color:var(--accent);opacity:1;}
+
+.art{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:13px 15px;margin-bottom:10px;}
+.art h4{font-family:var(--serif);margin:0 0 4px;font-size:.95rem;color:var(--accent);}
+.art .meta{font-family:var(--sans);font-size:.72rem;color:var(--muted);margin-bottom:4px;}
+.art p{margin:4px 0;font-size:.87rem;}
+.count{font-family:var(--sans);font-size:.78rem;color:var(--muted);margin-bottom:8px;}
+.hint{font-family:var(--sans);font-size:.8rem;color:var(--muted);margin:4px 0 10px;}
+.art-ref{border-left:3px solid var(--accent);padding:5px 12px;margin:8px 0;font-size:.88rem;background:var(--tag);}
+.art-ref b{color:var(--accent);}
+.art-ref .sanction{color:var(--muted);font-size:.82rem;margin-top:2px;}
+.note-inline{font-size:.86rem;color:var(--muted);font-style:italic;margin:6px 0 0;}
+.risk-banner{font-size:.92rem;font-weight:700;border-left-width:5px;}
+
+footer{max-width:920px;margin:20px auto 0;padding:18px 16px 60px;color:var(--muted);font-family:var(--serif);font-style:italic;font-size:.82rem;border-top:1px solid var(--line);}
+textarea{font-family:var(--sans);}
+</style>
+</head>
+<body>
+<header>
+<div class="masthead">
+<svg class="emblem" viewBox="0 0 30 34" aria-hidden="true">
+<path d="M15 1 L28 6 V16 C28 24 22 30 15 33 C8 30 2 24 2 16 V6 Z"/>
+<path d="M15 8 V26 M9 12 H21" stroke-width="1.4"/>
+</svg>
+<div class="masthead-text">
+<h1>Памятка МВД РО</h1>
+<div class="sub">Кодексы · Устав · Работа с гражданскими · База статей · Разбор ситуаций <span class="updated">· обновлено 26.09.2026</span></div>
+</div>
+</div>
+<div class="tabs-wrap">
+<div class="tabs" role="tablist">
+<button class="tab-btn active" data-tab="codes" role="tab" aria-selected="true" aria-controls="tab-codes" id="tabbtn-codes">Кодексы</button>
+<button class="tab-btn" data-tab="ustav" role="tab" aria-selected="false" aria-controls="tab-ustav" id="tabbtn-ustav">Устав</button>
+<button class="tab-btn" data-tab="provok" role="tab" aria-selected="false" aria-controls="tab-provok" id="tabbtn-provok">Гражданские</button>
+<button class="tab-btn" data-tab="db" role="tab" aria-selected="false" aria-controls="tab-db" id="tabbtn-db">База статей</button>
+<button class="tab-btn" data-tab="situation" role="tab" aria-selected="false" aria-controls="tab-situation" id="tabbtn-situation">Разбор ситуации</button>
+</div>
+</div>
+</header>
+
+<main>
+
+<!-- ===== TAB 1: КОДЕКСЫ ===== -->
+<div class="tab-panel active" id="tab-codes" role="tabpanel" aria-labelledby="tabbtn-codes">
+
+<section>
+<h2>Короткие карточки</h2>
+
+<div class="card">
+<h3>Проверка документов / основание задержания</h3>
+<p>Документы: подозрение в преступлении, розыск, повод для дела об АП, основания для задержания <span class="tag">6-ФЗ 13п.2</span>. Задержание как подозреваемого: застигнут на месте, указан потерпевшим/очевидцем, найдены следы, в ориентировке, либо пытался скрыться/личность не установлена <span class="tag">УПК 51</span>.</p>
+</div>
+
+<div class="card">
+<h3>Задержание — порядок по шагам</h3>
+<ol>
+<li>Спецсредства</li><li>Удостоверение/жетон</li><li>Обыск — на усмотрение</li>
+<li>Основания и права</li><li>Доставить в отдел</li><li>Если не уполномочен — передать дело</li>
+<li>Идентификация</li><li>Реализовать права (адвокат, звонок)</li><li>Госслужащий — вызвать прокурора</li>
+<li>Следственные действия</li><li>Предъявить статью УК</li>
+</ol>
+<p><span class="tag">УПК 52 / КоАП 16.2.1</span></p>
+</div>
+
+<div class="card">
+<h3>Обыск</h3>
+<p>При задержании — на усмотрение сотрудника <span class="tag">УПК 52в</span>. Вне задержания — досмотр только при основаниях (оружие/наркотики/похищенное) <span class="tag">6-ФЗ 13п.14</span>. Жилище — только по решению суда.</p>
+</div>
+
+<div class="card">
+<h3>Права и сроки ожидания</h3>
+<table><tr><th>Кто</th><th>Ответ</th><th>Приезд</th></tr>
+<tr><td>Адвокат</td><td>3 мин</td><td>7 мин</td></tr>
+<tr><td>Прокурор (госслужащий)</td><td>—</td><td>10 мин</td></tr>
+<tr><td>Судья (суд. контроль)</td><td>10 мин</td><td>10 мин</td></tr></table>
+<p>Звонок — до 2 минут. Полный список прав — см. вкладку «База статей».</p>
+</div>
+
+<div class="card">
+<h3>Сроки удержания</h3>
+<p>60 минут — базовый срок. 90 минут — госслужащий или судебный контроль <span class="tag">УПК 53</span>. Превышение = заведомо незаконное задержание <span class="tag">УК 94, до 40 мес.</span></p>
+</div>
+
+<div class="card">
+<h3>Текст для зачитывания при задержании (Миранда)</h3>
+<div class="script">«Гражданин <b>[Фамилия]</b>, вы задержаны по статье <b>[номер статьи]</b> УК. Вы вправе знать суть подозрений, давать показания или молчать, при этом сказанное может быть использовано в деле. Вы имеете право на помощь адвоката и беседу с ним наедине, на один телефонный звонок до 2 минут, а также на ознакомление с материалами дела, заявление ходатайств, отводов и требование судебного контроля за процессуальными действиями. Ваши права вам понятны?»</div>
+<div class="info">Допустима другая формулировка, если сохранены все элементы: суть подозрений, право молчать с предупреждением, адвокат и свидание наедине, звонок до 2 минут, материалы дела, ходатайства/отводы, судебный контроль <span class="tag">УПК 52 п.«г»</span>.</div>
+<div class="warning">Отказ от защитника необязателен для сотрудника — вы вправе всё равно обеспечить адвоката, если считаете нужным <span class="tag">УПК 31 ч.2</span>. Отказ не лишает подозреваемого права попросить адвоката позже.</div>
+</div>
+
+<div class="card">
+<h3>Видеофиксация</h3>
+<p>Цельная, со звуком, без монтажа. Хранить минимум 72 часа <span class="tag">УПК 78, 44.7</span>.</p>
+</div>
+
+<div class="card">
+<h3>Применение силы — лестница</h3>
+<ol>
+<li>Физическая сила — пресечение, доставление, сопротивление</li>
+<li>Спецсредства — нападение, сопротивление, вооружённый убегающий, конвой</li>
+<li>Оружие — угроза жизни, тяжкое/особо тяжкое + побег, вооружённое сопротивление</li>
+</ol>
+<p><span class="tag">6-ФЗ 19-21</span>. Перед применением — представиться и предупредить, кроме прямой угрозы жизни.</p>
+</div>
+</section>
+
+<section>
+<h2>КоАП: штрафы</h2>
+<div class="overflow"><table>
+<tr><th>Статья</th><th>Суть</th><th>Граждане</th><th>Альтернатива</th></tr>
+<tr><td>5.4</td><td>Оскорбление</td><td>10.000–28.000</td><td>арест до 20 сут.</td></tr>
+<tr><td>6.1</td><td>Побои</td><td>20.000–50.000</td><td>арест до 20 сут.</td></tr>
+<tr><td>7.1</td><td>Порча имущества (без значит. ущерба)</td><td>3.000–15.000</td><td>арест до 10 сут.</td></tr>
+<tr><td>11.1</td><td>Мелкое хулиганство</td><td>5.000–20.000</td><td>арест до 15 сут.</td></tr>
+<tr><td>11.5</td><td>Распитие/опьянение</td><td>4.000–12.000</td><td>арест до 10 сут.</td></tr>
+<tr><td>11.6</td><td>Неприемлемый вид</td><td>5.000–15.000</td><td>арест до 10 сут.</td></tr>
+<tr><td>11.7</td><td>Обнажение оружия без причины</td><td>10.000–20.000</td><td>арест до 15 сут.</td></tr>
+<tr><td>10.1</td><td>Оскорбление представителя власти</td><td>10.000–25.000</td><td>арест 15 сут.</td></tr>
+<tr><td>10.2</td><td>Отказ от уплаты штрафа</td><td>х2, мин.3.000</td><td>арест до 20 сут.</td></tr>
+<tr><td>8.15</td><td>Невыполнение требования об остановке ТС</td><td>10.000–30.000</td><td>арест до 20 сут.</td></tr>
+<tr><td>8.12</td><td>Нарушение стоянки/остановки</td><td>до 5.000-7.000</td><td>—</td></tr>
+</table></div>
+<div class="card">
+<p><b>Как считается сумма</b> — учитывается характер, личность, смягчающие (раскаяние, возмещение вреда) и отягчающие (повторность, продолжение после требования, группа, ЧС/КТО) обстоятельства <span class="tag">ст.4.1-4.4</span>. Малозначительность — можно устное замечание без штрафа <span class="tag">ст.2.5</span>. Минимум по любому штрафу — 500 руб. <span class="tag">ст.3.5ч.2</span>.</p>
+</div>
+</section>
+<section>
+<h2>УК: ходовые статьи</h2>
+<div class="overflow"><table>
+<tr><th>Статья</th><th>Суть</th><th>Санкция</th></tr>
+<tr><td>57</td><td>Угроза убийством/тяжким вредом</td><td>штраф 25–100к или 30 мес.</td></tr>
+<tr><td>64</td><td>Незаконное проникновение в жилище</td><td>штраф до 50к или 30 мес.; с насилием — 40 мес.</td></tr>
+<tr><td>65</td><td>Кража</td><td>штраф до 50к или 30 мес.; группой/с проникновением — 40 мес.</td></tr>
+<tr><td>66</td><td>Грабёж</td><td>30 мес.; группой/с насилием — 40 мес.</td></tr>
+<tr><td>66.1</td><td>Разбой</td><td>40 мес.</td></tr>
+<tr><td>67</td><td>Угон (ТС сдвинуто с места)</td><td>30 мес.</td></tr>
+<tr><td>68</td><td>Порча имущества со значит. ущербом</td><td>штраф до 50к или 30 мес.</td></tr>
+<tr><td>73</td><td>Хулиганство (насилие, оружие, группа, сопротивление)</td><td>штраф до 50к или 40 мес.</td></tr>
+<tr><td>73.1</td><td>Проникновение на режимный объект</td><td>штраф 80–150к или 40 мес.</td></tr>
+<tr><td>74</td><td>Оружие, боеприпасы, спецсредства</td><td>штраф 50к или 40 мес.</td></tr>
+<tr><td>75</td><td>Наркотики без цели сбыта</td><td>до 5 г — штраф до 50к или 30 мес.; до 20 г — 40 мес.; свыше — 50 мес.</td></tr>
+<tr><td>87</td><td>Дача взятки</td><td>штраф до 70к или 40 мес.; свыше 50к — 50 мес.</td></tr>
+<tr><td>97</td><td>Заведомо ложный донос</td><td>штраф до 50к или 40 мес.</td></tr>
+<tr><td>100.1</td><td>Уклонение (розыск)</td><td>10 мес. за каждый приоритет розыска</td></tr>
+<tr><td>102</td><td>Посягательство на жизнь сотрудника</td><td>50 мес.</td></tr>
+<tr><td>103</td><td>Насилие к представителю власти</td><td>штраф до 60к или 40 мес.; опасное — 50 мес.</td></tr>
+<tr><td>104</td><td>Публичное оскорбление представителя власти</td><td>штраф до 40к или 30 мес.</td></tr>
+<tr><td>105</td><td>Неповиновение законному требованию</td><td>штраф до 40к или 30 мес.</td></tr>
+<tr><td>107</td><td>Помеха задержанию</td><td>30 мес.</td></tr>
+</table></div>
+<div class="card">
+<p><b>Что может назначить МВД</b> — только штраф или лишение свободы в пределах санкции; всё остальное (доп. наказания, выход за санкцию) — только суд <span class="tag">УК 34</span>.</p>
+<p><b>Несколько статей сразу</b> — сотрудник МВД назначает по поглощению: берётся самое строгое наказание, остальные в нём растворяются. Исключение — ст.104: её срок можно однократно прибавить к самому строгому <span class="tag">УК 41</span>.</p>
+<p><b>Залог</b> — за небольшую тяжесть (до 20 мес.) 50.000, за среднюю (до 30 мес.) 75.000; за тяжкие и особо тяжкие залог невозможен <span class="tag">УК 50.1</span>.</p>
+</div>
+</section>
+
+<section>
+<h2>Путаница в квалификации</h2>
+<div class="card">
+<p>Пары составов, которые чаще всего путают. Критерий — не тяжесть последствий, а конкретный формальный признак.</p>
+<ul>
+<li><b>Угон (74) vs занятие ТС без перемещения</b> — преступление образует только сдвинутое с места ТС; сел, но не тронулся — не угон, а мелкое хулиганство <span class="tag">УК 67</span></li>
+<li><b>Грабёж vs разбой</b> — критерий: опасность насилия для жизни/здоровья. Толчок — грабёж <span class="tag">УК 66</span>, оружие/удушение — разбой <span class="tag">УК 66.1</span></li>
+<li><b>Побои vs истязание</b> — разовое насилие без тяжких последствий — <span class="tag">КоАП 6.1</span>; систематическое — <span class="tag">УК 56</span></li>
+<li><b>Мелкое хулиганство vs хулиганство</b> — переход в уголовную плоскость при отягчающем признаке: насилие, оружие, группа, сопротивление власти <span class="tag">КоАП 11.1 → УК 73</span></li>
+<li><b>Неповиновение / оскорбление / насилие к власти</b> — по характеру действия: отказ выполнить — <span class="tag">УК 105</span>; словесное унижение — <span class="tag">УК 104</span>; физическое воздействие — <span class="tag">УК 103</span></li>
+</ul>
+</div>
+</section>
+
+<section>
+<h2>На чём разваливаются дела</h2>
+<div class="card">
+<p>Процессуальные ошибки, из-за которых доказательства признают недопустимыми или задержание — незаконным, даже если по существу сотрудник был прав:</p>
+<ul>
+<li><b>Нет записи задержания/обыска</b> — основание оспаривается; хранить видео минимум 72 часа, цельным, без монтажа <span class="tag">УПК 78, 44.7</span></li>
+<li><b>Показания без адвоката</b> и не подтверждены позже в суде — недопустимое доказательство <span class="tag">УПК 44 ч.2 п.1</span></li>
+<li><b>Превышен срок 60/90 минут</b> без освобождения — заведомо незаконное задержание для сотрудника <span class="tag">УК 94</span></li>
+<li><b>Обыск вне задержания</b> без оснований 6-ФЗ 13 п.14 и без решения суда</li>
+<li><b>Права зачитаны после следственных действий</b>, а не до них, либо не зачитаны вовсе</li>
+<li><b>Госслужащего не отпустили</b>, хотя прокурор не смог прибыть — освобождение обязательно <span class="tag">УПК 83 ч.2</span></li>
+<li><b>Дело федеральной юрисдикции велось как обычное дознание МВД</b> вместо передачи по подследственности <span class="tag">УПК 80 ч.3 п.1</span></li>
+</ul>
+</div>
+</section>
+</div>
+
+<!-- ===== TAB 2: УСТАВ ===== -->
+<div class="tab-panel" id="tab-ustav" role="tabpanel" aria-labelledby="tabbtn-ustav">
+
+<section>
+<h2>Короткие карточки</h2>
+
+<div class="card">
+<h3>Когда можно не выполнять приказ</h3>
+<ul>
+<li>Приказ явно незаконен</li>
+<li>Исполнение — уголовное/дисциплинарное правонарушение</li>
+<li>Уже выполняете задачу своего подразделения (кроме приказа подполковника+)</li>
+<li>Приказ отдан лицом без полномочий, создаёт конфликт подразделений</li>
+</ul>
+<p><span class="tag">ст.3.15</span></p>
+</div>
+
+<div class="card">
+<h3>Субординация</h3>
+<table>
+<tr><td>К старшему</td><td>«Товарищ [звание] [фамилия], разрешите...»</td></tr>
+<tr><td>Согласие/несогласие</td><td>«Так точно» / «Никак нет»</td></tr>
+<tr><td>Выполнение</td><td>«Есть»</td></tr>
+<tr><td>К гражданскому</td><td>«Гражданин/Гражданка»</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h3>Получил взыскание — что делать</h3>
+<ol>
+<li>Обжаловать за 48 часов</li>
+<li>Не от МВД — через суд/прокуратуру</li>
+<li>Отработать за 14 дней</li>
+<li>К ответственности можно привлечь не позже 3 дней с момента проступка</li>
+</ol>
+</div>
+</section>
+
+<section>
+<h2>Звания и отделы</h2>
+<div class="overflow"><table>
+<tr><th>Звание</th><th>Должность (внутри отдела)</th></tr>
+<tr><td>Ген-майор</td><td>Начальник отдела</td></tr>
+<tr><td>Полковник</td><td>Зам. начальника</td></tr>
+<tr><td>Подполковник</td><td>Инструктор</td></tr>
+<tr><td>Майор</td><td>Ст. оперативник/сотрудник</td></tr>
+<tr><td>Капитан–мл.лейтенант</td><td>Оперативник/сотрудник</td></tr>
+<tr><td>Прапорщик–мл.сержант</td><td>Младший сотрудник</td></tr>
+<tr><td>Рядовой</td><td>Курсант/стажёр</td></tr>
+</table></div>
+<p>Отделы: <b>ОСБ</b> (внутр. безопасность), <b>СОБР</b> (поддержка операций), <b>ОРЛС</b> (обучение/повышения), <b>ППСП</b> (патруль), <b>ОУР</b> (розыск), <b>УКОН</b> (наркотики), <b>ОСН</b> (спецоперации).</p>
+</section>
+
+<section>
+<h2>Глоссарий сокращений</h2>
+<div class="overflow"><table>
+<tr><th>Сокращение</th><th>Расшифровка</th></tr>
+<tr><td>ППСП</td><td>Патрульно-постовая служба полиции</td></tr>
+<tr><td>ОСБ</td><td>Отдел собственной безопасности</td></tr>
+<tr><td>ОРЛС</td><td>Отдел по работе с личным составом</td></tr>
+<tr><td>ОУР</td><td>Отдел уголовного розыска</td></tr>
+<tr><td>УКОН</td><td>Управление по контролю за оборотом наркотиков</td></tr>
+<tr><td>ОСН</td><td>Отряд специального назначения</td></tr>
+<tr><td>СОБР</td><td>Специальный отряд быстрого реагирования</td></tr>
+<tr><td>СК</td><td>Следственный комитет</td></tr>
+<tr><td>АП</td><td>Административное правонарушение</td></tr>
+<tr><td>ОРМ</td><td>Оперативно-розыскные мероприятия</td></tr>
+<tr><td>РО</td><td>Российский округ</td></tr>
+</table></div>
+</section>
+
+<section>
+<h2>Дисциплина</h2>
+<p>Замечание → выговор → строгий выговор → предупреждение → понижение → увольнение. 3 выговора = увольнение/понижение <span class="tag">ст.12.21</span>. Взыскание действует 1 год (устно — 1 месяц). Обжалование не приостанавливает исполнение.</p>
+</section>
+
+<section>
+<h2>Служба</h2>
+<div class="overflow"><table>
+<tr><th>Что</th><th>Норма</th></tr>
+<tr><td>График</td><td>Пн–Пт 10:00–23:00, Сб–Вс 11:00–22:00</td></tr>
+<tr><td>Обед</td><td>1–2 часа, после 2 ч. службы, до 2 раз в сутки</td></tr>
+<tr><td>Отпуск</td><td>до 7 сут./мес. (после стажировки)</td></tr>
+<tr><td>Перевод между отделами</td><td>не раньше 48 часов после вступления</td></tr>
+</table></div>
+</section>
+
+<section>
+<h2>Запрещено (ст.4.3)</h2>
+<ul>
+<li>Врать руководству/ОСБ</li>
+<li>Применять спецсредства/оружие без оснований или для развлечения</li>
+<li>Хамить и оскорблять первым</li>
+<li>Разглашать записи без разрешения начальника отдела</li>
+<li>Одиночный патруль</li>
+<li>Работать не по направлению отдела без служебной необходимости</li>
+<li>Спать на посту дольше 3 минут вне зон отдыха</li>
+</ul>
+</section>
+</div>
+
+<!-- ===== TAB 3: РАБОТА С ГРАЖДАНСКИМИ ===== -->
+<div class="tab-panel" id="tab-provok" role="tabpanel" aria-labelledby="tabbtn-provok">
+
+<section>
+<h2>Когда можно подойти и требовать документы</h2>
+<div class="card">
+<p>Нужно хотя бы одно основание <span class="tag">6-ФЗ 13 п.2</span>:</p>
+<ul>
+<li>есть данные, что человек совершил преступление</li>
+<li>есть основания полагать, что он в розыске</li>
+<li>он совершает или совершил административное правонарушение (парковка, распитие, мат и т.д.)</li>
+<li>есть основания для задержания</li>
+</ul>
+<div class="danger">«Просто не понравился» или «ведёт себя подозрительно» без конкретики — не основание. Всегда называйте гражданину причину обращения <span class="tag">6-ФЗ 5 ч.4</span>.</div>
+</div>
+</section>
+
+<section>
+<h2>Типовые ситуации: что это и что делать</h2>
+<div class="overflow"><table>
+<tr><th>Что делает гражданин</th><th>Квалификация</th><th>Что делать</th></tr>
+<tr><td>Снимает вас на камеру, спорит, комментирует без оскорблений</td><td><span class="badge badge-green">Не нарушение</span></td><td>Не реагировать, продолжать работу</td></tr>
+<tr><td>В маске / скрывает лицо</td><td><span class="badge badge-green">Само по себе не нарушение</span></td><td>Нужно отдельное основание; маска лишь дополняет картину</td></tr>
+<tr><td>Оскорбляет вас при 3+ свидетелях</td><td>УК 104</td><td>Зафиксировать, задержать по УПК гл.12</td></tr>
+<tr><td>Оскорбляет вас без публичности</td><td>КоАП 10.1</td><td>Штраф 10–25к или арест 15 сут.</td></tr>
+<tr><td>Мат в общественном месте, пристаёт к людям</td><td>КоАП 11.1</td><td>Штраф 5–20к или арест до 15 сут.</td></tr>
+<tr><td>Не выполняет законное требование (не показывает документы, не отходит)</td><td>УК 105 ч.1</td><td>Повторить требование на видео, затем задержание</td></tr>
+<tr><td>Мешает задерживать другого, отталкивает, тянет задержанного</td><td>УК 107</td><td>Задержание</td></tr>
+<tr><td>Толкает, бьёт, угрожает сотруднику</td><td>УК 103</td><td>Задержание, при опасном насилии — ч.2 (50 мес.)</td></tr>
+<tr><td>Спецсредство на поясе (дубинка, шокер, наручники)</td><td>УК 74</td><td>Задержание, изъятие</td></tr>
+<tr><td>Достал оружие без причины</td><td>КоАП 11.7</td><td>Требование убрать; при угрозе — УК 57 / УК 103</td></tr>
+<tr><td>Бросил машину на проезжей части</td><td>КоАП 8.12 / 8.21</td><td>Протокол сами, эвакуация через ГИБДД</td></tr>
+<tr><td>Сидит в служебной машине, но не двигает её</td><td>Не угон (пояснение к УК 67)</td><td>Потребовать выйти; отказ — УК 105</td></tr>
+<tr><td>Зашёл на закрытую территорию</td><td>КоАП 11.8 / УК 73.1 (режимный объект)</td><td>Потребовать покинуть, при отказе — задержание</td></tr>
+<tr><td>Ложный вызов полиции</td><td>КоАП 10.5</td><td>Штраф 3–8к</td></tr>
+<tr><td>Пишет заведомо ложную жалобу/донос на сотрудника</td><td>УК 97</td><td>Сохранить видео, передать в ОСБ/прокуратуру</td></tr>
+</table></div>
+</section>
+
+<section>
+<h2>На чём сотрудника ловят провокаторы</h2>
+<div class="card">
+<ul>
+<li>Первым оскорбил или сорвался на мат <span class="tag">Устав 4.3 п.6, КоАП 9.6</span></li>
+<li>Применил силу без угрозы и без предупреждения <span class="tag">6-ФЗ 18, Устав 15.12</span></li>
+<li>Задержал без конкретного основания из ст.51 УПК <span class="tag">УК 94</span></li>
+<li>Не назвал себя и причину обращения</li>
+<li>Выключил или прервал запись</li>
+<li>Досмотрел вне задержания без оснований</li>
+</ul>
+<div class="info">Цель провокатора — вывести вас на эмоцию и получить ролик для жалобы. Говорите коротко и по закону, каждое их действие — на запись, решение — только по конкретной статье.</div>
+</div>
+</section>
+
+<section>
+<h2>Спецсредства и оружие у гражданского</h2>
+<div class="overflow"><table>
+<tr><th>Предмет</th><th>Гражданину можно?</th></tr>
+<tr><td>Электрошокер, электро- и резиновая дубинка, наручники, гранаты</td><td><span class="badge badge-red">Нет</span> — УК 74</td></tr>
+<tr><td>Кастет</td><td><span class="badge badge-green">Да</span>, открыто на поясе</td></tr>
+<tr><td>Нож, топор</td><td>Только сбор грибов/дров, охота в спец. зонах</td></tr>
+<tr><td>Гражданское огнестрельное, лёгкий бронежилет</td><td>По лицензии + мед. справка</td></tr>
+<tr><td>Дефибриллятор, эпинефрин</td><td><span class="badge badge-green">Да, всем</span></td></tr>
+</table></div>
+<p>Требовать лицензию и мед. справку можно по первому законному требованию <span class="tag">ФЗ-оружие гл.VIII ст.1 ч.3</span>. Применять оружие против законных действий сотрудника гражданин не вправе — это не самооборона <span class="tag">гл.VII ст.3 ч.2</span>.</p>
+</section>
+
+<section>
+<h2>Порядок действий</h2>
+<ol>
+<li>Включить запись до начала контакта</li>
+<li>Представиться и назвать причину обращения</li>
+<li>Озвучить требование чётко и один раз повторить</li>
+<li>Не выполнил — предупредить о применении силы/задержании</li>
+<li>Определить статью: КоАП — протокол/штраф на месте, УК — задержание по УПК гл.12 и Миранда</li>
+<li>Всё, что сделал гражданин в процессе (оскорбления, сопротивление), — отдельные составы</li>
+</ol>
+</section>
+</div>
+
+<!-- ===== TAB 4: БАЗА СТАТЕЙ ===== -->
+<div class="tab-panel" id="tab-db" role="tabpanel" aria-labelledby="tabbtn-db">
+<section>
+<h2>Поиск по статьям</h2>
+<div class="row-btns" id="codeChips"></div>
+<input id="search" type="text" placeholder="Например: 74, спецсредства, оскорбление, неповиновение...">
+<div class="count" id="count"></div>
+<div id="results"></div>
+</section>
+</div>
+
+<!-- ===== TAB 5: РАЗБОР СИТУАЦИИ ===== -->
+<div class="tab-panel" id="tab-situation" role="tabpanel" aria-labelledby="tabbtn-situation">
+<section>
+<h2>Опишите ситуацию своими словами</h2>
+<div class="card">
+<p>Например: «вооружённое ограбление банка, есть заложники» или «перестрелка между группировками возле склада». Можно описать сразу несколько эпизодов — каждый разберётся отдельно.</p>
+<textarea id="sitInput" rows="3" placeholder="Опишите, что происходит..."></textarea>
+<div class="row-btns">
+<button class="tab-btn" onclick="runSituation()">Разобрать</button>
+<button class="tab-btn ghost" onclick="presetSituation('вооружённое ограбление банка, есть заложники')">Ограбление банка</button>
+<button class="tab-btn ghost" onclick="presetSituation('перестрелка между группировками с оружием')">Перестрелка</button>
+<button class="tab-btn ghost" onclick="presetSituation('нашли нарколабораторию с оборудованием')">Нарколаборатория</button>
+<button class="tab-btn ghost" onclick="presetSituation('скрывается на машине после ограбления магазина')">Погоня после ограбления</button>
+</div>
+</div>
+<div id="sitCount" class="count"></div>
+<div id="sitResults"></div>
+</section>
+</div>
+
+</main>
+<footer>Составлено по законодательной базе сервера. Обновляйте при изменении законов.</footer>
+
+<script>
+const articles = [
+{code:'КоАП', num:'16.3', title:'Досмотр по делу об АП', tags:'досмотр административный арест вещи транспорт',
+ text:'Личный досмотр, досмотр вещей и ТС по делу об административном правонарушении допускается только если за это правонарушение предусмотрен административный арест.', sanction:'Процессуальная норма.'},
+{code:'КоАП', num:'16.4', title:'Отстранение от управления, освидетельствование', tags:'пьяный за рулём опьянение отстранение освидетельствование водитель',
+ text:'Водитель с признаками опьянения отстраняется от управления до устранения причины. Отстранение и освидетельствование проводятся с видеозаписью.', sanction:'Процессуальная норма.'},
+{code:'Разъяснение', num:'', title:'Угон vs занятие ТС без перемещения', tags:'угон завладение сел в машину занял не сдвинул путаница',
+ text:'Преступление образует только сдвинутое с места транспортное средство. Сел в машину, но не тронулся — это не угон, а мелкое хулиганство.', sanction:'См. УК 67 (угон — 30 мес.) и примечание к статье.'},
+{code:'Разъяснение', num:'', title:'Грабёж vs разбой', tags:'грабёж разбой отличие путаница насилие',
+ text:'Критерий — опасность применённого насилия для жизни или здоровья. Толчок, вырывание сумки — грабёж. Оружие, удушение — разбой.', sanction:'УК 66 — 30-40 мес. УК 66.1 (разбой) — 40 мес.'},
+{code:'Разъяснение', num:'', title:'Побои vs истязание', tags:'побои истязание отличие систематически путаница',
+ text:'Разовое насильственное действие без тяжких последствий — административное правонарушение. Систематическое нанесение побоев — уже уголовная статья.', sanction:'КоАП 6.1 — штраф/арест 20 сут. УК 56 (истязание) — 20-30 мес.'},
+{code:'Разъяснение', num:'', title:'Мелкое хулиганство vs хулиганство', tags:'хулиганство мелкое отличие путаница переход уголовное',
+ text:'Переход в уголовную плоскость происходит при наличии отягчающего признака: насилие, оружие, группа лиц, сопротивление представителю власти.', sanction:'КоАП 11.1 — штраф/арест 15 сут. УК 73 — до 40 мес.'},
+{code:'Разъяснение', num:'', title:'Неповиновение / оскорбление / насилие к власти — отличие', tags:'неповиновение оскорбление насилие власти отличие путаница',
+ text:'Разграничиваются по характеру действия гражданина: отказ выполнить законное требование — неповиновение; словесное унижение чести — оскорбление; физическое воздействие — насилие к представителю власти.', sanction:'УК 105 (до 30 мес.) / УК 104 (до 30 мес.) / УК 103 (40-50 мес.)'},
+// ===== УПК — базовые процессуальные =====
+{code:'УПК', num:'7', title:'Неприкосновенность личности', tags:'неприкосновенность задержание освобождение',
+ text:'Никто не может быть задержан или заключён под стражу без законных оснований. Незаконно задержанного нужно немедленно освободить.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'9', title:'Неприкосновенность жилища', tags:'обыск жилище согласие суд',
+ text:'Обыск, выемка, осмотр жилища — только с согласия проживающих или по решению суда, кроме случаев, предусмотренных законом.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'13', title:'Обеспечение права на защиту', tags:'право защита адвокат защитник бесплатно',
+ text:'Подозреваемому и обвиняемому обеспечивается право на защиту лично или с помощью защитника, в предусмотренных случаях — бесплатно.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'26', title:'Права подозреваемого', tags:'права подозреваемый адвокат защитник звонок показания',
+ text:'Знать в чём подозревается, давать показания или отказаться, помощь защитника (свидание до 10 мин), звонок до 2 минут, представлять доказательства, обжаловать действия.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'27', title:'Права обвиняемого', tags:'права обвиняемый защитник материалы дела',
+ text:'Знать в чём обвиняется, получить копию обвинительного заключения, свидания с защитником без ограничений, знакомиться с материалами дела, обжаловать решения.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'44', title:'Недопустимые доказательства', tags:'доказательства недопустимые адвокат показания',
+ text:'Показания подозреваемого/обвиняемого, данные без защитника (включая отказ от него) и не подтверждённые в суде — недопустимы.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'44.6-44.7', title:'Вещественные доказательства и их хранение', tags:'вещдоки видео хранение 72 часа',
+ text:'Предметы-орудия и следы преступления признаются вещдоками. По делу без письменной отчётности хранятся у дознавателя/следователя 72 часа с момента решения по делу.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'51', title:'Основания задержания подозреваемого', tags:'задержание основания подозреваемый',
+ text:'Застигнут при совершении/сразу после; указан потерпевшим/очевидцем; найдены следы; лицо в ориентировке; иные данные + попытка скрыться/личность не установлена.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'52', title:'Порядок задержания подозреваемого', tags:'порядок задержание шаги последовательность',
+ text:'Спецсредства → удостоверение → обыск на усмотрение → основания и права → доставление → передача уполномоченному при необходимости → идентификация → права (адвокат, звонок) → госслужащий: прокурор → следственные действия → предъявление статьи.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'52 г / Миранда', title:'Текст прав при задержании (Миранда)', tags:'миранда права зачитать текст задержание речь озвучить',
+ text:'«Гражданин [Фамилия], вы задержаны по статье [номер] УК. Вы вправе знать суть подозрений, давать показания или молчать — сказанное может быть использовано в деле. Вы имеете право на адвоката и беседу с ним наедине, на звонок до 2 минут, на материалы дела, ходатайства, отводы и судебный контроль. Ваши права понятны?»', sanction:'Процессуальная норма — обязательна к озвучиванию при задержании.'},
+{code:'УПК', num:'53', title:'Основания освобождения, сроки задержания', tags:'освобождение срок 60 минут 90 минут',
+ text:'Освобождение при неподтверждении подозрения, нарушении ст.51, превышении срока (60 мин, 90 — для госслужащего/суд.контроля).', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'54', title:'Субъекты задержания', tags:'кто присутствует задержание адвокат прокурор судья',
+ text:'При задержании вправе присутствовать: задерживающий, дознаватель/следователь, задержанный, адвокат, руководство задержанного, прокурор, судья при суд. контроле. Посторонних можно попросить отойти на 5 метров.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'78', title:'Возбуждение уголовного дела, хранение видео', tags:'возбуждение видео 72 часа монтаж',
+ text:'Дело возбуждается постановлением либо с момента фактического задержания. Видео основания задержания хранить 72 часа, цельным, со звуком, без монтажа.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'80', title:'Подследственность', tags:'дознание следствие подследственность юрисдикция МВД',
+ text:'Дознаватели МВД ведут дела региональной юрисдикции [Р], кроме составов, отнесённых к [Ф] и ст.91/101 УК — их нужно передавать по подследственности.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'83', title:'Особый порядок при задержании госслужащего', tags:'госслужащий прокурор освобождение особый порядок',
+ text:'При задержании госслужащего вызывается прокурор и его руководство. Задержание приостанавливается на время ожидания (до 10+10 мин). Если прокурор не может прибыть — освобождение обязательно.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'83.1', title:'Судебный контроль при задержании', tags:'судебный контроль судья приостановка',
+ text:'Подозреваемый вправе требовать проверки судьёй законности действий. Ожидание ответа судьи и приезда — по 10 минут. Без ответа/прибытия — контроль необязателен.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'93', title:'Личный обыск и обыск жилища', tags:'обыск жилище личный решение суда',
+ text:'Личный обыск — по решению суда либо при задержании. Обыск жилища — только по решению суда. Перед обыском предлагается выдать предметы добровольно.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'96', title:'Место и время допроса', tags:'допрос время час непрерывно',
+ text:'Допрос проводится по месту расследования или по месту нахождения допрашиваемого. Не может длиться непрерывно более часа.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'101.1', title:'Арест', tags:'арест лишение свободы порядок увольнение военный билет',
+ text:'Порядок ареста: личный обыск и изъятие опасных предметов → разъяснение оснований и статьи → заполнение бланка с данными и сроком → помещение под стражу. Возможен после порядка ст.52, либо только по решению суда.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'102', title:'Особые категории лиц', tags:'неприкосновенность депутат судья министр премьер',
+ text:'Особый порядок применяется к депутатам, судьям, руководителям органов власти и их замам, Премьер-Министру и его заму, Генпрокурору и его замам.', sanction:'Процессуальная норма.'},
+{code:'УПК', num:'104', title:'Задержание неприкосновенных лиц', tags:'неприкосновенные лица немедленное освобождение',
+ text:'Депутаты, судьи, Генпрокурор, министры, Премьер и его зам, задержанные по подозрению, освобождаются немедленно после установления личности, кроме задержания на месте преступления.', sanction:'Процессуальная норма.'},
+
+// ===== 6-ФЗ «О полиции» =====
+{code:'6-ФЗ', num:'5', title:'Соблюдение прав и свобод при обращении', tags:'представиться должность звание фамилия',
+ text:'Сотрудник называет должность, звание, фамилию, предъявляет удостоверение по требованию, сообщает причину обращения; при ограничении прав — разъясняет основания и права.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'6', title:'Законность', tags:'законность полномочия основания',
+ text:'Полиция действует строго в соответствии с законом. Ограничение прав граждан допустимо только по основаниям, предусмотренным законом.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'13 п.2', title:'Проверка документов', tags:'документы проверка основания подозрение розыск',
+ text:'Документы можно проверять при основаниях подозревать в преступлении, полагать розыск, поводе к делу об АП или основаниях для задержания.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'13 п.8', title:'Составление протоколов об АП', tags:'протокол доказательства меры обеспечения',
+ text:'Полиция вправе составлять протоколы об административных правонарушениях и собирать доказательства.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'13 п.14', title:'Личный досмотр вне задержания', tags:'досмотр оружие наркотики похищенное основания',
+ text:'Досмотр гражданина/вещей/ТС вне задержания — если есть основания полагать оружие, боеприпасы, взрывчатку, наркотики или похищенное.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'14', title:'Задержание — общий срок', tags:'задержание срок час',
+ text:'До судебного решения задержание не может превышать 1 час, кроме случаев, установленных отдельно для УПК/КоАП.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'15', title:'Проникновение в жилые помещения', tags:'проникновение жилище спасение задержание',
+ text:'Проникновение допускается для спасения жизни, задержания подозреваемых, пресечения преступления, установления обстоятельств несчастного случая — с уведомлением находящихся там.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'15.1', title:'Вскрытие транспортного средства', tags:'вскрытие машина осмотр опьянение',
+ text:'Вскрытие ТС допускается для спасения жизни, задержания, пресечения преступления, осмотра при подозрении на опьянение или запрещённые предметы, проверки угрозы теракта.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'16', title:'Оцепление территорий', tags:'оцепление блокирование массовые беспорядки',
+ text:'Оцепление допускается при ЧС, массовых беспорядках, розыске, преследовании, КТО, обнаружении взрывчатки, угрозе жизни.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'18', title:'Порядок применения силы/спецсредств/оружия', tags:'предупреждение применение силы порядок',
+ text:'Перед применением сотрудник представляется, предупреждает и даёт время выполнить требование, кроме случаев прямой угрозы жизни.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'19', title:'Применение физической силы', tags:'физическая сила пресечение доставление',
+ text:'Физическая сила применяется для пресечения преступлений/АП, доставления, преодоления сопротивления законным требованиям.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'20', title:'Применение спецсредств', tags:'спецсредства нападение сопротивление конвоирование',
+ text:'Спецсредства — для отражения нападения, пресечения преступления, сопротивления, задержания вооружённого/убегающего, конвоирования.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'21', title:'Применение огнестрельного оружия', tags:'оружие угроза жизни заложники вооружённое сопротивление',
+ text:'Оружие — для защиты от угрозы жизни, пресечения попытки завладения оружием, освобождения заложников, задержания за тяжкое/особо тяжкое преступление, вооружённого сопротивления.', sanction:'Процессуальная норма.'},
+{code:'6-ФЗ', num:'24 ч.8', title:'Гарантии сотрудника при исполнении', tags:'привод обыск сотрудник гарантии',
+ text:'При исполнении обязанностей не допускаются привод, задержание, личный обыск сотрудника и обыск его транспорта, кроме прямой угрозы жизни или постановления/решения суда.', sanction:'Процессуальная норма.'},
+
+// ===== Устав МВД =====
+{code:'Устав', num:'3.6', title:'Заведомо незаконный приказ', tags:'приказ незаконный уведомление руководитель',
+ text:'При явно незаконном приказе сотрудник руководствуется законом и уведомляет отдавшего приказ или вышестоящего руководителя.', sanction:'Процессуальная норма.'},
+{code:'Устав', num:'3.15', title:'Когда можно не выполнять приказ', tags:'отказ приказ незаконность конфликт полномочий',
+ text:'Приказ можно не исполнять: он явно незаконен; исполнение — уголовное/дисциплинарное правонарушение; мешает уже выполняемой задаче (кроме приказа подполковника+); отдан лицом без полномочий и создаёт конфликт подразделений.', sanction:'Процессуальная норма.'},
+{code:'Устав', num:'4.3', title:'Категорический запрет для сотрудника', tags:'запрещено оскорбление провокация спецсредства развлечение',
+ text:'Запрещено: врать руководству, злоупотреблять полномочиями, применять спецсредства/оружие без оснований или для развлечения, хамить и оскорблять первым, одиночный патруль, разглашать записи без разрешения.', sanction:'Дисциплинарная ответственность.'},
+{code:'Устав', num:'12.7', title:'Виды дисциплинарных взысканий', tags:'взыскание замечание выговор увольнение',
+ text:'Замечание → выговор → строгий выговор → предупреждение о неполном соответствии → понижение → увольнение.', sanction:'Дисциплинарная норма.'},
+{code:'Устав', num:'12.21', title:'Накопление взысканий', tags:'три выговора увольнение понижение замечание',
+ text:'3 предупреждения = 1 выговор; 3 выговора влекут увольнение или понижение.', sanction:'Дисциплинарная норма.'},
+{code:'Устав', num:'12.29', title:'Обжалование взыскания', tags:'обжаловать 48 часов выговор',
+ text:'Взыскание можно обжаловать в течение 48 часов с момента получения. Не от МВД — через суд/прокуратуру.', sanction:'Дисциплинарная норма.'},
+
+// ===== ФЗ об обороте оружия и спецсредств =====
+{code:'ФЗ-оружие', num:'гл.II ст.2', title:'Перечень спецсредств', tags:'спецсредства перечень бронежилет электрошокер дубинка наручники',
+ text:'К спецсредствам относятся: бронежилеты, электрошокер, резиновая дубинка, наручники, гранаты, электрическая дубинка, дрон гос. образца, медицинские инструменты.', sanction:'Процессуальная норма.'},
+{code:'ФЗ-оружие', num:'гл.V ст.1,3', title:'Запрет спецсредств гражданским', tags:'спецсредства гражданский запрет продажа передача',
+ text:'Спецсредства разрешены только сотрудникам силовых структур (и отдельным исключениям). Продажа/передача/покупка спецсредств лицам вне госструктур запрещена.', sanction:'См. УК ст.74 — уголовная ответственность.'},
+{code:'ФЗ-оружие', num:'гл.VII ст.3', title:'Самооборона в общественном месте', tags:'самооборона оружие гражданин необходимая оборона сотрудник',
+ text:'Обнажение/применение оружия для самообороны — только по правилам необходимой обороны. Запрещено применять оружие против законных действий сотрудника полиции (задержание, досмотр, обыск).', sanction:'Процессуальная норма / см. УК ст.26.'},
+{code:'ФЗ-оружие', num:'гл.VIII ст.1', title:'Ношение оружия гражданами', tags:'ношение оружие охотничье гражданское лицензия',
+ text:'Ношение огнестрельного оружия гражданами запрещено, кроме охотничьего в зонах охоты по лицензии. Обязаны предъявлять лицензию и мед. справку по требованию.', sanction:'Процессуальная норма.'},
+
+// ===== ФЗ об особом статусе должностных лиц =====
+{code:'ФЗ-статус', num:'гл.I ст.1', title:'Неприкосновенность должностных лиц', tags:'неприкосновенность депутат судья министр расследование',
+ text:'Расследование в отношении неприкосновенных лиц (советники, министры, судьи, депутаты и др.) невозможно без снятия статуса уполномоченным лицом.', sanction:'Процессуальная норма.'},
+{code:'ФЗ-статус', num:'гл.I ст.2', title:'Правовая защита', tags:'правовая защита военнослужащий прокуратура задержание исключение',
+ text:'Лицам с правовой защитой (военные на дежурстве, сотрудники ФССП/прокуратуры/СК при исполнении и др.) не допускается привод/задержание/обыск, кроме преступления, угрозы жизни или решения суда/санкции Генпрокурора.', sanction:'Процессуальная норма.'},
+
+// ===== УК — Особенная часть (все статьи с санкциями) =====
+{code:'УК', num:'51', title:'Убийство', tags:'убийство умышленное смерть',
+ text:'Умышленное причинение смерти другому человеку; квалифицирующие признаки — двое и более лиц, сотрудник при исполнении, особая жестокость, группа, хулиганские побуждения.', sanction:'Лишение свободы 50 мес.'},
+{code:'УК', num:'52', title:'Убийство при превышении пределов обороны/задержания', tags:'превышение обороны задержания убийство',
+ text:'Убийство при превышении пределов необходимой обороны либо мер, необходимых для задержания преступника.', sanction:'Лишение свободы 30 мес.'},
+{code:'УК', num:'53', title:'Причинение смерти по неосторожности', tags:'неосторожность смерть',
+ text:'Причинение смерти по неосторожности.', sanction:'Лишение свободы 30 мес.'},
+{code:'УК', num:'54', title:'Умышленное причинение тяжкого вреда здоровью', tags:'тяжкий вред здоровью умышленное',
+ text:'Тяжкий вред, опасный для жизни, или с потерей органа/функции, прерыванием беременности, обезображиванием лица.', sanction:'Лишение свободы 50 мес.'},
+{code:'УК', num:'55', title:'Вред здоровью при превышении обороны/задержания', tags:'превышение обороны вред здоровью задержание',
+ text:'Ч.1: тяжкий вред при превышении пределов обороны. Ч.2: тяжкий/средний вред при превышении мер задержания.', sanction:'Ч.1 — штраф 35–60к либо 30 мес. Ч.2 — штраф 50к либо 30 мес.'},
+{code:'УК', num:'56', title:'Истязание', tags:'истязание побои систематически',
+ text:'Систематическое нанесение побоев/иные насильственные действия без тяжких последствий; ч.2 — с особой жестокостью или группой.', sanction:'Ч.1 — 20 мес. Ч.2 — 30 мес.'},
+{code:'УК', num:'57', title:'Угроза убийством или тяжким вредом', tags:'угроза убийство тяжкий вред',
+ text:'Угроза убийством/причинением тяжкого вреда здоровью при наличии оснований опасаться её осуществления.', sanction:'Штраф 25–100к либо 30 мес.'},
+{code:'УК', num:'58', title:'Похищение человека', tags:'похищение человек',
+ text:'Похищение человека.', sanction:'Лишение свободы 50 мес.'},
+{code:'УК', num:'59', title:'Незаконное лишение свободы', tags:'лишение свободы незаконное',
+ text:'Незаконное лишение человека свободы, не связанное с похищением.', sanction:'Лишение свободы 40 мес.'},
+{code:'УК', num:'60', title:'Клевета', tags:'клевета ложные сведения репутация',
+ text:'Распространение заведомо ложных сведений, порочащих честь; ч.2 — со служебным положением или с обвинением в тяжком преступлении.', sanction:'Ч.1 — штраф 5–30к. Ч.2 — штраф 20–100к либо 20 мес.'},
+{code:'УК', num:'61', title:'Изнасилование', tags:'изнасилование половое насилие',
+ text:'Половое сношение с насилием/угрозой либо с использованием беспомощного состояния; ч.2 — группой, с угрозой убийством, со смертью по неосторожности.', sanction:'Ч.1 — 40 мес. Ч.2 — 50 мес.'},
+{code:'УК', num:'62', title:'Понуждение к действиям сексуального характера', tags:'понуждение сексуальное шантаж',
+ text:'Понуждение путём шантажа, угрозы имуществу или с использованием зависимости.', sanction:'Лишение свободы 30 мес.'},
+{code:'УК', num:'63', title:'Нарушение равенства прав и свобод', tags:'дискриминация равенство служебное положение',
+ text:'Дискриминация по признакам пола, расы, национальности и др. с использованием служебного положения.', sanction:'Штраф 30–90к либо 20 мес.'},
+{code:'УК', num:'64', title:'Нарушение неприкосновенности жилища', tags:'жилище проникновение незаконное',
+ text:'Незаконное проникновение в жилище против воли проживающего; ч.2 — с насилием или со служебным положением.', sanction:'Ч.1 — штраф до 50к либо 30 мес. Ч.2 — штраф до 75к либо 40 мес.'},
+{code:'УК', num:'65', title:'Кража', tags:'кража тайное хищение',
+ text:'Тайное хищение чужого имущества; ч.2 — группой или с проникновением в жилище/помещение.', sanction:'Ч.1 — штраф до 50к либо 30 мес. Ч.2 — штраф до 90к либо 40 мес.'},
+{code:'УК', num:'66', title:'Грабёж', tags:'грабёж открытое хищение',
+ text:'Открытое хищение чужого имущества; ч.2 — группой, с проникновением, с насилием.', sanction:'Ч.1 — 30 мес. Ч.2 — 40 мес.'},
+{code:'УК', num:'66.1', title:'Разбой', tags:'разбой нападение хищение насилие опасное',
+ text:'Нападение в целях хищения с насилием, опасным для жизни/здоровья, либо угрозой такого насилия.', sanction:'Лишение свободы 40 мес.'},
+{code:'УК', num:'67', title:'Угон / неправомерное завладение ТС', tags:'угон завладение транспорт машина',
+ text:'Неправомерное завладение и перемещение ТС независимо от цели. Занятие ТС без перемещения — не угон, а хулиганство.', sanction:'Лишение свободы 30 мес.'},
+{code:'УК', num:'68', title:'Уничтожение/повреждение имущества', tags:'уничтожение повреждение имущество значительный ущерб',
+ text:'Умышленное уничтожение/повреждение чужого имущества со значительным ущербом.', sanction:'Штраф до 50к либо 30 мес.'},
+{code:'УК', num:'69', title:'Незаконное предпринимательство', tags:'предпринимательство без регистрации лицензии',
+ text:'Предпринимательская деятельность без регистрации/лицензии с крупным ущербом.', sanction:'Штраф до 100к либо 40 мес.'},
+{code:'УК', num:'70', title:'Террористический акт', tags:'теракт взрыв поджог',
+ text:'Взрыв, поджог, иные действия, устрашающие население, в целях воздействия на власть.', sanction:'Лишение свободы 50 мес.'},
+{code:'УК', num:'71', title:'Призывы к терроризму', tags:'призывы терроризм пропаганда оправдание',
+ text:'Публичные призывы к терроризму, его оправдание или пропаганда.', sanction:'Штраф до 70к либо 30 мес.'},
+{code:'УК', num:'72', title:'Бандитизм', tags:'банда вооружённая группа нападение',
+ text:'Создание/руководство устойчивой вооружённой группой для нападений; участие в банде.', sanction:'Создание/руководство — 50 мес. Участие — 40 мес.'},
+{code:'УК', num:'73', title:'Хулиганство', tags:'хулиганство группа маска демонстративное неуважение общество',
+ text:'Грубое нарушение общественного порядка, явное неуважение к обществу: с насилием, по мотивам ненависти, с оружием, группой лиц, с сопротивлением представителю власти.', sanction:'Штраф до 50к либо лишение свободы 40 мес.'},
+{code:'УК', num:'73.1', title:'Проникновение на режимный объект', tags:'режимный объект проникновение нахождение',
+ text:'Незаконное проникновение на режимный объект либо нахождение на нём.', sanction:'Штраф 80–150к либо 40 мес.'},
+{code:'УК', num:'74', title:'Незаконный оборот оружия и спецсредств', tags:'оружие боеприпасы спецсредства электродубинка электрошокер оборот ношение хранение',
+ text:'Ч.1: незаконные приобретение, передача, хранение, сбыт, перевозка, пересылка, ношение оружия/боеприпасов/спецсредств. Ч.2: незаконные изготовление, переделка, ремонт.', sanction:'Ч.1 — штраф 50к либо 40 мес. Ч.2 — 50 мес.'},
+{code:'УК', num:'75', title:'Оборот наркотиков без цели сбыта', tags:'наркотики хранение перевозка размер значительный крупный',
+ text:'Приобретение/хранение/перевозка/изготовление наркотиков без цели сбыта; размер значительный/крупный/особо крупный.', sanction:'Значительный — штраф до 50к либо 30 мес. Крупный — 40 мес. Особо крупный — 50 мес.'},
+{code:'УК', num:'76', title:'Производство/сбыт наркотиков', tags:'наркотики производство сбыт пересылка',
+ text:'Незаконные производство, сбыт или пересылка наркотических средств.', sanction:'Лишение свободы 50 мес.'},
+{code:'УК', num:'77', title:'Жестокое обращение с животными', tags:'животные жестокость гибель',
+ text:'Жестокое обращение с животным с целью причинения боли/страданий, повлёкшее гибель или увечье.', sanction:'Штраф 50–75к либо 30 мес.'},
+{code:'УК', num:'78', title:'Нарушение ПДД с тяжкими последствиями', tags:'дтп пдд тяжкий вред смерть',
+ text:'Нарушение ПДД, повлёкшее по неосторожности тяжкий вред здоровью (ч.1) или смерть (ч.2).', sanction:'Ч.1 — штраф до 60к либо 30 мес. Ч.2 — 40 мес.'},
+{code:'УК', num:'78.1', title:'Перевозка грузов с поддельными документами', tags:'перевозка груз поддельные документы',
+ text:'Перевозка декларируемых/ограниченных грузов с поддельными документами группой или со служебным положением; ч.2 — товары под запретом.', sanction:'Ч.1 — штраф 30–60к либо 30 мес. Ч.2 — 40 мес.'},
+{code:'УК', num:'80', title:'Разглашение государственной тайны', tags:'гостайна разглашение',
+ text:'Разглашение сведений, составляющих гос. тайну, доверенных по службе.', sanction:'Лишение свободы 40 мес.'},
+{code:'УК', num:'81', title:'Утрата документов гостайны', tags:'утрата документы гостайна допуск',
+ text:'Нарушение правил обращения с документами гос. тайны, повлёкшее их утрату по неосторожности.', sanction:'Штраф 30–70к либо 30 мес.'},
+{code:'УК', num:'82', title:'Злоупотребление должностными полномочиями', tags:'злоупотребление полномочия корысть должностное лицо',
+ text:'Использование полномочий вопреки интересам службы из корысти с существенным нарушением прав; ч.2 — гос. должность; ч.3 — тяжкие последствия.', sanction:'Ч.1 — штраф 50–100к либо 40 мес. Ч.2 — штраф 70–150к либо 40 мес. Ч.3 — 50 мес.'},
+{code:'УК', num:'83', title:'Нецелевое расходование бюджетных средств', tags:'бюджет нецелевое расходование',
+ text:'Расходование бюджетных средств не по назначению в крупном размере; ч.2 — группой или в особо крупном размере.', sanction:'Ч.1 — штраф 40–70к либо 30 мес. Ч.2 — 40 мес.'},
+{code:'УК', num:'84', title:'Превышение должностных полномочий', tags:'превышение полномочий сотрудник насилие оружие',
+ text:'Действия, явно выходящие за пределы полномочий, с существенным нарушением прав; ч.2 — гос. должность; ч.3 — с насилием/оружием/тяжкими последствиями/группой/корыстью.', sanction:'Ч.1 — штраф 65–100к либо 40 мес. Ч.2 — 40 мес. Ч.3 — 50 мес.'},
+{code:'УК', num:'85', title:'Неисполнение приказа сотрудником ОВД', tags:'неисполнение приказ сотрудник овд',
+ text:'Умышленное неисполнение приказа начальника, причинившее существенный вред; ч.2 — группой или с тяжкими последствиями.', sanction:'Ч.1 — штраф 20–40к либо 20 мес. Ч.2 — 30 мес.'},
+{code:'УК', num:'85.1', title:'Отказ в предоставлении информации Госдуме', tags:'отказ информация госдума',
+ text:'Неправомерный отказ/уклонение от предоставления информации Государственной Думе должностным лицом.', sanction:'Штраф до 200к либо 50 мес.'},
+{code:'УК', num:'86', title:'Получение взятки', tags:'взятка получение должностное лицо',
+ text:'Получение должностным лицом взятки лично или через посредника; ч.2 — в значительном размере (свыше 50к).', sanction:'Ч.1 — штраф 50–100к либо 40 мес. Ч.2 — 50 мес.'},
+{code:'УК', num:'87', title:'Дача взятки', tags:'взятка дача должностное лицо',
+ text:'Дача взятки должностному лицу лично или через посредника; ч.2 — в значительном размере.', sanction:'Ч.1 — штраф до 70к либо 40 мес. Ч.2 — штраф до 80к либо 50 мес.'},
+{code:'УК', num:'88', title:'Халатность', tags:'халатность небрежность обязанности',
+ text:'Ненадлежащее исполнение обязанностей из-за небрежности с крупным ущербом; ч.2 — с тяжким вредом/смертью.', sanction:'Ч.1 — штраф 60–80к либо 40 мес. Ч.2 — 50 мес.'},
+{code:'УК', num:'89', title:'Воспрепятствование правосудию/расследованию', tags:'воспрепятствование правосудие расследование',
+ text:'Вмешательство в деятельность суда/прокурора/следователя/дознавателя в целях воспрепятствования; ч.3 — со служебным положением.', sanction:'Ч.1-2 — штраф до 100к либо 40 мес. Ч.3 — 50 мес.'},
+{code:'УК', num:'90', title:'Посягательство на жизнь лица, осуществляющего правосудие', tags:'посягательство жизнь судья следователь прокурор',
+ text:'Посягательство на жизнь судьи, прокурора, следователя, дознавателя, защитника, эксперта в связи с их деятельностью.', sanction:'Лишение свободы 50 мес.'},
+{code:'УК', num:'91', title:'Неуважение к суду', tags:'неуважение суд оскорбление судья',
+ text:'Явное пренебрежение правилами судебного заседания, неявка без причины; ч.2 — оскорбление судьи/участника.', sanction:'Ч.1 — штраф до 100к либо 40 мес. Ч.2 — штраф до 80к либо 50 мес.'},
+{code:'УК', num:'92', title:'Привлечение заведомо невиновного', tags:'невиновный привлечение уголовная ответственность',
+ text:'Привлечение заведомо невиновного к уголовной ответственности; ч.2 — с обвинением в тяжком/крупным ущербом.', sanction:'Ч.1 — 40 мес. Ч.2 — 50 мес.'},
+{code:'УК', num:'93', title:'Незаконное освобождение от уголовной ответственности', tags:'незаконное освобождение прокурор следователь',
+ text:'Незаконное освобождение от уголовной ответственности прокурором/следователем/дознавателем.', sanction:'Лишение свободы 40 мес.'},
+{code:'УК', num:'94', title:'Незаконные задержание, заключение под стражу', tags:'незаконное задержание сотрудник ответственность превышение срока',
+ text:'Заведомо незаконное задержание (ч.1); заведомо незаконные заключение под стражу или содержание под стражей (ч.2).', sanction:'Ч.1 — 40 мес. Ч.2 — 50 мес.'},
+{code:'УК', num:'95', title:'Принуждение к даче показаний', tags:'принуждение показания угрозы следователь',
+ text:'Принуждение к даче показаний путём угроз, шантажа со стороны следователя/дознавателя/сотрудника.', sanction:'Лишение свободы 40 мес.'},
+{code:'УК', num:'95.1', title:'Разглашение данных предварительного расследования', tags:'разглашение данные расследование подписка',
+ text:'Разглашение данных расследования лицом, предупреждённым о недопустимости, без согласия следователя.', sanction:'Штраф до 50к либо 40 мес.'},
+{code:'УК', num:'96', title:'Заведомо неправосудный приговор', tags:'неправосудный приговор судья решение',
+ text:'Вынесение судьёй заведомо неправосудных приговора/решения; ч.2 — с лишением свободы или тяжкими последствиями.', sanction:'Ч.1 — штраф до 100к либо 40 мес. Ч.2 — 50 мес.'},
+{code:'УК', num:'97', title:'Заведомо ложный донос', tags:'ложный донос преступление',
+ text:'Заведомо ложный донос о преступлении; ч.2 — с обвинением в тяжком/особо тяжком.', sanction:'Ч.1 — штраф до 50к либо 40 мес. Ч.2 — штраф до 100к либо 50 мес.'},
+{code:'УК', num:'98', title:'Заведомо ложные показания эксперта', tags:'ложные показания эксперт свидетель',
+ text:'Заведомо ложные показания свидетеля/потерпевшего, заключение/показания эксперта или специалиста.', sanction:'Штраф до 45к либо 40 мес.'},
+{code:'УК', num:'99', title:'Отказ свидетеля от дачи показаний', tags:'отказ показания свидетель освидетельствование',
+ text:'Отказ свидетеля/потерпевшего от показаний либо уклонение от освидетельствования/экспертизы.', sanction:'Штраф 15–40к либо 40 мес.'},
+{code:'УК', num:'100', title:'Побег из-под стражи', tags:'побег стража арест лишение свободы',
+ text:'Побег из места лишения свободы, из-под ареста или из-под стражи.', sanction:'Лишение свободы 40 мес.'},
+{code:'УК', num:'100.1', title:'Уклонение от отбывания наказания', tags:'уклонение розыск приоритет',
+ text:'Неявка в органы правопорядка лица, объявленного в розыск. Наказание считается по приоритету розыска (1 приоритет = 10 мес.).', sanction:'По приоритету розыска.'},
+{code:'УК', num:'101', title:'Неисполнение приговора/решения суда', tags:'неисполнение приговор решение прокурор злостное',
+ text:'Злостное неисполнение приговора/решения суда/акта прокурора-следователя; ч.2 — представителем власти/госслужащим.', sanction:'Ч.1 — 40 мес. Ч.2 — 50 мес.'},
+{code:'УК', num:'102', title:'Посягательство на жизнь сотрудника правоохранительного органа', tags:'посягательство жизнь сотрудник нападение убийство власти',
+ text:'Посягательство на жизнь сотрудника правоохранительного органа, военнослужащего, а равно их близких в целях воспрепятствования законной деятельности либо из мести.', sanction:'Лишение свободы 50 мес.'},
+{code:'УК', num:'103', title:'Применение насилия в отношении представителя власти', tags:'насилие представитель власти сопротивление',
+ text:'Ч.1: насилие, не опасное для жизни/здоровья, либо угроза насилия. Ч.2: насилие, опасное для жизни/здоровья.', sanction:'Ч.1 — штраф до 60к либо 40 мес. Ч.2 — 50 мес.'},
+{code:'УК', num:'104', title:'Оскорбление представителя власти', tags:'оскорбление представитель власти публичное',
+ text:'Публичное оскорбление представителя власти при исполнении. Публичным считается оскорбление в СМИ либо в группе от 3 человек-свидетелей.', sanction:'Штраф до 40к либо лишение свободы 30 мес.'},
+{code:'УК', num:'105', title:'Неповиновение законному требованию должностного лица', tags:'неповиновение сопротивление требование распоряжение полиция прокурор следователь',
+ text:'Ч.1: неповиновение сотруднику полиции/военнослужащему/правоохранительному служащему. Ч.2: неповиновение прокурору/следователю.', sanction:'Ч.1 — штраф до 40к либо 30 мес. Ч.2 — штраф до 60к либо 40 мес.'},
+{code:'УК', num:'106', title:'Самоуправство', tags:'самоуправство самовольно вопреки закону',
+ text:'Самовольное совершение действий вопреки установленному порядку, оспариваемых гражданином/организацией, с существенным вредом; ч.2 — с насилием.', sanction:'Ч.1 — штраф до 35к либо 30 мес. Ч.2 — 40 мес.'},
+{code:'УК', num:'107', title:'Помеха задержанию', tags:'помеха задержание сопротивление воспрепятствование',
+ text:'Умышленные действия, направленные на физическое воспрепятствование законному ограничению свободы подозреваемого/обвиняемого.', sanction:'Лишение свободы 30 мес.'},
+{code:'УК', num:'108', title:'Неисполнение приказа (военнослужащий)', tags:'военный приказ неисполнение армия',
+ text:'Неисполнение подчинённым приказа начальника, отданного в установленном порядке, с существенным вредом службе.', sanction:'Штраф до 40к либо 20 мес. + лишение звания.'},
+{code:'УК', num:'109', title:'Самовольное оставление части', tags:'военный дезертир оставление части',
+ text:'Самовольное оставление части/места службы, неявка в срок при увольнении.', sanction:'Лишение свободы 30 мес. + лишение звания.'},
+{code:'УК', num:'110', title:'Дезертирство', tags:'дезертирство военный уклонение служба',
+ text:'Самовольное оставление части в целях уклонения от военной службы, а равно неявка в тех же целях.', sanction:'Лишение свободы 40 мес. + лишение звания.'},
+{code:'УК', num:'111', title:'Уничтожение военного имущества', tags:'военное имущество оружие техника уничтожение',
+ text:'Умышленное уничтожение/повреждение оружия, боеприпасов, военной техники.', sanction:'Штраф до 60к либо 40 мес. + лишение звания.'},
+{code:'УК', num:'112', title:'Насилие в отношении начальника', tags:'военный насилие начальник побои',
+ text:'Побои или насилие в отношении начальника во время исполнения обязанностей военной службы.', sanction:'Лишение свободы 40 мес. + лишение звания.'},
+{code:'УК', num:'113', title:'Оскорбление военнослужащего', tags:'военный оскорбление сослуживец',
+ text:'Оскорбление одним военнослужащим другого при исполнении обязанностей военной службы.', sanction:'Штраф до 30к либо 20 мес.'},
+
+// ===== КоАП — Особенная часть (все статьи с санкциями) =====
+{code:'КоАП', num:'5.1', title:'Нарушение трудового законодательства', tags:'труд трудовое законодательство нарушение',
+ text:'Нарушение трудового законодательства и иных актов о труде; ч.2 — повторно.', sanction:'Ч.1 — д.лица 25–75к, ю.лица 50–200к. Ч.2 — д.лица 50–120к, ю.лица 100–250к.'},
+{code:'КоАП', num:'5.2', title:'Нарушение законодательства о митингах', tags:'митинг собрание воспрепятствование',
+ text:'Воспрепятствование проведению/участию в законных собраниях, митингах, пикетах.', sanction:'Граждане 30–50к, д.лица 50–150к.'},
+{code:'КоАП', num:'5.3', title:'Нарушение порядка рассмотрения обращений граждан', tags:'обращения граждан порядок рассмотрения',
+ text:'Нарушение установленного порядка рассмотрения обращений граждан должностными лицами.', sanction:'Штраф 10–50к.'},
+{code:'КоАП', num:'5.4', title:'Оскорбление', tags:'оскорбление честь достоинство публично госслужащий',
+ text:'Ч.1: унижение чести и достоинства. Ч.2: публично/в сети/группе лиц. Ч.3: госслужащим при исполнении.', sanction:'Ч.1 — граждане 10–25к/арест 20 сут. Ч.2 — граждане 12–28к, д.лица 50–100к. Ч.3 — 90–130к или арест 20 сут.'},
+{code:'КоАП', num:'5.5', title:'Клевета (юр. лица)', tags:'клевета ложные сведения юридическое лицо',
+ text:'Распространение заведомо ложных сведений, порочащих честь, юридическим лицом.', sanction:'Штраф ю.лица 100–200к.'},
+{code:'КоАП', num:'6.1', title:'Побои', tags:'побои насильственные действия боль',
+ text:'Нанесение побоев/иных насильственных действий без уголовно наказуемых последствий.', sanction:'Штраф 20–50к либо арест 20 сут.'},
+{code:'КоАП', num:'6.2', title:'Занятие проституцией', tags:'проституция',
+ text:'Занятие проституцией.', sanction:'Штраф 1–10к либо арест 15 сут.'},
+{code:'КоАП', num:'6.3', title:'Пропаганда нетрадиционных отношений', tags:'пропаганда нетрадиционные отношения',
+ text:'Пропаганда нетрадиционных сексуальных отношений, смены пола, отказа от деторождения.', sanction:'Граждане 25–100к/арест 20 сут; д.лица 50–150к.'},
+{code:'КоАП', num:'6.4', title:'Курение в общественных местах', tags:'курение общественное место',
+ text:'Использование сигарет/вейпов/кальянов в общественных местах.', sanction:'Штраф 5–15к.'},
+{code:'КоАП', num:'6.7', title:'Воспрепятствование медицинской помощи', tags:'медицинская помощь воспрепятствование',
+ text:'Воспрепятствование законной деятельности медработника по оказанию помощи.', sanction:'Штраф 10–30к.'},
+{code:'КоАП', num:'7.1', title:'Уничтожение/повреждение чужого имущества', tags:'порча имущество повреждение',
+ text:'Умышленное уничтожение/повреждение чужого имущества без значительного ущерба.', sanction:'Штраф 3–15к либо арест 10 сут.'},
+{code:'КоАП', num:'8.1', title:'Незарегистрированное ТС', tags:'регистрация тс незарегистрированное',
+ text:'Управление транспортным средством, не зарегистрированным в установленном порядке.', sanction:'Штраф 3–7к.'},
+{code:'КоАП', num:'8.2', title:'Нарушение правил гос. номеров', tags:'госномер регистрационный знак нечитаемый скрытый',
+ text:'Нечитаемые/нестандартные знаки (ч.1); без знаков либо видоизменённые (ч.2); с устройствами для сокрытия (ч.3).', sanction:'Ч.1 — предупреждение/до 5к. Ч.2 — 5–18к или лишение права. Ч.3 — лишение права.'},
+{code:'КоАП', num:'8.3', title:'Управление без документов', tags:'документы права регистрационные передача',
+ text:'Без регистрационных документов (ч.1); без прав (ч.2); передача управления без прав (ч.3).', sanction:'Ч.1 — до 3к. Ч.2 — до 7к. Ч.3 — до 25к.'},
+{code:'КоАП', num:'8.4', title:'Опасное вождение', tags:'опасное вождение угроза жизни',
+ text:'Действия при управлении ТС, угрожающие жизни/здоровью, повреждением ТС/грузов.', sanction:'Штраф 1.500–15.000 и/или лишение права.'},
+{code:'КоАП', num:'8.5', title:'Управление без права / лишённым права', tags:'без прав лишён права передача управления',
+ text:'Без права управления (ч.1); лишённым права (ч.2); передача заведомо лишённому (ч.3).', sanction:'Ч.1 — 15–25к. Ч.2 — 30–50к или арест 15 сут. Ч.3 — 50к.'},
+{code:'КоАП', num:'8.6', title:'Превышение скорости', tags:'скорость превышение километры',
+ text:'Превышение более 15 км/ч, более 40 км/ч, более 60 км/ч.', sanction:'До 10к / до 25к / до 35к либо лишение права.'},
+{code:'КоАП', num:'8.7', title:'Нарушение движения через ж/д пути', tags:'железная дорога переезд шлагбаум',
+ text:'Пересечение ж/д пути вне переезда, при закрытом шлагбауме, остановка на переезде.', sanction:'Штраф 15к.'},
+{code:'КоАП', num:'8.8', title:'Проезд на запрещающий жест регулировщика', tags:'регулировщик запрещающий жест',
+ text:'Проезд на запрещающий жест регулировщика.', sanction:'Штраф 2к.'},
+{code:'КоАП', num:'8.9', title:'Нарушение проезда перекрёстков', tags:'затор проезжая часть перекрёсток',
+ text:'Выезд на перекрёсток при заторе, создание препятствия для поперечного движения.', sanction:'Штраф до 2.500 руб.'},
+{code:'КоАП', num:'8.10', title:'Нарушение расположения на проезжей части', tags:'обочина тротуар вело дорожка расположение',
+ text:'Нарушение расположения ТС на дороге (ч.1); движение по тротуарам/велодорожкам (ч.2).', sanction:'Ч.1 — до 3.5к. Ч.2 — до 4.75к.'},
+{code:'КоАП', num:'8.11', title:'Несоблюдение дорожных знаков/разметки', tags:'знаки разметка встречное направление',
+ text:'Несоблюдение требований знаков/разметки (ч.1); движение навстречу на одностороннем движении (ч.2).', sanction:'Ч.1 — предупреждение/до 2.5к. Ч.2 — до 3к.'},
+{code:'КоАП', num:'8.12', title:'Нарушение остановки/стоянки', tags:'парковка стоянка проезжая часть машина',
+ text:'Нарушение правил остановки/стоянки (ч.1); в специально отведённых местах (ч.2).', sanction:'Ч.1 — предупреждение/до 5к. Ч.2 — до 7к.'},
+{code:'КоАП', num:'8.13', title:'Нарушение правил световых приборов/сигналов', tags:'фары сигналы аварийка',
+ text:'Нарушение правил пользования световыми приборами, звуковыми сигналами, аварийной сигнализацией.', sanction:'Предупреждение/до 2.5к.'},
+{code:'КоАП', num:'8.14', title:'ДТП с вредом здоровью', tags:'дтп вред здоровью лёгкий средний',
+ text:'Нарушение ПДД с лёгким вредом здоровью (ч.1) или средней тяжести (ч.2).', sanction:'Ч.1 — 15–25к или лишение права. Ч.2 — 20–37к или лишение права.'},
+{code:'КоАП', num:'8.15', title:'Невыполнение требования об остановке ТС', tags:'остановка тс невыполнение требования',
+ text:'Невыполнение законного требования сотрудника полиции об остановке ТС.', sanction:'Штраф 10–30к либо арест 20 сут.'},
+{code:'КоАП', num:'8.16', title:'Нарушение ПДД пешеходом', tags:'пешеход пдд пассажир',
+ text:'Нарушение пешеходом/пассажиром правил дорожного движения.', sanction:'Предупреждение/до 3к.'},
+{code:'КоАП', num:'8.17', title:'Неуплата штрафов на ТС', tags:'неуплата штрафы эвакуация 10 штрафов',
+ text:'Использование ТС с 10 и более неоплаченными штрафами.', sanction:'Эвакуация на спецстоянку + оплата по тарифам.'},
+{code:'КоАП', num:'8.19-8.25', title:'Иные нарушения ПДД (общая норма)', tags:'иные нарушения пдд общая норма',
+ text:'Иные нарушения обязанностей водителей (8.19), пешеходов/велосипедистов (8.20), расположения (8.21), обгона (8.22), остановки (8.23), перекрёстков (8.24), прочее (8.25).', sanction:'От 1.500 до 25.000 руб. в зависимости от статьи, иногда + эвакуация/лишение права.'},
+{code:'КоАП', num:'8.26', title:'Перевозка грузов с поддельными документами', tags:'перевозка груз поддельные документы',
+ text:'Перевозка грузов с использованием заведомо поддельных товаросопроводительных документов.', sanction:'Штраф 10–30к.'},
+{code:'КоАП', num:'9.1', title:'Невыполнение требований депутата', tags:'депутат требования препятствие',
+ text:'Невыполнение законных требований депутата (ч.1); нарушение сроков предоставления информации (ч.2).', sanction:'Ч.1 — 35–55к или арест 15 сут. Ч.2 — 30–70к.'},
+{code:'КоАП', num:'9.2', title:'Неисполнение распоряжения судьи', tags:'судья распоряжение пристав',
+ text:'Неисполнение распоряжения судьи (ч.1) или судебного пристава (ч.2) о прекращении нарушений.', sanction:'Ч.1 — 10–25к или арест 15 сут. Ч.2 — 10–25к.'},
+{code:'КоАП', num:'9.3', title:'Непринятие мер по определению суда', tags:'определение суда представление судьи',
+ text:'Оставление без рассмотрения определения суда/представления судьи (ч.1); ненадлежащее рассмотрение (ч.2).', sanction:'Ч.1 — 30–50к. Ч.2 — 35–55к.'},
+{code:'КоАП', num:'9.4', title:'Неуважение к Федеральному Собранию', tags:'госдума неуважение оскорбление депутата',
+ text:'Нарушение порядка заседаний, оскорбление депутата, неисполнение распоряжения Председателя.', sanction:'Штраф 25–50к либо арест 20 сут.'},
+{code:'КоАП', num:'9.5', title:'Неявка депутата', tags:'неявка депутат заседание',
+ text:'Неявка депутата на заседание (ч.1); неявка всех депутатов от партии/органа (ч.2).', sanction:'Ч.1 — 35–50к. Ч.2 — ю.лица 80–150к.'},
+{code:'КоАП', num:'9.6', title:'Нарушение норм служебного поведения госслужащим', tags:'госслужащий поведение внешний вид',
+ text:'Оскорбительное обращение госслужащего с гражданином (ч.1); несоблюдение требований к внешнему виду (ч.2).', sanction:'Ч.1 — 20–200к. Ч.2 — 10–100к.'},
+{code:'КоАП', num:'10.1', title:'Оскорбление представителя государственной власти', tags:'оскорбление власть госслужащий',
+ text:'Оскорбление лица на гос. службе в связи с исполнением обязанностей.', sanction:'Штраф 10–25к или арест 15 сут.'},
+{code:'КоАП', num:'10.2', title:'Отказ от уплаты штрафа', tags:'отказ штраф игнорирование тикет',
+ text:'Отказ от уплаты штрафа, возврат тикета, игнорирование.', sanction:'Штраф х2 от суммы, мин. 3к, либо арест 20 сут.'},
+{code:'КоАП', num:'10.3', title:'Ненадлежащее рассмотрение акта прокурора', tags:'прокурор протест представление',
+ text:'Нерассмотрение/нарушение срока рассмотрения протеста/представления прокурора.', sanction:'Штраф 20–40к.'},
+{code:'КоАП', num:'10.4', title:'Неисполнение устного запроса', tags:'устный запрос прокурор судья следователь',
+ text:'Непредоставление информации по устному запросу прокурора, судьи, следователя, дознавателя.', sanction:'Штраф 10–20к.'},
+{code:'КоАП', num:'10.5', title:'Ложный вызов спецслужб', tags:'ложный вызов полиция скорая пожарная',
+ text:'Заведомо ложный вызов полиции, скорой, пожарной или иных спецслужб.', sanction:'Штраф 3–8к.'},
+{code:'КоАП', num:'10.6', title:'Отказ от гос. проверки', tags:'госпроверка отказ непредставление документов',
+ text:'Отказ от прохождения проверки, непредставление документов (ч.1); неудовлетворительное прохождение (ч.2).', sanction:'Ч.1 — 20–40к, ю.лица 50–500к. Ч.2 — до 500к ю.лицам.'},
+{code:'КоАП', num:'10.7', title:'Незаконный отказ в доступе к проверке', tags:'отказ доступ проверка здравоохранение',
+ text:'Отказ в доступе должностному лицу, проводящему проверку в сфере здравоохранения.', sanction:'Д.лица 25к, ю.лица 50–100к.'},
+{code:'КоАП', num:'11.1', title:'Мелкое хулиганство', tags:'хулиганство нецензурная брань приставание общество маска',
+ text:'Нарушение общественного порядка, явное неуважение к обществу: нецензурная брань, приставание, повреждение имущества.', sanction:'Штраф 5.000–20.000 либо арест до 15 суток.'},
+{code:'КоАП', num:'11.2', title:'Нарушение порядка митингов', tags:'митинг порядок уведомление участник',
+ text:'Нарушение порядка организации (ч.1); проведение без уведомления (ч.2); нарушение участником (ч.3).', sanction:'Ч.1 — 25–50к. Ч.2 — 30–70к. Ч.3 — 20–35к или арест 20 сут.'},
+{code:'КоАП', num:'11.3', title:'Дискредитация Вооружённых Сил', tags:'дискредитация армия вооружённые силы',
+ text:'Публичные действия по дискредитации использования ВС РО; ч.2 — с призывами/угрозой безопасности.', sanction:'Ч.1 — 40–55к, ю.лица 100–250к. Ч.2 — 50–70к, ю.лица 200–300к.'},
+{code:'КоАП', num:'11.4', title:'Нарушение порядка при ЧП/военном положении', tags:'комендантский час чп военное положение удостоверение',
+ text:'Нарушение комендантского часа (ч.1); публичное мероприятие в период ЧП (ч.2); отказ предъявить удостоверение (ч.3).', sanction:'Ч.1 — арест 20 сут/до 20к. Ч.2 — арест 20 сут/до 35к. Ч.3 — арест 15 сут/до 15к.'},
+{code:'КоАП', num:'11.5', title:'Распитие в общественных местах', tags:'распитие алкоголь опьянение общественное место',
+ text:'Распитие алкоголя либо нахождение в общественном месте в состоянии опьянения.', sanction:'Штраф 4–12к либо арест 10 сут.'},
+{code:'КоАП', num:'11.6', title:'Неприемлемый вид в общественном месте', tags:'неприемлемый вид оголённый общественное место',
+ text:'Нахождение в общественном месте без элементов верхней одежды.', sanction:'Предупреждение/5–15к либо арест 10 сут.'},
+{code:'КоАП', num:'11.7', title:'Обнажение оружия без необходимости', tags:'обнажение оружие спецсредства инвентарь',
+ text:'Обнажение огнестрельного/холодного оружия, спецсредств или инвентаря без обоснованной необходимости.', sanction:'Предупреждение/10–20к либо арест 15 сут.'},
+{code:'КоАП', num:'11.8', title:'Нарушение режима закрытых территорий', tags:'закрытая территория проникновение нахождение',
+ text:'Незаконное проникновение на закрытую территорию либо нахождение на ней.', sanction:'Штраф 50–80к либо арест 24 сут.'},
+];
+function render(list){
+  const box=document.getElementById('results');
+  box.innerHTML = list.map(a => `
+    <div class="art">
+      <h4>${a.code}${a.num ? ' ст.'+a.num : ''} — ${a.title}</h4>
+      <div class="meta">${a.code}</div>
+      <p>${a.text}</p>
+      <p><b>Санкция:</b> ${a.sanction}</p>
+    </div>`).join('');
+}
+
+/* ================= МОРФОЛОГИЯ (общая для поиска и разбора) ================= */
+const ENDINGS = ['иями','ями','ами','ого','его','ому','ему','ыми','ими','ешь','ишь','ать','ять','ить','еть','ует','уют','ает','яет','ают','яют','ет','ют','ит','ах','ях','ов','ев','ей','ой','ий','ый','ая','яя','ое','ее','ую','юю','ом','ем','ам','ям','ла','ло','ли','ы','и','а','я','о','е','у','ю','ь','й'];
+const STOP = new Set(['и','в','во','на','не','с','со','у','к','по','из','за','от','до','о','об','а','но','что','как','он','она','они','его','её','ее','их','это','то','же','при','для','без','или','ли','бы','уже','там','тут','мне','меня','нас','вас','сам','был','была','было','были','есть']);
+function norm(s){ return String(s).toLowerCase().replace(/ё/g,'е'); }
+function stem(w){
+  w = norm(w);
+  if(/^\d/.test(w)) return w;
+  if(w.length > 5 && /(ся|сь)$/.test(w)) w = w.slice(0,-2);
+  for(const e of ENDINGS) if(w.length - e.length >= 3 && w.endsWith(e)) return w.slice(0,-e.length);
+  return w;
+}
+function tokens(s){
+  return (norm(s).match(/[а-яa-z0-9]+(?:\.[0-9]+)*/g) || []).filter(w => !STOP.has(w) && (w.length >= 3 || /^\d/.test(w)));
+}
+function same(a,b){
+  if(a === b) return true;
+  if(a.length < 4 || b.length < 4 || /^\d/.test(a) || /^\d/.test(b)) return false;
+  let n = 0; const m = Math.min(a.length,b.length);
+  while(n < m && a[n] === b[n]) n++;
+  if(m <= 4) return n === m && Math.abs(a.length-b.length) <= 1;
+  return n >= m - 1;
+}
+function has(pool,st){ return pool.some(p => same(p,st)); }
+
+/* ================= ДАННЫЕ РАЗБОРА СИТУАЦИЙ ================= */
+const SIT = {"version": 1, "updated": "2026-09-25", "situations": [{"title": "Снимает на камеру, спорит, грозит жалобой", "keys": ["снимает", "камера", "снимать", "видео", "спорит", "жалоба", "пожалуюсь", "номер жетона"], "verdict": "ok", "articles": ["6-ФЗ-5"], "steps": ["Не реагировать на съёмку — это не нарушение", "Назвать должность, звание, фамилию, причину обращения", "Продолжать работу по закону, всё фиксировать на свою запись"], "notes": []}, {"title": "Маска, скрытое лицо", "keys": ["маска", "маске", "балаклава", "лицо закрыто", "скрывает лицо"], "verdict": "ok", "articles": ["6-ФЗ-13 п.2"], "steps": ["Маска сама по себе не нарушение", "Нужно отдельное основание для проверки документов", "Маска лишь дополняет картину (например, при групповом хулиганстве)"], "notes": []}, {"title": "Не предъявляет документы / не выполняет законное требование", "keys": ["документы", "паспорт", "не показывает", "отказывается показывать", "отказывается выполнять", "не выполняет требование", "игнорирует требование", "неповиновение", "не подчиняется"], "verdict": "uk", "articles": ["6-ФЗ-13 п.2", "УК-105"], "steps": ["Убедиться, что есть основание требовать документы (6-ФЗ 13 п.2) — назвать его вслух", "Повторить требование на запись", "Предупредить о задержании и применении силы", "Отказ — задержание по ст.105 ч.1, Миранда"], "notes": ["Если основания требовать документы не было — неповиновения тоже нет"]}, {"title": "Оскорбляет сотрудника", "keys": ["оскорбляет", "оскорбил", "оскорбление", "обзывает", "унижает", "послал", "хамит сотруднику"], "verdict": "uk", "articles": ["УК-104", "КоАП-10.1"], "steps": ["Зафиксировать на запись дословно", "При 3+ свидетелях или в СМИ — УК 104, задержание и Миранда", "Без публичности — КоАП 10.1, штраф 10–25к или арест 15 сут.", "Самому не отвечать тем же"], "notes": ["По ст.104 при совокупности допускается прибавка срока к самому строгому наказанию (УК 41)"]}, {"title": "Мат, приставание к гражданам в общественном месте", "keys": ["мат", "матерится", "брань", "нецензурно", "пристаёт", "пристает", "хулиганит", "буянит", "орёт"], "verdict": "koap", "articles": ["КоАП-11.1"], "steps": ["Потребовать прекратить", "Продолжает — отягчающее (КоАП 4.4)", "Штраф 5–20к или арест до 15 сут."], "notes": []}, {"title": "Мешает задерживать другого человека", "keys": ["мешает", "вырывает", "отталкивает", "отбивает", "не даёт задержать", "помеха"], "verdict": "uk", "articles": ["УК-107"], "steps": ["Предупредить, что это помеха задержанию", "Продолжает — задержание по УК 107, Миранда"], "notes": []}, {"title": "Применяет насилие к сотруднику, угрожает", "keys": ["бьёт", "бьет", "ударил", "толкнул", "толкает", "напал", "нападает", "угрожает сотруднику", "кинулся", "драка с сотрудником"], "verdict": "uk", "articles": ["УК-103", "6-ФЗ-19", "6-ФЗ-20"], "steps": ["Пресечь: физическая сила/спецсредства (6-ФЗ 19–20)", "Задержание по УК 103: ч.1 — не опасное насилие/угроза (штраф до 60к или 40 мес.), ч.2 — опасное (50 мес.)", "После применения силы — первая помощь (6-ФЗ 18 ч.4)"], "notes": [], "danger": true}, {"title": "Стреляет в сотрудника, покушение на жизнь", "keys": ["стреляет", "стрелял", "выстрелил", "убить сотрудника", "покушение", "огонь по сотрудникам"], "verdict": "uk", "articles": ["УК-102", "6-ФЗ-21"], "steps": ["Применение оружия допустимо (6-ФЗ 21 ч.1 п.1, п.5)", "Не применять при скоплении людей, если пострадают случайные лица", "Задержание по УК 102 — 50 мес."], "notes": [], "danger": true}, {"title": "Спецсредство у гражданского (дубинка, шокер, наручники)", "keys": ["дубинка", "дубинку", "шокер", "электрошокер", "наручники", "граната", "спецсредство", "спецсредства"], "verdict": "uk", "articles": ["УК-74", "ФЗ-оружие-гл.V ст.1,3"], "steps": ["Спецсредства гражданам запрещены полностью", "Задержание по УК 74 ч.1, изъятие предмета", "Штраф 50к или 40 мес."], "notes": ["Исключения: лёгкий бронежилет (по лицензии), дефибриллятор, эпинефрин, кастет открыто на поясе"]}, {"title": "Оружие без лицензии / носит огнестрел в городе", "keys": ["оружие", "ствол", "пистолет", "автомат", "винтовка", "дробовик", "без лицензии", "лицензия"], "verdict": "uk", "articles": ["УК-74", "ФЗ-оружие-гл.VIII ст.1", "КоАП-11.7"], "steps": ["Потребовать лицензию на оружие и мед. справку", "Нет лицензии или ношение огнестрела гражданином вне зоны охоты — УК 74, задержание", "Лицензия есть, но просто достал оружие без причины — КоАП 11.7"], "notes": []}, {"title": "Достал оружие без причины / угрожает оружием", "keys": ["достал оружие", "обнажил", "размахивает", "целится", "направил"], "verdict": "koap", "articles": ["КоАП-11.7", "УК-57", "УК-73"], "steps": ["Требование убрать оружие", "Без угрозы — КоАП 11.7 (10–20к или 15 сут.)", "Целится/угрожает — УК 57 или УК 73 (хулиганство с оружием)", "Можно привести своё оружие в готовность (6-ФЗ 22)"], "notes": [], "danger": true}, {"title": "Драка, побои между гражданами", "keys": ["драка", "дерутся", "избил", "побои", "ударил гражданина", "избивает"], "verdict": "koap", "articles": ["КоАП-6.1", "УК-54", "УК-56"], "steps": ["Пресечь", "Без тяжких последствий — КоАП 6.1 (20–50к или 20 сут.)", "Тяжкий вред здоровью — УК 54 (50 мес.)", "Систематически — УК 56"], "notes": []}, {"title": "Угроза убийством", "keys": ["угрожает убить", "убью", "угроза убийством", "грозит убить"], "verdict": "uk", "articles": ["УК-57"], "steps": ["Установить, были ли основания опасаться угрозы", "УК 57 — штраф 25–100к или 30 мес."], "notes": []}, {"title": "Кража", "keys": ["украл", "кража", "стащил", "ворует", "тайно"], "verdict": "uk", "articles": ["УК-65", "УПК-51"], "steps": ["Основание задержания — указал потерпевший/очевидец или найдено похищенное (УПК 51)", "Группой или с проникновением в помещение — ч.2 (до 90к или 40 мес.)"], "notes": []}, {"title": "Грабёж / разбой", "keys": ["грабёж", "грабеж", "ограбил", "отобрал", "вырвал", "разбой", "нападение с целью", "отнял"], "verdict": "uk", "articles": ["УК-66", "УК-66.1"], "steps": ["Открыто, без насилия — УК 66 (30 мес.)", "С не опасным насилием или группой — ч.2 (40 мес.)", "С опасным насилием/угрозой — разбой УК 66.1 (40 мес.)"], "notes": []}, {"title": "Угон / сел в чужую машину", "keys": ["угон", "угнал", "чужая машина", "чужую машину", "сел в машину", "служебная машина", "служебную машину", "залез в машину"], "verdict": "uk", "articles": ["УК-67", "УК-105"], "steps": ["Сдвинул машину с места — угон, УК 67 (30 мес.)", "Сел, но не сдвинул — не угон, это мелкое хулиганство", "В служебной машине — потребовать выйти, отказ — УК 105"], "notes": []}, {"title": "Порча имущества", "keys": ["сломал", "разбил", "повредил", "порча", "поджёг", "испортил"], "verdict": "koap", "articles": ["КоАП-7.1", "УК-68"], "steps": ["Без значительного ущерба — КоАП 7.1 (3–15к или 10 сут.)", "Значительный ущерб — УК 68"], "notes": []}, {"title": "Машина брошена на проезжей части / неправильная парковка", "keys": ["бросил машину", "проезжая часть", "припарковал", "парковка", "стоит на дороге", "загородил", "машины на дороге"], "verdict": "koap", "articles": ["КоАП-8.12", "КоАП-8.19-8.25", "6-ФЗ-13 п.8"], "steps": ["Протокол вправе составить любой сотрудник полиции", "КоАП 8.12 — до 5–7к; общие нормы 8.21/8.23 — до 10к и эвакуация", "ГИБДД — только для эвакуации"], "notes": []}, {"title": "Не остановился по требованию, уезжает от полиции", "keys": ["не остановился", "уезжает", "погоня", "скрывается на машине", "убегает на машине", "не останавливается"], "verdict": "koap", "articles": ["КоАП-8.15", "6-ФЗ-20", "6-ФЗ-21"], "steps": ["КоАП 8.15 — 10–30к или арест 20 сут.", "Остановка ТС спецсредствами допустима (6-ФЗ 20 ч.1 п.9)", "Стрельба по ТС — только если создаёт угрозу жизни людям после неоднократных требований (6-ФЗ 21 ч.3 п.1)"], "notes": []}, {"title": "Езда без прав / лишён прав / без номеров", "keys": ["без прав", "нет прав", "лишён прав", "лишен прав", "без номеров", "номера", "нет документов на машину"], "verdict": "koap", "articles": ["КоАП-8.5", "КоАП-8.3", "КоАП-8.2"], "steps": ["Нет права управления — 8.5 ч.1 (15–25к)", "Лишён права — 8.5 ч.2 (30–50к или арест 15 сут.)", "Права есть, но не при себе — 8.3", "Без номеров — 8.2 ч.2"], "notes": []}, {"title": "Опасное вождение, превышение скорости, водитель пьян", "keys": ["скорость", "превышение", "гоняет", "опасно едет", "пьяный за рулём", "пьяный водитель", "дрифт", "таранит"], "verdict": "koap", "articles": ["КоАП-8.4", "КоАП-8.6", "КоАП-16.4"], "steps": ["Превышение: +15 — до 10к, +40 — до 25к, +60 — до 35к или лишение", "Опасное вождение — 8.4 (1.5–15к и/или лишение)", "Признаки опьянения — отстранить от управления (КоАП 16.4)"], "notes": []}, {"title": "Пьяный в общественном месте, распивает", "keys": ["пьяный", "пьян", "распивает", "алкоголь", "бутылка", "выпивает", "бухой"], "verdict": "koap", "articles": ["КоАП-11.5"], "steps": ["КоАП 11.5 — 4–12к или арест 10 сут.", "Не может передвигаться сам — доставить в медучреждение (6-ФЗ 13 п.13)"], "notes": []}, {"title": "Наркотики при себе", "keys": ["наркотики", "наркота", "травка", "вещества", "порошок", "закладка", "сбывает"], "verdict": "uk", "articles": ["УК-75", "УК-76"], "steps": ["До 5 г — УК 75 ч.1 (до 50к или 30 мес.)", "До 20 г — 40 мес., свыше 20 г — 50 мес. (федеральная юрисдикция — передать по подследственности)", "Сбыт/производство — УК 76 (50 мес., [Ф])"], "notes": ["Досмотр вне задержания допустим при основаниях полагать наличие наркотиков (6-ФЗ 13 п.14)"]}, {"title": "Предлагает взятку", "keys": ["взятка", "взятку", "предложил деньги", "откупиться"], "verdict": "uk", "articles": ["УК-87", "УК-86"], "steps": ["Отказаться чётко и на запись", "Задержание по УК 87 (штраф до 70к или 40 мес.; свыше 50к — 50 мес.)", "Сотрудник, принявший взятку, — УК 86"], "notes": []}, {"title": "Проник на закрытую территорию / режимный объект", "keys": ["закрытая территория", "территория мвд", "проник", "залез на территорию", "режимный объект", "охраняемый объект"], "verdict": "koap", "articles": ["КоАП-11.8", "УК-73.1"], "steps": ["Потребовать покинуть", "Закрытая территория — КоАП 11.8 (50–80к или 24 сут.)", "Режимный объект — УК 73.1 (80–150к или 40 мес.)"], "notes": []}, {"title": "Незаконное проникновение в жилище", "keys": ["залез в дом", "проник в дом", "вломился", "в чужой дом", "жилище"], "verdict": "uk", "articles": ["УК-64"], "steps": ["УК 64 — до 50к или 30 мес.; с насилием — 40 мес.", "Сотрудник вправе войти в жилище для задержания подозреваемого или пресечения преступления (6-ФЗ 15)"], "notes": []}, {"title": "Голый / без верхней одежды в общественном месте", "keys": ["голый", "без одежды", "раздет", "голым торсом"], "verdict": "koap", "articles": ["КоАП-11.6"], "steps": ["КоАП 11.6 — предупреждение, 5–15к или арест 10 сут."], "notes": []}, {"title": "Курит в общественном месте", "keys": ["курит", "сигарета", "вейп", "кальян"], "verdict": "koap", "articles": ["КоАП-6.4"], "steps": ["КоАП 6.4 — 5–15к"], "notes": []}, {"title": "Ложный вызов полиции", "keys": ["ложный вызов", "вызвал просто так", "шутка вызов", "ложно вызвал"], "verdict": "koap", "articles": ["КоАП-10.5"], "steps": ["КоАП 10.5 — 3–8к"], "notes": []}, {"title": "Ложный донос / ложная жалоба на сотрудника", "keys": ["ложный донос", "ложная жалоба", "оклеветал", "наговаривает", "клевета"], "verdict": "uk", "articles": ["УК-97", "УК-60"], "steps": ["Сохранить свою запись", "Передать материалы в ОСБ/прокуратуру", "Заведомо ложный донос — УК 97"], "notes": []}, {"title": "Мешает медикам", "keys": ["мешает врачу", "мешает медикам", "мешает скорой", "мешает лечить"], "verdict": "koap", "articles": ["КоАП-6.7"], "steps": ["КоАП 6.7 — 10–30к"], "notes": []}, {"title": "Митинг, собрание без уведомления", "keys": ["митинг", "пикет", "шествие", "собрание", "толпа", "демонстрация"], "verdict": "koap", "articles": ["КоАП-11.2", "6-ФЗ-13 п.2"], "steps": ["Без уведомления — организатору 11.2 ч.2 (30–70к)", "Нарушение порядка участником — 11.2 ч.3 (20–35к или 20 сут.)", "Скопление мешает движению/угрожает людям — требование разойтись (6-ФЗ 13 п.7)"], "notes": []}, {"title": "Лицо в розыске", "keys": ["розыск", "в розыске", "ориентировка", "разыскивается"], "verdict": "uk", "articles": ["УПК-51", "УК-100.1", "6-ФЗ-14"], "steps": ["Задержание: основание — лицо в ориентировке (УПК 51 ч.1 п.4)", "Уклонение от отбывания — УК 100.1: 10 мес. за каждый приоритет розыска"], "notes": []}, {"title": "Сбежал из-под стражи", "keys": ["сбежал", "побег", "вырвался", "убежал из", "сбежал из кпз"], "verdict": "uk", "articles": ["УК-100", "6-ФЗ-21"], "steps": ["УК 100 — 40 мес.", "Для пресечения побега из-под конвоя допустимо оружие (6-ФЗ 21 ч.1 п.7)"], "notes": []}, {"title": "Задержанный — госслужащий", "keys": ["госслужащий", "госслужащего", "чиновник", "военнослужащий", "депутат", "судья", "министр", "задержал прокурора", "задержанный прокурор"], "verdict": "proc", "articles": ["УПК-83", "ФЗ-статус-гл.I ст.1", "ФЗ-статус-гл.I ст.2", "УПК-104"], "steps": ["Уведомить прокурора и руководство задержанного", "Срок задержания — 90 минут; ожидание прокурора приостанавливает срок (до 10+10 мин)", "Прокурор не может прибыть — освободить", "Депутат, судья, министр, Генпрокурор и их замы — освободить сразу после установления личности (УПК 104)", "Правовая защита (военный на дежурстве, СК/прокуратура при исполнении) — задержание только при преступлении или по решению суда"], "notes": []}, {"title": "Адвокат, звонок, права задержанного", "keys": ["адвокат", "адвоката", "защитник", "звонок", "позвонить", "зачитать права", "миранда"], "verdict": "proc", "articles": ["УПК-26", "УПК-52", "УПК-44"], "steps": ["Ответ адвоката — 3 мин, приезд — 7 мин", "Звонок — до 2 минут", "Свидание с адвокатом до первого допроса — до 10 минут", "Показания без адвоката недопустимы, если не подтверждены в суде"], "notes": []}, {"title": "Требует судебного контроля", "keys": ["судебный контроль", "требует судью", "вызовите судью", "вызвать судью"], "verdict": "proc", "articles": ["УПК-83.1"], "steps": ["Задержанный должен назвать, что именно обжалует", "Доставить в суд, вызвать судью по рации: ответ 10 мин, приезд 10 мин", "Нет ответа/не приехал — контроль необязателен, продолжать", "Срок задержания — 90 минут"], "notes": []}, {"title": "Обыск, досмотр", "keys": ["обыск", "обыскать", "досмотр", "досмотреть", "проверить карманы", "осмотреть машину", "багажник"], "verdict": "proc", "articles": ["УПК-52", "6-ФЗ-13 п.14", "КоАП-16.3", "УПК-93"], "steps": ["При уголовном задержании — обыск на усмотрение сотрудника", "Вне задержания — только при основаниях полагать оружие, наркотики, взрывчатку или похищенное", "По делу об АП — только если за правонарушение предусмотрен арест", "Жилище — только по решению суда"], "notes": []}, {"title": "Срок задержания истекает", "keys": ["срок", "60 минут", "час прошёл", "время задержания", "долго держим"], "verdict": "proc", "articles": ["УПК-53", "УК-94"], "steps": ["60 минут — общий срок, 90 — госслужащий или судебный контроль", "Истёк — освободить, иначе УК 94 (40 мес.)"], "notes": []}, {"title": "ДТП с пострадавшими", "keys": ["дтп", "авария", "столкновение", "сбил", "врезался"], "verdict": "proc", "articles": ["УК-78", "КоАП-8.14"], "steps": ["Оказать первую помощь пострадавшим, вызвать скорую", "Зафиксировать место и обстановку на запись до перемещения ТС", "Лёгкий/средний вред — КоАП 8.14", "Тяжкий вред или смерть — УК 78"], "notes": ["Квалификация зависит от тяжести вреда здоровью — устанавливается после освидетельствования"]}, {"title": "Наркотики найдены в машине при досмотре", "keys": ["наркотики в машине", "нашли наркотики", "наркотики при досмотре"], "verdict": "uk", "articles": ["6-ФЗ-13 п.14", "УК-75", "УК-76"], "steps": ["Досмотр ТС допустим при основаниях полагать наличие наркотиков (6-ФЗ 13 п.14)", "Изъять, зафиксировать на видео", "Без цели сбыта, по размеру — УК 75", "Признаки производства/сбыта — УК 76"]}, {"title": "Нарушает оцепление / не пропускает оцепление", "keys": ["оцепление", "не пропускает", "блокирование"], "verdict": "proc", "articles": ["6-ФЗ-16"], "steps": ["Потребовать соблюдать границы оцепления", "При отказе покинуть — не допускать проход, возможен личный осмотр в границах оцепления"]}, {"title": "Жестоко обращается с животным", "keys": ["жестоко с животным", "избивает животное", "истязает животное", "мучает животное"], "verdict": "uk", "articles": ["УК-77"], "steps": ["Пресечь действие", "Зафиксировать на видео состояние животного и обстоятельства", "Задержание при наличии признаков ст.77 УК"]}, {"title": "Незаконная предпринимательская деятельность", "keys": ["торгует без лицензии", "незаконное предпринимательство", "нелегальная торговля"], "verdict": "uk", "articles": ["УК-69"], "steps": ["Установить факт деятельности без регистрации/лицензии", "Оценить наличие крупного ущерба", "При наличии состава — материалы по ст.69 УК"]}, {"title": "Публичные призывы к терроризму / экстремистские высказывания", "keys": ["призывы к терроризму", "экстремистские высказывания", "оправдание терроризма"], "verdict": "uk", "articles": ["УК-71", "УК-70"], "steps": ["Зафиксировать высказывания на видео (свидетели, место, дословно)", "Не вступать в дискуссию по существу высказываний", "Публичные призывы/оправдание — УК 71", "Непосредственные действия, создающие опасность — УК 70"]}, {"title": "Нарушает комендантский час / режим ЧП", "keys": ["комендантский час", "нарушает режим чп", "чрезвычайное положение"], "verdict": "koap", "articles": ["КоАП-11.4"], "steps": ["Проверить документы, установить личность", "Штраф либо арест по ст.11.4 КоАП в зависимости от части"]}, {"title": "Массовая/групповая драка", "keys": ["массовая драка", "групповая драка", "дерутся толпой"], "verdict": "uk", "articles": ["УК-73", "КоАП-11.1"], "steps": ["Вызвать подкрепление, оценить безопасность подхода", "Групповое насилие в общественном месте — признак хулиганства, УК 73", "Без признаков группы/насилия высокой степени — КоАП 11.1"]}, {"title": "Не предъявляет лицензию на оружие", "keys": ["не предъявляет лицензию", "нет лицензии на оружие", "без лицензии на оружие"], "verdict": "uk", "articles": ["ФЗ-оружие-гл.VIII ст.1", "УК-74"], "steps": ["Потребовать лицензию и медицинскую справку", "Нет документов или оружие не по лицензии — задержание, УК 74"]}, {"title": "Бесхозный подозрительный предмет", "keys": ["бесхозный предмет", "подозрительный сверток", "забытый пакет", "возможна взрывчатка"], "verdict": "proc", "articles": ["6-ФЗ-16"], "steps": ["Не приближаться и не трогать предмет", "Оцепить территорию, эвакуировать людей на безопасное расстояние", "Вызвать специалистов по разминированию"]}, {"title": "Вооружённое ограбление банка", "danger": true, "keys": ["ограбление банка", "грабит банк", "ограбили банк", "налёт на банк"], "verdict": "uk", "articles": ["УК-66.1", "УК-72", "6-ФЗ-21", "6-ФЗ-16"], "steps": ["Не входить в одиночку — оцепить периметр снаружи (6-ФЗ 16)", "Вызвать подкрепление/ОСН, перекрыть пути отхода", "Уточнить, есть ли заложники — если да, см. «Захват заложников»", "При визуальном контакте с вооружённым — оружие применяется по основаниям 6-ФЗ 21 (угроза жизни, тяжкое преступление)", "Квалификация: разбой (УК 66.1), группой — дополнительно бандитизм (УК 72)"], "notes": ["Нападение группой с оружием на банк — это одновременно и разбой, и признаки бандитизма"]}, {"title": "Ограбление магазина / АЗС / ювелирного", "danger": true, "keys": ["ограбление магазина", "грабит магазин", "ограбили азс", "ограбление ювелирного", "грабит кассу"], "verdict": "uk", "articles": ["УК-66", "УК-66.1"], "steps": ["Уточнить по рации — вооружён ли нападающий, есть ли пострадавшие", "Без оружия/опасного насилия — грабёж (УК 66)", "С оружием или опасным насилием — разбой (УК 66.1)", "Не задерживать в одиночку при подозрении на оружие — дождаться подкрепления"]}, {"title": "Нападение на инкассаторов", "danger": true, "keys": ["напали на инкассаторов", "нападение на инкассацию", "ограбили инкассаторскую машину"], "verdict": "uk", "articles": ["УК-66.1", "УК-72"], "steps": ["Оценить вооружённость нападавших до сближения", "Оцепить район, перекрыть пути отхода транспорта", "Разбой (УК 66.1); организованной группой с оружием — дополнительно бандитизм (УК 72)"]}, {"title": "Захват заложников", "danger": true, "keys": ["захват заложников", "держит заложников", "заложники в здании", "угрожает заложнику"], "verdict": "uk", "articles": ["УК-59", "6-ФЗ-21"], "steps": ["Не штурмовать в одиночку — вызвать ОСН и переговорщика", "Оцепить здание, эвакуировать посторонних (6-ФЗ 16)", "Не вести переговоры самостоятельно без указания руководства", "Оружие для освобождения заложников применяется по 6-ФЗ 21 ч.1 п.3"], "notes": ["Это ситуация для СОБР/ОСН, а не для самостоятельного разрешения патрулём"]}, {"title": "Похищение человека", "danger": true, "keys": ["похитил человека", "похищение человека", "удерживает силой", "насильно увёз"], "verdict": "uk", "articles": ["УК-58", "УК-59"], "steps": ["Установить местонахождение потерпевшего в приоритете", "Похищение с перемещением — УК 58", "Удержание без перемещения — УК 59", "Задержание похитителя по УПК гл.12 при обнаружении"]}, {"title": "Перестрелка / вооружённый конфликт группировок", "danger": true, "keys": ["перестрелка", "вооружённый конфликт", "разборки с оружием", "бандитские разборки"], "verdict": "uk", "articles": ["6-ФЗ-21", "УК-72", "УК-102"], "steps": ["Не приближаться в одиночку — оцепить район на безопасном расстоянии", "Дать гражданским укрыться, вызвать подкрепление", "Оружие применяется для защиты себя/других от угрозы жизни (6-ФЗ 21 ч.1 п.1)", "Стрельба велась по сотруднику — дополнительно УК 102"]}, {"title": "Нарколаборатория / точка сбыта наркотиков", "danger": true, "keys": ["нарколаборатория", "подпольная лаборатория", "точка продажи наркотиков", "цех по производству наркотиков"], "verdict": "uk", "articles": ["УК-76", "УК-75"], "steps": ["Обыск/задержание по общим основаниям (УПК гл.12), при сопротивлении — вызвать подкрепление", "Производство или сбыт — УК 76 (тяжелее)", "Хранение без цели сбыта — УК 75 по размеру"]}, {"title": "Вымогательство / рэкет у бизнеса", "keys": ["вымогает деньги", "рэкет", "крышует бизнес", "требует денег под угрозой"], "verdict": "uk", "articles": ["УК-57", "УК-106"], "steps": ["Зафиксировать угрозу дословно, по возможности на видео", "Прямой статьи о вымогательстве в базе нет — квалификация по угрозе (УК 57) или самоуправству (УК 106)", "Собрать показания потерпевшего для дальнейшей передачи по подследственности"], "notes": ["Если угроза была с оружием или сопряжена с насилием — рассмотреть дополнительно составы гл.14 УК (хищения)"]}, {"title": "Открытая стрельба в общественном месте / по людям", "danger": true, "keys": ["стреляет по людям", "открыл огонь по толпе", "стрельба в общественном месте"], "verdict": "uk", "articles": ["6-ФЗ-21", "УК-70", "УК-102"], "steps": ["Укрыть гражданских, вызвать подкрепление немедленно", "Оружие применяется для защиты жизни граждан (6-ФЗ 21 ч.1 п.1)", "Цель — устрашение/воздействие на власть — рассмотреть УК 70 (теракт)", "Стрельба велась по сотруднику — УК 102"]}, {"title": "Обнаружен крупный тайник/арсенал оружия", "danger": true, "keys": ["тайник с оружием", "арсенал", "склад оружия", "много оружия найдено"], "verdict": "uk", "articles": ["УК-74"], "steps": ["Не трогать до прибытия усиления — возможны мины-ловушки/взрывчатка", "Изъятие и опись под видеозапись", "Квалификация — УК 74 (оборот оружия)"]}, {"title": "Кража с проникновением (взлом, ограбление точки ночью)", "keys": ["взломал и украл", "кража с проникновением", "залез и украл", "взлом помещения"], "verdict": "uk", "articles": ["УК-65"], "steps": ["Осмотреть место проникновения, не затаптывая следы", "Кража с проникновением в помещение — УК 65 ч.2 (до 40 мес.)"]}, {"title": "Скрывается на машине после ограбления, погоня", "danger": true, "keys": ["уезжает после ограбления", "погоня после ограбления", "скрывается на машине с награбленным"], "verdict": "uk", "articles": ["КоАП-8.15", "6-ФЗ-20", "6-ФЗ-21"], "steps": ["Невыполнение требования об остановке — КоАП 8.15 либо часть общего состава по факту преступления", "Остановка ТС спецсредствами допустима (6-ФЗ 20 ч.1 п.9)", "Оружие по ТС — только если создаётся угроза жизни людям после неоднократных требований (6-ФЗ 21 ч.3 п.1)"]}], "flags": [{"keys": ["госслужащ", "военнослужащ", "депутат", "судья", "министр", "чиновник"], "note": "Если задержанный — госслужащий: прокурор и руководство, срок 90 минут (УПК 83). Депутат/судья/министр — освободить после установления личности (УПК 104)."}, {"keys": ["групп", "вдвоём", "вдвоем", "втроём", "толпой", "несколько человек", "компания"], "note": "Группа лиц — отягчающее (УК 43, КоАП 4.4); при хулиганстве группой — УК 73."}, {"keys": ["у мвд", "у отдела", "возле мвд", "у здания мвд", "около отдела"], "note": "У здания МВД: проверьте, не является ли территория закрытой (КоАП 11.8)."}, {"keys": ["повторно", "снова", "опять", "второй раз", "уже был"], "note": "Повторное однородное правонарушение — отягчающее (КоАП 4.4); предупреждение вместо штрафа невозможно."}, {"keys": ["жилищ", "дом", "квартир", "в доме"], "note": "Жилище: обыск — только по решению суда; вход без согласия — только по основаниям 6-ФЗ 15."}, {"keys": ["впервые", "первый раз"], "note": "Впервые и без вреда — штраф можно заменить предупреждением (КоАП 4.2) или устным замечанием (КоАП 2.5)."}, {"keys": ["убегает", "убежал", "скрылся", "скрывается", "бежит"], "note": "Попытка скрыться — самостоятельное основание задержания при иных данных о преступлении (УПК 51 ч.2)."}, {"keys": ["ночь", "ночью"], "note": "Следственные действия ночью (22:00–6:00) — только в неотложных случаях (УПК 88 ч.3)."}], "synonyms": [["паспорт", "документ", "удостоверение", "ксива"], ["машина", "авто", "тачка", "автомобиль", "транспорт", "тс"], ["дубинка", "шокер", "электрошокер", "наручники", "спецсредство"], ["ствол", "пистолет", "автомат", "оружие", "винтовка", "дробовик"], ["бьёт", "бьет", "ударил", "толкает", "толкнул", "напал", "насилие"], ["мат", "матерится", "брань", "материт"], ["оскорбляет", "обзывает", "оскорбил", "оскорбление", "унижает"], ["наркотики", "наркота", "травка", "вещества", "порошок"], ["пьяный", "пьян", "бухой", "нетрезвый", "опьянение"], ["убегает", "скрылся", "сбежал", "побег", "бежит"], ["взятка", "откуп"], ["дтп", "авария", "столкновение"], ["оцепление", "блокирование"], ["терроризм", "экстремизм"], ["предпринимательство", "торговля", "бизнес"], ["банк", "налёт"], ["заложник", "заложники"], ["перестрелка", "стрельба", "огонь"], ["арсенал", "тайник", "склад"]]};
+let SYN = (SIT.synonyms || []).map(g => g.map(stem));
+let SIT_KEYS = SIT.situations.map(s => s.keys.map(k => ({
+  label: k,
+  stems: tokens(k).map(stem),
+  selfNeg: /(?:^|\s)не\s|отказ/i.test(k)
+})).filter(o => o.stems.length));
+function expand(stems){
+  const out = new Set(stems);
+  for(const g of SYN) if(stems.some(s => g.some(x => same(s,x)))) g.forEach(x => out.add(x));
+  return [...out];
+}
+function negatedStems(text){
+  const out = new Set();
+  const re = /(?:^|\s)(?:не|нет|ни)\s+([а-яё]{3,})/gi;
+  let m;
+  while((m = re.exec(norm(text)))) out.add(stem(m[1]));
+  return [...out];
+}
+
+/* ================= ПОДГОТОВКА СТАТЕЙ (общая база) ================= */
+const LAW_BY_ID = {};
+articles.forEach(a => {
+  a.id = a.code + '-' + a.num;
+  LAW_BY_ID[a.id] = a;
+  a._title = tokens(a.title + ' ' + (a.tags||'')).map(stem);
+  a._text = tokens(a.text).map(stem);
+});
+
+/* ================= БАЗА СТАТЕЙ: фильтр по кодексу + умный поиск ================= */
+let codeFilter = 'Все';
+const CODES = ['Все', ...new Set(articles.map(a => a.code))];
+function renderChips(){
+  document.getElementById('codeChips').innerHTML = CODES.map(c =>
+    `<button class="chip ${c===codeFilter?'active':''}" data-code="${c}">${c}</button>`).join('');
+}
+function renderLawList(){
+  const raw = document.getElementById('search').value.trim();
+  const box = document.getElementById('results');
+  const countBox = document.getElementById('count');
+  let pool = codeFilter === 'Все' ? articles : articles.filter(a => a.code === codeFilter);
+
+  if(!raw){
+    if(codeFilter === 'Все'){
+      countBox.textContent = 'Начните вводить запрос или выберите кодекс выше';
+      box.innerHTML = '';
+      return;
+    }
+    countBox.textContent = `${pool.length} статей в разделе «${codeFilter}»`;
+    render(pool);
+    return;
+  }
+
+  const nq = norm(raw).replace(/^(ст\.?|статья)\s*/,'');
+  let list;
+  if(/^\d+(\.\d+)*$/.test(nq)){
+    list = pool.filter(a => a.num === nq || a.num.startsWith(nq+' ') || a.num.startsWith(nq+'-'));
+  } else {
+    const st = expand(tokens(raw).map(stem));
+    list = pool.map(a => {
+      let sc = 0;
+      st.forEach(s => { if(has(a._title,s)) sc += 3; else if(has(a._text,s)) sc += 1; });
+      return {a,sc};
+    }).filter(r => r.sc > 0).sort((x,y) => y.sc-x.sc).map(r => r.a);
+  }
+  countBox.textContent = list.length ? `Найдено: ${list.length}` : 'Ничего не найдено — попробуйте другие слова';
+  render(list);
+}
+document.getElementById('search').addEventListener('input', renderLawList);
+document.getElementById('codeChips').addEventListener('click', e => {
+  const b = e.target.closest('[data-code]');
+  if(!b) return;
+  codeFilter = b.dataset.code;
+  renderChips();
+  renderLawList();
+});
+renderChips();
+renderLawList();
+
+/* ================= РАЗБОР СИТУАЦИЙ ================= */
+const VERDICT = {
+  uk:   ['УК — задержание', 'badge-red'],
+  koap: ['КоАП — протокол/штраф', 'badge-amber'],
+  ok:   ['Не нарушение', 'badge-green'],
+  proc: ['Процедура', 'badge-blue']
+};
+function splitEpisodes(text){
+  return norm(text).split(/[.!?;\n]+|,?\s+(?:а также|а потом|потом|затем|после чего)\s+/).map(s => s.trim()).filter(Boolean);
+}
+function scoreSituations(stems, negated){
+  const res = [];
+  SIT.situations.forEach((s,i) => {
+    let score = 0; const hit = [];
+    SIT_KEYS[i].forEach(key => {
+      const negatedOut = !key.selfNeg && key.stems.length === 1 && has(negated, key.stems[0]);
+      if(!negatedOut && key.stems.every(k => has(stems,k))){ score += key.stems.length > 1 ? 3 : 2; hit.push(key.label); }
+    });
+    if(score) res.push({s,score,hit});
+  });
+  return res.sort((a,b) => b.score - a.score);
+}
+function lawRef(id){
+  const a = LAW_BY_ID[id];
+  if(!a) return '';
+  return `<div class="art-ref"><b>${a.code} ${a.num}</b> — ${a.title}${a.sanction && !/норма/i.test(a.sanction) ? `<div class="sanction">${a.sanction}</div>` : ''}</div>`;
+}
+function presetSituation(text){
+  document.getElementById('sitInput').value = text;
+  runSituation();
+}
+function runSituation(){
+  const text = document.getElementById('sitInput').value.trim();
+  const out = document.getElementById('sitResults');
+  const countBox = document.getElementById('sitCount');
+  if(!text){ out.innerHTML=''; countBox.textContent=''; return; }
+
+  const found = new Map();
+  for(const ep of [...splitEpisodes(text), text]){
+    const negated = expand(negatedStems(ep));
+    const st = expand(tokens(ep).map(stem));
+    for(const r of scoreSituations(st, negated).slice(0,6)){
+      const prev = found.get(r.s.title);
+      if(!prev || prev.score < r.score) found.set(r.s.title, r);
+    }
+  }
+  let sits = [...found.values()].sort((a,b) => b.score - a.score).slice(0,5);
+
+  const ntext = norm(text);
+  const flags = (SIT.flags || []).filter(f => f.keys.some(k => ntext.includes(norm(k))));
+
+  if(!sits.length){
+    countBox.textContent = 'Ситуация не распознана — опишите проще: кто, что сделал, что при нём. Либо найдите статью во вкладке «База статей».';
+    out.innerHTML = '';
+    return;
+  }
+  countBox.textContent = `Распознано ситуаций: ${sits.length}`;
+
+  let html = '';
+  if(sits.some(r => r.s.danger)){
+    html += `<div class="danger risk-banner"><b>⚠ Высокий риск.</b> Вооружённый противник/угроза жизни — не действовать в одиночку. Вызвать подкрепление, оцепить периметр, дождаться ОСН/СОБР при захвате заложников или перестрелке. Оружие применяется по 6-ФЗ ст.21.</div>`;
+  }
+  html += sits.map(({s,hit}) => {
+    const [vt,vc] = VERDICT[s.verdict] || ['',''];
+    return `<div class="card">
+      <h3><span class="badge ${vc}">${vt}</span> ${s.title}</h3>
+      <div class="hint">Распознано по: ${hit.map(x=>x).join(', ')}</div>
+      ${s.articles.map(lawRef).join('')}
+      <ol>${s.steps.map(x => `<li>${x}</li>`).join('')}</ol>
+      ${(s.notes||[]).map(n => `<p class="note-inline">${n}</p>`).join('')}
+    </div>`;
+  }).join('');
+
+  if(flags.length) html += flags.map(f => `<div class="warning">${f.note}</div>`).join('');
+
+  const ukCount = sits.filter(r => r.s.verdict === 'uk').length;
+  if(ukCount){
+    html += `<div class="card"><h3>Общий порядок</h3><ol>
+      <li>Запись включена до контакта, не прерывать (хранить 72 часа)</li>
+      <li>Представиться, назвать основание</li>
+      <li>Задержание по УПК 52: спецсредства → удостоверение → обыск → права/Миранда</li>
+      <li>Срок — 60 минут (госслужащий/суд. контроль — 90)</li>
+    </ol></div>`;
+  }
+
+  html += '<p class="hint">Разбор — подсказка по базе, а не готовое решение. Квалификацию по обстоятельствам определяете вы.</p>';
+  out.innerHTML = html;
+}
+
+/* ================= ВКЛАДКИ: переключение + ARIA ================= */
+document.querySelectorAll('.tabs .tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabs .tab-btn').forEach(b=>{ b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    btn.setAttribute('aria-selected','true');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    btn.scrollIntoView({block:'nearest', inline:'center', behavior:'smooth'});
+  });
+});
+</script>
+</body>
+</html>

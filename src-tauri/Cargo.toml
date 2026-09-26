@@ -1,0 +1,21 @@
+[package]
+name = "protocol"
+version = "1.0.0"
+description = "PROTOCOL — AI-помощник для GTA 5 RP (Russia Online)"
+edition = "2021"
+
+[lib]
+name = "mvd_helper_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-global-shortcut = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
