@@ -42,6 +42,9 @@ header .meta{margin-left:auto;font-size:.74rem;color:var(--muted);}
 .hits-details.empty{color:var(--warn);}
 .hits-details summary{cursor:pointer;font-weight:700;}
 .hit-row{padding:4px 0 4px 4px;border-top:1px solid var(--line);margin-top:4px;}
+.persp-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
+.persp-btn{font-family:var(--sans);font-size:.76rem;padding:5px 10px;border-radius:2px;border:1px solid var(--line);background:none;color:var(--muted);cursor:pointer;}
+.persp-btn:hover{border-color:var(--accent);color:var(--accent);}
 
 #serverScreen{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;}
 .server-cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;max-width:700px;}
@@ -327,6 +330,44 @@ function addChatMessage(role, html){
   return div;
 }
 
+const PERSPECTIVES = [
+  ['state', '🏛 Государство'],
+  ['citizen', '🙋 Гражданский'],
+  ['lawyer', '⚖️ Адвокат'],
+  ['crime', '🎭 Крайм'],
+];
+
+function escAttr(s){
+  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+function perspectiveButtonsHtml(question){
+  return `<div class="persp-row">${PERSPECTIVES.map(([key,label]) =>
+    `<button class="persp-btn" data-q="${escAttr(question)}" data-p="${key}">${label}</button>`
+  ).join('')}</div>`;
+}
+
+function renderAiResult(bubbleEl, res){
+  const hitsBlock = res.hits.length
+    ? `<details class="hits-details">
+        <summary>Что нашёл поиск: ${res.hits.length} ${res.hits.length===1?'статья':'статей'}</summary>
+        ${res.hits.map(h => `<div class="hit-row"><span class="badge ${STATUS_CLASS[h.document_status]||'pending'}">${h.document_status}</span> ${h.document_title} — ст.${h.article_no} «${h.heading}»</div>`).join('')}
+      </details>`
+    : `<div class="hits-details empty">Поиск не нашёл ни одной статьи по этому запросу.</div>`;
+  bubbleEl.querySelector('.bubble').innerHTML = formatAiAnswer(res.answer) + hitsBlock;
+}
+
+async function askAndRender(question, perspective, targetBubble){
+  try {
+    const res = await invoke('ask_ai', { server: currentServer, question, perspective: perspective || null });
+    renderAiResult(targetBubble, res);
+    const bubble = targetBubble.querySelector('.bubble');
+    bubble.insertAdjacentHTML('beforeend', perspectiveButtonsHtml(question));
+  } catch (err) {
+    targetBubble.querySelector('.bubble').innerHTML = `<p>Не получилось спросить ИИ.<br>${err}<br><br>Проверьте ключ через кнопку ⚙ в шапке.</p>`;
+  }
+  document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+}
+
 async function sendChatMessage(){
   const input = document.getElementById('chatInput');
   const q = input.value.trim();
@@ -334,23 +375,20 @@ async function sendChatMessage(){
   input.value = '';
   addChatMessage('user', q.replace(/</g,'&lt;'));
   const loadingMsg = addChatMessage('ai', '<p>Ищу по базе и формирую ответ…</p>');
-  try {
-    const res = await invoke('ask_ai', { server: currentServer, question: q });
-    const hitsBlock = res.hits.length
-      ? `<details class="hits-details">
-          <summary>Что нашёл поиск: ${res.hits.length} ${res.hits.length===1?'статья':'статей'}</summary>
-          ${res.hits.map(h => `<div class="hit-row"><span class="badge ${STATUS_CLASS[h.document_status]||'pending'}">${h.document_status}</span> ${h.document_title} — ст.${h.article_no} «${h.heading}»</div>`).join('')}
-        </details>`
-      : `<div class="hits-details empty">Поиск не нашёл ни одной статьи по этому запросу.</div>`;
-    loadingMsg.querySelector('.bubble').innerHTML = formatAiAnswer(res.answer) + hitsBlock;
-  } catch (err) {
-    loadingMsg.querySelector('.bubble').innerHTML = `<p>Не получилось спросить ИИ.<br>${err}<br><br>Проверьте ключ через кнопку ⚙ в шапке.</p>`;
-  }
-  document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+  await askAndRender(q, null, loadingMsg);
 }
 document.getElementById('btnChatSend').addEventListener('click', sendChatMessage);
 document.getElementById('chatInput').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendChatMessage();
+});
+document.getElementById('chatMessages').addEventListener('click', (e) => {
+  const btn = e.target.closest('.persp-btn');
+  if (!btn) return;
+  const label = btn.textContent;
+  const question = btn.dataset.q;
+  const perspective = btn.dataset.p;
+  const loadingMsg = addChatMessage('ai', `<p><i>Перспектива: ${label}</i></p><p>Формирую ответ…</p>`);
+  askAndRender(question, perspective, loadingMsg);
 });
 
 // ---------- Переключение режимов База / ИИ-чат ----------
