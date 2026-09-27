@@ -14,6 +14,16 @@ export function clampOpacity(value: number): number {
   return Math.min(MAX_OPACITY, Math.max(MIN_OPACITY, value));
 }
 
+/** «Сплошное» — an opaque dark panel with a red accent, ПРОТОКОЛ's own look; «Стекло» — the game shows through, as in РО Хелпер. */
+export type Theme = 'solid' | 'glass';
+export const THEME_KEY = 'overlay.theme';
+export const DEFAULT_THEME: Theme = 'solid';
+
+export function applyTheme(theme: Theme): void {
+  if (theme === 'glass') document.documentElement.dataset.theme = 'glass';
+  else delete document.documentElement.dataset.theme;
+}
+
 /** Applies the glass opacity to the whole overlay through the `--glass-alpha` token. */
 export function applyOpacity(value: number): void {
   document.documentElement.style.setProperty('--glass-alpha', String(clampOpacity(value)));

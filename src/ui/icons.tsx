@@ -25,6 +25,21 @@ export const SearchIcon = ({ size = 20 }: { size?: number }) => (
   </Icon>
 );
 
+/** ПРОТОКОЛ's mark: a shield with the letter П, white on a red disc — the same as the app icon. */
+export const ProtocolLogo = ({ size = 34 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 34 34" aria-hidden="true" className="logo">
+    <circle cx="17" cy="17" r="17" fill="var(--accent)" />
+    <path d="M17 6.5l8.5 3.3v6.3c0 5.2-3.7 9.3-8.5 11.4-4.8-2.1-8.5-6.2-8.5-11.4V9.8z" fill="none" stroke="#fff" strokeWidth="2" strokeLinejoin="round" />
+    <path d="M13.6 21.4v-8.9h6.8v8.9" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const ChevronDownIcon = ({ size = 16 }: { size?: number }) => (
+  <Icon size={size}>
+    <path d="M6 9l6 6 6-6" />
+  </Icon>
+);
+
 /** The AI analysis: a spark. */
 export const SparkIcon = ({ size = 20 }: { size?: number }) => (
   <Icon size={size}>

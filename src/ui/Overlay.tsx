@@ -11,6 +11,7 @@ import {
   type ChangeEntry,
   type Charge,
   type ChargeItem,
+  type LawDocument,
   type Mode,
   type Offender,
   type Part,
@@ -26,8 +27,9 @@ import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
 import { useAiChat } from './ai';
 import { AiView } from './AiView';
-import { BackIcon, CloseIcon, MenuIcon, SearchIcon, SettingsIcon, SparkIcon } from './icons';
-import { DEFAULT_OPACITY, OPACITY_KEY, applyOpacity, clampOpacity } from './overlaySettings';
+import { BackIcon, CloseIcon, MenuIcon, ProtocolLogo, SearchIcon, SettingsIcon, SparkIcon } from './icons';
+import { ServerMenu } from './ServerMenu';
+import { DEFAULT_OPACITY, DEFAULT_THEME, OPACITY_KEY, THEME_KEY, applyOpacity, applyTheme, clampOpacity, type Theme } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
 import { OrganizationChoice } from './OrganizationChoice';
 import { PinSurface } from './PinSurface';
@@ -56,6 +58,19 @@ function plural(n: number, [one, few, many]: [string, string, string]): string {
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} ${few}`;
   return `${n} ${many}`;
 }
+
+/** What the search looks through, picked in the header: the laws of the game world, or the rules of the project. */
+type Kind = 'all' | 'laws' | 'rules';
+const KINDS: { id: Kind; label: string; title: string }[] = [
+  { id: 'all', label: 'Всё', title: 'Искать везде' },
+  { id: 'laws', label: 'Законы', title: 'Кодексы, законы и уставы' },
+  { id: 'rules', label: 'Правила', title: 'Правила проекта и сервера' },
+];
+const KIND_FILTERS: Record<Kind, ((document: LawDocument) => boolean) | undefined> = {
+  all: undefined,
+  laws: (document) => document.category !== 'rules',
+  rules: (document) => document.category === 'rules',
+};
 
 /** The version of the laws the user last saw, per server. */
 const seenKey = (server: string) => `laws.seen:${server}`;
@@ -124,9 +139,11 @@ export function Overlay({
   // A document picked in the menu narrows the search; with no query it shows as a table of contents.
   const [scopeId, setScopeId] = useState<string | null>(null);
   const scope = scopeId ? pack.documents.find((d) => d.id === scopeId) : undefined;
+  // «Законы» or «Правила» in the header narrow the search; «Всё» searches both.
+  const [kind, setKind] = useState<Kind>('all');
   const hits = useMemo(
-    () => searchArticles(pack, query, { boostDocuments, document: scope?.id }),
-    [pack, query, boostDocuments, scope],
+    () => searchArticles(pack, query, { boostDocuments, document: scope?.id, only: KIND_FILTERS[kind] }),
+    [pack, query, boostDocuments, scope, kind],
   );
   const contents = useMemo(() => (scope ? documentContents(scope) : []), [scope]);
   /** Where each chapter's rows start in the list ↑↓ walk through. */
@@ -452,6 +469,14 @@ export function Overlay({
     searchRef.current?.focus();
   };
 
+  /** Switches the server, from the header or the settings. */
+  const pickServer = (id: string) => {
+    // Another server has its own organisations: one it does not have goes back to «Без организации».
+    const keep = packFor(id).organizations.some((o) => o.id === profile.organization);
+    onProfile({ ...profile, server: id, organization: keep ? profile.organization : 'none' });
+    searchRef.current?.focus();
+  };
+
   /** Opens the AI analysis over whatever was on show; with a text — what was typed in the search — asks about it at once. */
   const openAi = (text?: string) => {
     setAiOpen(true);
@@ -578,6 +603,20 @@ export function Overlay({
     void platform.writeSetting(OPACITY_KEY, clamped);
   };
 
+  const [theme, setTheme] = useState<Theme>(DEFAULT_THEME);
+  useEffect(() => {
+    void platform.readSetting<Theme>(THEME_KEY).then((saved) => {
+      const value = saved === 'glass' ? 'glass' : DEFAULT_THEME;
+      setTheme(value);
+      applyTheme(value);
+    });
+  }, [platform]);
+  const changeTheme = (value: Theme) => {
+    setTheme(value);
+    applyTheme(value);
+    void platform.writeSetting(THEME_KEY, value);
+  };
+
   return (
     <>
     {/* In the browser there is no second window: the stand-in game scene shows the cards itself. */}
@@ -623,13 +662,82 @@ export function Overlay({
         >
           <MenuIcon />
         </button>
-        <span className="brand" data-tauri-drag-region>
-          ПРОТОКОЛ
+        <span className="brand" data-tauri-drag-region title={summary}>
+          <ProtocolLogo />
+          <span className="brand__name">ПРОТОКОЛ</span>
         </span>
-        <span className="sp" data-tauri-drag-region />
-        <span className="chip" data-tauri-drag-region>
-          {summary}
-        </span>
+        <div className={aiMode ? 'search search--ai' : 'search'}>
+          {aiMode ? <SparkIcon /> : <SearchIcon />}
+          {scope && !aiMode && (
+            <button className="scope" type="button" aria-label={`Искать во всех документах, а не только в ${scope.short}`} title="Искать во всех документах" onClick={clearScope}>
+              <span>{scope.short}</span>
+              <CloseIcon size={12} />
+            </button>
+          )}
+          <input
+            ref={searchRef}
+            className="search__input"
+            type="search"
+            aria-label="Поиск по законам"
+            placeholder={
+              aiMode
+                ? chat.messages.length
+                  ? 'Уточните или опишите новую ситуацию…'
+                  : 'Опишите ситуацию своими словами…'
+                : scope
+                  ? `Поиск: ${scope.title}`
+                  : kind === 'rules'
+                    ? 'Пункт или слова правил: 1.20, nonrp, оскорбление'
+                    : 'Статья, преступление или номер: 65, коап 8.6, кража'
+            }
+            autoComplete="off"
+            spellCheck={aiMode}
+            value={aiMode ? aiDraft : query}
+            onChange={(e) => {
+              if (aiMode) {
+                setAiDraft(e.target.value);
+                setSettingsOpen(false);
+                setPrivacyOpen(false);
+                return;
+              }
+              setQuery(e.target.value);
+              setAiOpen(false);
+              setOpen(null);
+              setDiff(null);
+              setPrivacyOpen(false);
+              setNotesOpen(false);
+              setOrganizationOpen(false);
+              setServerOpen(false);
+              setSettingsOpen(false);
+              setWhatsNew(null);
+              setChangesView(null);
+              setSelected(0);
+            }}
+            onKeyDown={onSearchKey}
+          />
+          <span className="kbd">{aiMode ? 'Enter' : 'Esc'}</span>
+        </div>
+        {!aiMode && !scope && (
+          <div className="tabs" role="radiogroup" aria-label="Где искать">
+            {KINDS.map((k) => (
+              <button
+                key={k.id}
+                type="button"
+                role="radio"
+                aria-checked={kind === k.id}
+                className={kind === k.id ? 'tabs__btn tabs__btn--on' : 'tabs__btn'}
+                title={k.title}
+                onClick={() => {
+                  setKind(k.id);
+                  setSelected(0);
+                  searchRef.current?.focus();
+                }}
+              >
+                {k.label}
+              </button>
+            ))}
+          </div>
+        )}
         <button
           className={aiOpen ? 'icon-btn icon-btn--on icon-btn--ai' : 'icon-btn icon-btn--ai'}
           type="button"
@@ -640,6 +748,7 @@ export function Overlay({
         >
           <SparkIcon />
         </button>
+        <ServerMenu server={profile.server} organization={organization && organization.id !== 'none' ? organization.name : undefined} onPick={pickServer} />
         <button
           className={settingsOpen ? 'icon-btn icon-btn--on' : 'icon-btn'}
           type="button"
@@ -668,56 +777,6 @@ export function Overlay({
           setNotesOpen(true);
         }}
       />
-
-      <div className={aiMode ? 'search search--ai' : 'search'}>
-        {aiMode ? <SparkIcon /> : <SearchIcon />}
-        {scope && !aiMode && (
-          <button className="scope" type="button" aria-label={`Искать во всех документах, а не только в ${scope.short}`} title="Искать во всех документах" onClick={clearScope}>
-            <span>{scope.short}</span>
-            <CloseIcon size={12} />
-          </button>
-        )}
-        <input
-          ref={searchRef}
-          className="search__input"
-          type="search"
-          aria-label="Поиск по законам"
-          placeholder={
-            aiMode
-              ? chat.messages.length
-                ? 'Уточните или опишите новую ситуацию…'
-                : 'Опишите ситуацию своими словами…'
-              : scope
-                ? `Поиск: ${scope.title}`
-                : 'Номер или слова: 65, коап 8.6, кража'
-          }
-          autoComplete="off"
-          spellCheck={aiMode}
-          value={aiMode ? aiDraft : query}
-          onChange={(e) => {
-            if (aiMode) {
-              setAiDraft(e.target.value);
-              setSettingsOpen(false);
-              setPrivacyOpen(false);
-              return;
-            }
-            setQuery(e.target.value);
-            setAiOpen(false);
-            setOpen(null);
-            setDiff(null);
-            setPrivacyOpen(false);
-            setNotesOpen(false);
-            setOrganizationOpen(false);
-            setServerOpen(false);
-            setSettingsOpen(false);
-            setWhatsNew(null);
-            setChangesView(null);
-            setSelected(0);
-          }}
-          onKeyDown={onSearchKey}
-        />
-        <span className="kbd">{aiMode ? 'Enter' : 'Esc'}</span>
-      </div>
 
       <div
         ref={contentRef}
@@ -779,11 +838,8 @@ export function Overlay({
             <ServerChoice
               value={profile.server}
               onPick={(id) => {
-                // Another server has its own organisations: one it does not have goes back to «Без организации».
-                const keep = packFor(id).organizations.some((o) => o.id === profile.organization);
-                onProfile({ ...profile, server: id, organization: keep ? profile.organization : 'none' });
+                pickServer(id);
                 setServerOpen(false);
-                searchRef.current?.focus();
               }}
             />
           </section>
@@ -844,6 +900,8 @@ export function Overlay({
             onCapturing={onCapturing}
             opacity={opacity}
             onOpacity={changeOpacity}
+            theme={theme}
+            onTheme={changeTheme}
             pinned={cardCount(groups)}
             onUnpinAll={() => setGroups([])}
             presets={presets.map((preset) => ({ id: preset.id, name: preset.name, count: cardCount(preset.groups) }))}

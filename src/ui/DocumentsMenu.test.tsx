@@ -229,6 +229,6 @@ describe('searching one document', () => {
 
     await pick(user, /^ПДД/);
     await user.click(screen.getByRole('button', { name: /только в ПДД/ }));
-    expect(search()).toHaveAttribute('placeholder', 'Номер или слова: 65, коап 8.6, кража');
+    expect(search()).toHaveAttribute('placeholder', 'Статья, преступление или номер: 65, коап 8.6, кража');
   });
 });

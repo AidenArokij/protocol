@@ -17,6 +17,8 @@ export interface SearchOptions {
   boostDocuments?: string[];
   /** Search only this document, unless the query names another one by its alias («ук 65»). */
   document?: string;
+  /** Search only the documents it lets through («Законы» or «Правила»), unless the query or `document` names one. */
+  only?: (document: LawDocument) => boolean;
   limit?: number;
 }
 
@@ -145,6 +147,8 @@ export function searchArticles(pack: ServerPack, raw: string, options: SearchOpt
   const query = parseQuery(pack, raw);
   if (!query.number && !query.words.length) return [];
   query.scope ??= pack.documents.find((d) => d.id === options.document);
+  /** A named document is searched whatever the filter says: the user asked for it. */
+  const allowed = (document: LawDocument) => (query.scope ? document === query.scope : (options.only?.(document) ?? true));
   const index = wordIndex(pack);
   const matchers = query.words.map((word, i) => matchWord(index, word, query.typing && i === query.words.length - 1));
   const boost = new Set(options.boostDocuments ?? []);
@@ -161,7 +165,7 @@ export function searchArticles(pack: ServerPack, raw: string, options: SearchOpt
   if (query.number) {
     let order = 0;
     for (const document of pack.documents) {
-      if (query.scope && document !== query.scope) continue;
+      if (!allowed(document)) continue;
       for (const article of document.articles) {
         order++;
         const score = numberScore(article, query.number);
@@ -187,7 +191,7 @@ export function searchArticles(pack: ServerPack, raw: string, options: SearchOpt
     for (const phrase of first.phrases) index.postings.get(phrase[0])?.forEach((i) => candidates.add(i));
     for (const i of candidates) {
       const entry = index.entries[i];
-      if (query.scope && entry.document !== query.scope) continue;
+      if (!allowed(entry.document)) continue;
       consider(entry.article, entry.document, entry.part, 0, entry.order, entry);
     }
   }

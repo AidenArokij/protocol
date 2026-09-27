@@ -77,15 +77,21 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
   let visible = false;
   let hotkey: string | null = null;
 
-  /** The right third of the work area (screen minus taskbar), with a margin, in physical pixels. */
+  /** A wide window in the middle of the work area (screen minus taskbar), a little above centre, in physical pixels. */
   const defaultBounds = async (): Promise<WindowBounds> => {
     const monitor = (await currentMonitor()) ?? (await primaryMonitor());
-    if (!monitor) return { x: 100, y: 100, width: 600, height: 900 };
+    if (!monitor) return { x: 100, y: 100, width: 1000, height: 720 };
     const { position, size } = monitor.workArea;
     const scale = monitor.scaleFactor;
-    const margin = Math.round(24 * scale);
-    const width = Math.round(Math.min(Math.max(size.width / 3, 480 * scale), 760 * scale));
-    return { x: position.x + size.width - width - margin, y: position.y + margin, width, height: size.height - 2 * margin };
+    const clamp = (value: number, min: number, max: number) => Math.round(Math.min(Math.max(value, min), max));
+    const width = clamp(size.width * 0.56, Math.min(760 * scale, size.width), Math.min(1080 * scale, size.width));
+    const height = clamp(size.height * 0.74, Math.min(560 * scale, size.height), Math.min(820 * scale, size.height));
+    return {
+      x: position.x + Math.round((size.width - width) / 2),
+      y: position.y + Math.round((size.height - height) * 0.35),
+      width,
+      height,
+    };
   };
 
   /** A saved position is only reused if the window would still be on some screen. */

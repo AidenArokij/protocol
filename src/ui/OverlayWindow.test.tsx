@@ -1,7 +1,7 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { renderApp } from '../test/renderApp';
-import { DEFAULT_HOTKEY, OPACITY_KEY } from './overlaySettings';
+import { DEFAULT_HOTKEY, OPACITY_KEY, THEME_KEY } from './overlaySettings';
 
 const search = () => screen.getByRole('searchbox', { name: 'Поиск по законам' });
 
@@ -41,10 +41,16 @@ describe('overlay window', () => {
     expect(platform.state.overlayVisible).toBe(false);
   });
 
-  it('adjusts the background transparency, saves it and closes the settings on Esc', async () => {
+  it('is solid by default; «Стекло» brings the background transparency, saved, and Esc closes the settings', async () => {
     const { platform, user } = await renderApp();
     await user.click(screen.getByRole('button', { name: 'Настройки' }));
     const settings = screen.getByRole('group', { name: 'Настройки' });
+    expect(within(settings).getByRole('radio', { name: 'Сплошное' })).toHaveAttribute('aria-checked', 'true');
+    expect(within(settings).queryByRole('slider', { name: 'Прозрачность фона' })).not.toBeInTheDocument();
+
+    await user.click(within(settings).getByRole('radio', { name: 'Стекло' }));
+    expect(document.documentElement.dataset.theme).toBe('glass');
+    expect(platform.settings.get(THEME_KEY)).toBe('glass');
     const slider = within(settings).getByRole('slider', { name: 'Прозрачность фона' });
     expect(slider).toHaveValue('38');
 

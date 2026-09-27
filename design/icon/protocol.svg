@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- ПРОТОКОЛ: a white shield with the letter П on a red disc, over a dark rounded square. -->
+  <rect x="32" y="32" width="960" height="960" rx="220" fill="#1b1b1e"/>
+  <circle cx="512" cy="512" r="380" fill="#e5484d"/>
+  <path d="M512 248l200 78v148c0 122-87 219-200 268-113-49-200-146-200-268V326z" fill="none" stroke="#fff" stroke-width="44" stroke-linejoin="round"/>
+  <path d="M432 620V410h160v210" fill="none" stroke="#fff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -5,7 +5,12 @@ import { APP_VERSION, AUTHOR, LINKS, ORIGINAL } from './about';
 import { AI_KEY_SETTING, AI_KEY_URL } from './ai';
 import { BackIcon, CloseIcon, GitHubIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
-import { MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
+import { MAX_OPACITY, MIN_OPACITY, type Theme } from './overlaySettings';
+
+const THEMES: { id: Theme; label: string }[] = [
+  { id: 'solid', label: 'Сплошное' },
+  { id: 'glass', label: 'Стекло' },
+];
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
 import type { Laws, LawsStatus } from './laws';
 import type { Updates } from './updates';
@@ -267,6 +272,8 @@ export interface SettingsViewProps {
   onCapturing: (capturing: boolean) => void;
   opacity: number;
   onOpacity: (value: number) => void;
+  theme: Theme;
+  onTheme: (theme: Theme) => void;
   /** Cards pinned over the game: how many, and unpinning them all at once. */
   pinned: number;
   onUnpinAll: () => void;
@@ -300,6 +307,8 @@ export function SettingsView({
   onCapturing,
   opacity,
   onOpacity,
+  theme,
+  onTheme,
   pinned,
   onUnpinAll,
   presets,
@@ -348,21 +357,46 @@ export function SettingsView({
       </Block>
 
       <Block title="Внешний вид">
-        <label className="set__row">
-          <span className="set__label">Прозрачность фона</span>
+        <div className="set__row">
+          <span className="set__label">Оформление</span>
           <span className="sp" />
-          <span className="settings__value">{transparency}%</span>
-        </label>
-        <input
-          className="settings__slider"
-          type="range"
-          aria-label="Прозрачность фона"
-          min={Math.round((1 - MAX_OPACITY) * 100)}
-          max={Math.round((1 - MIN_OPACITY) * 100)}
-          step={1}
-          value={transparency}
-          onChange={(e) => onOpacity(1 - Number(e.target.value) / 100)}
-        />
+          <div className="tabs" role="radiogroup" aria-label="Оформление">
+            {THEMES.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                role="radio"
+                aria-checked={theme === option.id}
+                className={theme === option.id ? 'tabs__btn tabs__btn--on' : 'tabs__btn'}
+                onClick={() => onTheme(option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="set__hint">
+          {theme === 'solid' ? 'Тёмная панель с красным акцентом: читается на любом фоне.' : 'Игра просвечивает сквозь панель, как в РО Хелпер.'}
+        </p>
+        {theme === 'glass' && (
+          <>
+            <label className="set__row">
+              <span className="set__label">Прозрачность фона</span>
+              <span className="sp" />
+              <span className="settings__value">{transparency}%</span>
+            </label>
+            <input
+              className="settings__slider"
+              type="range"
+              aria-label="Прозрачность фона"
+              min={Math.round((1 - MAX_OPACITY) * 100)}
+              max={Math.round((1 - MIN_OPACITY) * 100)}
+              step={1}
+              value={transparency}
+              onChange={(e) => onOpacity(1 - Number(e.target.value) / 100)}
+            />
+          </>
+        )}
         {platform.kind !== 'browser' && (
           <button className="settings__button" type="button" onClick={() => void platform.resetWindowBounds()}>
             Сбросить положение окна
