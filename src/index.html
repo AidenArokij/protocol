@@ -310,8 +310,8 @@ document.getElementById('btnSaveKey').addEventListener('click', async () => {
 // ---------- ИИ-чат (отдельный режим) ----------
 function formatAiAnswer(text){
   return text.split('\n').filter(l => l.trim()).map(line => {
-    const isHeading = /^(КРАТКО|ПОЧЕМУ|ЧТО МОЖНО|ЧТО НЕЛЬЗЯ|ИСТОЧНИКИ)\s*:/i.test(line.trim());
-    return isHeading ? `<h4>${line}</h4>` : `<p>${line}</p>`;
+    const m = line.trim().match(/^[•\-]?\s*(Суть|Статья|Детали)\s*:\s*(.*)$/i);
+    return m ? `<p><b>${m[1]}:</b> ${m[2]}</p>` : `<p>${line}</p>`;
   }).join('');
 }
 
