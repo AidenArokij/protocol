@@ -5,7 +5,7 @@ import { renderApp } from '../test/renderApp';
 describe('overlay', () => {
   it('opens with the brand and the cursor in the search field', async () => {
     await renderApp();
-    expect(screen.getByText('РО Хелпер')).toBeInTheDocument();
+    expect(screen.getByText('ПРОТОКОЛ')).toBeInTheDocument();
     expect(screen.getByRole('searchbox', { name: 'Поиск по законам' })).toHaveFocus();
   });
 

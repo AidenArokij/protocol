@@ -1,9 +1,9 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import type { Organization, ServerPack } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
-import { APP_VERSION, AUTHOR, LINKS } from './about';
+import { APP_VERSION, AUTHOR, LINKS, ORIGINAL } from './about';
 import { AI_KEY_SETTING, AI_KEY_URL } from './ai';
-import { BackIcon, CloseIcon, DiscordIcon, GitHubIcon, WarnIcon } from './icons';
+import { BackIcon, CloseIcon, GitHubIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
 import { MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
@@ -450,16 +450,20 @@ export function SettingsView({
       <Block title="О программе">
         <div className="set__row settings__about">
           <span>
-            РО Хелпер {APP_VERSION} · автор {AUTHOR}
+            ПРОТОКОЛ {APP_VERSION} · автор {AUTHOR}
           </span>
           <span className="sp" />
           <button className="icon-btn icon-btn--sm" type="button" aria-label="GitHub" title="GitHub" onClick={() => void platform.openExternal(LINKS.repository)}>
             <GitHubIcon />
           </button>
-          <button className="icon-btn icon-btn--sm" type="button" aria-label="Discord" title="Discord" onClick={() => void platform.openExternal(LINKS.discord)}>
-            <DiscordIcon />
-          </button>
         </div>
+        <p className="set__hint">
+          Основано на{' '}
+          <button className="link" type="button" onClick={() => void platform.openExternal(ORIGINAL.repository)}>
+            {ORIGINAL.name}
+          </button>{' '}
+          — автор {ORIGINAL.author}, лицензия MIT. Поиск, калькулятор, карточки и базу законов сделал он; ИИ-разбор добавлен в ПРОТОКОЛЕ.
+        </p>
         <div className="set__row set__links">
           <button className="link" type="button" onClick={onPrivacy}>
             Политика конфиденциальности

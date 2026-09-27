@@ -9,7 +9,7 @@ import { AUTO_KEY, CHECK_EVERY_MS } from './updates';
  * Where installed copies take newer laws without a new version of the app: the packs on the main branch
  * of the repository, which `npm run import` writes and a push publishes.
  */
-export const LAWS_BASE = 'https://raw.githubusercontent.com/skyyyzeee/ro-helper/main/src/data';
+export const LAWS_BASE = 'https://raw.githubusercontent.com/AidenArokij/protocol/main/src/data';
 export const MANIFEST_URL = `${LAWS_BASE}/manifest.json`;
 export const packUrl = (server: string) => `${LAWS_BASE}/${server}.json`;
 

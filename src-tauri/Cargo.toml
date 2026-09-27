@@ -1,10 +1,10 @@
 [package]
-name = "ro-helper"
+name = "protocol"
 version = "1.0.0"
-description = "РО Хелпер — законы Russia Online поверх игры"
-authors = ["skyze"]
+description = "ПРОТОКОЛ — законы Russia Online поверх игры и ИИ-разбор ситуаций"
+authors = ["AidenArokij", "skyze"]
 license = "MIT"
-repository = "https://github.com/skyyyzeee/ro-helper"
+repository = "https://github.com/AidenArokij/protocol"
 edition = "2021"
 rust-version = "1.77.2"
 

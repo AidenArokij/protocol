@@ -14,12 +14,12 @@ describe('the privacy policy', () => {
 
     const policy = screen.getByRole('article', { name: 'Политика конфиденциальности' });
     expect(within(policy).getByRole('heading', { level: 2 })).toHaveTextContent('Политика конфиденциальности');
-    expect(policy).toHaveTextContent('РО Хелпер не собирает и не отправляет данные о вас');
+    expect(policy).toHaveTextContent('ПРОТОКОЛ не собирает данные о вас');
     // Only the Russian part: the English one is for GitHub.
     expect(policy).not.toHaveTextContent('English');
 
-    await user.click(within(policy).getByRole('button', { name: 'Discord' }));
-    expect(platform.calls.at(-1)).toEqual({ method: 'openExternal', args: ['https://discord.gg/VBNn86EmDd'] });
+    await user.click(within(policy).getByRole('button', { name: 'условиях Gemini API' }));
+    expect(platform.calls.at(-1)).toEqual({ method: 'openExternal', args: ['https://ai.google.dev/gemini-api/terms'] });
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('article', { name: 'Политика конфиденциальности' })).not.toBeInTheDocument();

@@ -1,9 +1,9 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "РО Хелпер",
-  "mainBinaryName": "ro-helper",
+  "productName": "ПРОТОКОЛ",
+  "mainBinaryName": "protocol",
   "version": "../package.json",
-  "identifier": "com.skyze.rohelper",
+  "identifier": "com.aidenarokij.protocol",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://127.0.0.1:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "РО Хелпер",
+        "title": "ПРОТОКОЛ",
         "width": 600,
         "height": 900,
         "minWidth": 420,
@@ -45,9 +45,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": true,
-    "publisher": "skyze",
-    "copyright": "© 2026 skyze",
+    "createUpdaterArtifacts": false,
+    "publisher": "AidenArokij",
+    "copyright": "© 2026 AidenArokij; основано на РО Хелпер © 2026 skyze",
     "category": "Utility",
     "shortDescription": "Законы Russia Online поверх игры",
     "longDescription": "Законы, уставы и правила сервера Тверской Russia Online в окне поверх игры: поиск, калькулятор срока и штрафа, закреплённая карточка.",
@@ -65,7 +65,7 @@
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE5NEIzRkQwOEE1MDAwOEYKUldTUEFGQ0swRDlMR1k2QnYyZ2FmVWdQdGRzT3BGU1RaUUtnb2tlT29qL2dPT1UvOEUybC96R2gK",
       "endpoints": [
-        "https://github.com/skyyyzeee/ro-helper/releases/latest/download/latest.json"
+        "https://github.com/AidenArokij/protocol/releases/latest/download/latest.json"
       ],
       "windows": {
         "installMode": "passive"

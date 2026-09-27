@@ -53,7 +53,7 @@ describe('updates of the app', () => {
     expect(platform.calls.some((c) => c.method === 'openExternal')).toBe(false);
 
     await user.click(within(page).getByRole('button', { name: 'Страница релиза на GitHub' }));
-    expect(platform.calls.at(-1)).toEqual({ method: 'openExternal', args: ['https://github.com/skyyyzeee/ro-helper/releases/tag/v1.1.0'] });
+    expect(platform.calls.at(-1)).toEqual({ method: 'openExternal', args: ['https://github.com/AidenArokij/protocol/releases/tag/v1.1.0'] });
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('article', { name: /^Что нового/ })).not.toBeInTheDocument();
@@ -103,14 +103,15 @@ describe('updates of the app', () => {
     expect(banner()).toHaveTextContent('Доступна версия 1.1.0');
   });
 
-  it('names the version and the author, with links to GitHub and Discord', async () => {
+  it('names the version and the author, links to GitHub, and credits РО Хелпер it grew out of', async () => {
     const { platform, user } = await renderApp();
     await user.click(screen.getByRole('button', { name: 'Настройки' }));
-    expect(settings()).toHaveTextContent(`РО Хелпер ${APP_VERSION} · автор skyze`);
+    expect(settings()).toHaveTextContent(`ПРОТОКОЛ ${APP_VERSION} · автор AidenArokij`);
     await user.click(within(settings()).getByRole('button', { name: 'GitHub' }));
+    expect(platform.calls.at(-1)?.args).toEqual(['https://github.com/AidenArokij/protocol']);
+    expect(settings()).toHaveTextContent('Основано на РО Хелпер — автор skyze, лицензия MIT');
+    await user.click(within(settings()).getByRole('button', { name: 'РО Хелпер' }));
     expect(platform.calls.at(-1)?.args).toEqual(['https://github.com/skyyyzeee/ro-helper']);
-    await user.click(within(settings()).getByRole('button', { name: 'Discord' }));
-    expect(platform.calls.at(-1)?.args).toEqual(['https://discord.gg/VBNn86EmDd']);
   });
 
   it('does not go online by itself when automatic checks are off, but still checks when asked', async () => {
@@ -142,7 +143,7 @@ describe('updates of the app', () => {
     const { platform } = await renderApp({ platform: { update: { version: '1.1.0' } } });
     await vi.waitFor(() => expect(platform.state.toast).not.toBeNull());
     expect(platform.state.toast).toMatchObject({
-      title: 'Вышло обновление РО Хелпер',
+      title: 'Вышло обновление ПРОТОКОЛА',
       text: 'Версия 1.1.0. Откройте хелпер (Alt + Q) и нажмите «Обновить».',
     });
     expect(platform.settings.get(TOASTED_KEY)).toBe('1.1.0');

@@ -124,7 +124,7 @@ export function Onboarding({
       <div className="overlay glass onboarding">
       <div className="ob__head" data-tauri-drag-region>
         <span className="brand" data-tauri-drag-region>
-          {mode === 'first' ? 'РО Хелпер' : 'Настройки'}
+          {mode === 'first' ? 'ПРОТОКОЛ' : 'Настройки'}
         </span>
         <span className="sp" data-tauri-drag-region />
         <span className="muted" data-tauri-drag-region>

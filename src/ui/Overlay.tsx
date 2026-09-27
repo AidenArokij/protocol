@@ -177,7 +177,7 @@ export function Overlay({
       if (!active || told === found || putOff === found) return;
       const toast: Toast = {
         id: `update-${found}`,
-        title: 'Вышло обновление РО Хелпер',
+        title: 'Вышло обновление ПРОТОКОЛА',
         text: `Версия ${found}. Откройте хелпер (${formatHotkey(profile.hotkey)}) и нажмите «Обновить».`,
       };
       void platform.showToast(toast);
@@ -624,7 +624,7 @@ export function Overlay({
           <MenuIcon />
         </button>
         <span className="brand" data-tauri-drag-region>
-          РО Хелпер
+          ПРОТОКОЛ
         </span>
         <span className="sp" data-tauri-drag-region />
         <span className="chip" data-tauri-drag-region>
