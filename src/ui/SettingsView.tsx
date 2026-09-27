@@ -497,7 +497,8 @@ export function SettingsView({
 
   const go = (id: SectionId) => {
     setActive(id);
-    void bodyRef.current?.querySelector(`#settings-${id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    // Not every environment scrolls (the tests' has no layout): the menu still marks the section.
+    void bodyRef.current?.querySelector(`#settings-${id}`)?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
   };
 
   return (

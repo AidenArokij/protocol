@@ -73,7 +73,7 @@ export function AiView({
   const last = chat.messages.at(-1);
   // Braces: newer browsers return a promise from scrolling, and an effect may return only its clean-up.
   useEffect(() => {
-    void endRef.current?.scrollIntoView({ block: 'end' });
+    void endRef.current?.scrollIntoView?.({ block: 'end' });
   }, [chat.messages.length, last?.pending]);
   const lastQuestion = [...chat.messages].reverse().find((m) => m.role === 'user')?.text;
 
