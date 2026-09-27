@@ -141,26 +141,27 @@ input {
 }
 
 .overlay__head .search {
-  flex: 1 1 200px;
+  flex: 1 1 240px;
   min-width: 0;
   margin: 0;
   height: 48px;
 }
 
+/* The name beside the logo only on a wide window; the logo alone says it is ПРОТОКОЛ. */
+@container overlay (max-width: 1120px) {
+  .brand__name {
+    display: none;
+  }
+}
+
 /* Too narrow for one row: the search goes under the buttons, and they keep to the right edge. */
-@container overlay (max-width: 820px) {
+@container overlay (max-width: 900px) {
   .overlay__head .search {
     order: 10;
     flex-basis: 100%;
   }
   .overlay__head .tabs {
     margin-left: auto;
-  }
-}
-
-@container overlay (max-width: 720px) {
-  .brand__name {
-    display: none;
   }
 }
 
@@ -3186,3 +3187,68 @@ input {
 @media (prefers-reduced-motion: reduce) {
   .ai__dots { animation: none; }
 }
+
+/* The microphone in the search field: red and pulsing while it records, dimmed while Gemini writes the words down. */
+.mic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: var(--text-muted);
+}
+.mic:hover { color: var(--text); background: var(--surface-hover); }
+.mic--recording,
+.mic--recording:hover {
+  color: #fff;
+  background: var(--accent);
+  animation: mic-pulse 1.2s ease-out infinite;
+}
+.mic--transcribing { opacity: 0.5; cursor: progress; }
+
+@keyframes mic-pulse {
+  from { box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 55%, transparent); }
+  to { box-shadow: 0 0 0 10px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mic--recording { animation: none; }
+}
+
+/* The history of AI analyses. */
+.history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.history__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 8px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.history__item:hover { background: var(--surface-hover); }
+.history__open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 11px 14px;
+  text-align: left;
+}
+.history__title {
+  font-size: 14.5px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history__meta { font-size: 12.5px; color: var(--text-muted); }

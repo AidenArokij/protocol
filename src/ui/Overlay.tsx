@@ -25,9 +25,11 @@ import { ArticleView } from './ArticleView';
 import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } from './CalculatorPanel';
 import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
-import { useAiChat } from './ai';
+import { transcribe, useAiChat } from './ai';
 import { AiView } from './AiView';
-import { BackIcon, CloseIcon, MenuIcon, ProtocolLogo, SearchIcon, SettingsIcon, SparkIcon } from './icons';
+import { HistoryView } from './HistoryView';
+import { BackIcon, CloseIcon, HistoryIcon, MenuIcon, MicIcon, ProtocolLogo, SearchIcon, SettingsIcon, SparkIcon } from './icons';
+import { canRecord, startRecording, type Recording } from './voice';
 import { ServerMenu } from './ServerMenu';
 import { DEFAULT_OPACITY, DEFAULT_THEME, OPACITY_KEY, STREAMER_KEY, THEME_KEY, applyOpacity, applyTheme, clampOpacity, type Theme } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
@@ -477,9 +479,49 @@ export function Overlay({
     searchRef.current?.focus();
   };
 
+  // A spoken question: the microphone until pressed again, then Gemini writes it down and the AI takes it up.
+  const [voice, setVoice] = useState<'idle' | 'recording' | 'transcribing'>('idle');
+  const recording = useRef<Recording | null>(null);
+  useEffect(() => () => recording.current?.cancel(), []);
+  const voiceFailed = (text: string) => {
+    openAi();
+    chat.note(text);
+  };
+  const stopVoice = async () => {
+    const current = recording.current;
+    if (!current) return;
+    recording.current = null;
+    setVoice('transcribing');
+    try {
+      const text = await transcribe(platform, await current.stop());
+      if (text) openAi(text);
+      else voiceFailed('Не расслышал вопрос. Нажмите 🎤 и говорите чуть громче или ближе к микрофону.');
+    } catch (error) {
+      voiceFailed(error instanceof Error ? error.message : String(error));
+    } finally {
+      setVoice('idle');
+    }
+  };
+  const toggleVoice = async () => {
+    if (voice === 'recording') return void stopVoice();
+    if (voice !== 'idle') return;
+    try {
+      recording.current = await startRecording(() => void stopVoice());
+      setVoice('recording');
+    } catch {
+      voiceFailed(
+        'Не получилось включить микрофон. Проверьте, что он подключён и что Windows разрешает к нему доступ: «Параметры» → «Конфиденциальность» → «Микрофон».',
+      );
+    }
+  };
+
+  // Earlier conversations with the AI, from the header.
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   /** Opens the AI analysis over whatever was on show; with a text — what was typed in the search — asks about it at once. */
   const openAi = (text?: string) => {
     setAiOpen(true);
+    setHistoryOpen(false);
     setOpen(null);
     setMenuOpen(false);
     setSettingsOpen(false);
@@ -508,6 +550,7 @@ export function Overlay({
     else if (changesView && settingsOpen) setChangesView(null);
     else if (settingsOpen) setSettingsOpen(false);
     else if (open) setOpen(null);
+    else if (historyOpen) setHistoryOpen(false);
     else if (aiOpen) setAiOpen(false);
     else if (changesView) setChangesView(null);
     else if (query) {
@@ -544,7 +587,7 @@ export function Overlay({
   // what is opened starts at its own top.
   const contentRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
-  const onList = !whatsNew && !settingsOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView && !aiOpen;
+  const onList = !whatsNew && !settingsOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView && !aiOpen && !historyOpen;
   const wasOnList = useRef(onList);
   useLayoutEffect(() => {
     const content = contentRef.current;
@@ -731,6 +774,19 @@ export function Overlay({
             }}
             onKeyDown={onSearchKey}
           />
+          {canRecord() && (
+            <button
+              type="button"
+              className={voice === 'idle' ? 'mic' : `mic mic--${voice}`}
+              aria-label={voice === 'recording' ? 'Остановить запись и спросить ИИ' : 'Спросить ИИ голосом'}
+              aria-pressed={voice === 'recording'}
+              title={voice === 'recording' ? 'Говорите… нажмите ещё раз, чтобы спросить' : voice === 'transcribing' ? 'Разбираю, что вы сказали…' : 'Спросить голосом'}
+              disabled={voice === 'transcribing'}
+              onClick={() => void toggleVoice()}
+            >
+              <MicIcon />
+            </button>
+          )}
           <span className="kbd">{aiMode ? 'Enter' : 'Esc'}</span>
         </div>
         {!aiMode && !scope && (
@@ -763,6 +819,20 @@ export function Overlay({
           onClick={() => (aiMode ? setAiOpen(false) : openAi())}
         >
           <SparkIcon />
+        </button>
+        <button
+          className={historyOpen ? 'icon-btn icon-btn--on' : 'icon-btn'}
+          type="button"
+          aria-label="История ИИ-разборов"
+          aria-pressed={historyOpen}
+          title="История ИИ-разборов"
+          onClick={() => {
+            setHistoryOpen((v) => !v);
+            setOpen(null);
+            setSettingsOpen(false);
+          }}
+        >
+          <HistoryIcon />
         </button>
         <ServerMenu server={profile.server} organization={organization && organization.id !== 'none' ? organization.name : undefined} onPick={pickServer} />
         <button
@@ -962,6 +1032,23 @@ export function Overlay({
             onFavorite={() => toggleFavorite(open)}
             pinned={pinnedArticle}
             onPin={() => togglePin(articlePinCard(open, rules))}
+          />
+        ) : historyOpen ? (
+          <HistoryView
+            history={chat.history}
+            serverName={pack.server.name}
+            backLabel={aiOpen ? 'ИИ-разбор' : 'Поиск'}
+            onBack={() => {
+              setHistoryOpen(false);
+              searchRef.current?.focus();
+            }}
+            onOpen={(id) => {
+              chat.open(id);
+              setHistoryOpen(false);
+              setAiOpen(true);
+              searchRef.current?.focus();
+            }}
+            onForget={chat.forget}
           />
         ) : aiOpen ? (
           <AiView

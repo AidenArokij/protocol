@@ -64,7 +64,22 @@ export const PaletteIcon = ({ size = 18 }: { size?: number }) => (
   </Icon>
 );
 
-export const ChevronDownIcon =({ size = 16 }: { size?: number }) => (
+export const MicIcon = ({ size = 20 }: { size?: number }) => (
+  <Icon size={size}>
+    <rect x="9" y="3.5" width="6" height="11" rx="3" />
+    <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5" />
+  </Icon>
+);
+
+/** The history of AI analyses: a clock turned back. */
+export const HistoryIcon = ({ size = 20 }: { size?: number }) => (
+  <Icon size={size}>
+    <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9" />
+    <path d="M4.5 4.5V9H9M12 8v4.3l2.8 1.7" />
+  </Icon>
+);
+
+export const ChevronDownIcon = ({ size = 16 }: { size?: number }) => (
   <Icon size={size}>
     <path d="M6 9l6 6 6-6" />
   </Icon>

@@ -1,7 +1,7 @@
 // The AI analysis of a situation: Gemini reads only the articles the search found in the server's laws.
 // It never sees the whole pack, so it cannot cite an article it was not given — that is the guard against
 // made-up laws, not a request in the prompt alone.
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { findForSituation, sourcesText, type SearchHit, type ServerPack } from '../core';
 import type { PlatformAdapter } from '../platform/types';
 
@@ -54,7 +54,8 @@ const TERMS_PROMPT =
 
 interface GeminiTurn {
   role: 'user' | 'model';
-  parts: { text: string }[];
+  /** Text, or a file sent along with it — a voice recording. */
+  parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[];
 }
 
 class AiError extends Error {
@@ -139,7 +140,15 @@ export interface AiChat {
   busy: boolean;
   /** Asks about a situation, or the last one again from a side. */
   send: (text: string, perspective?: Perspective) => Promise<void>;
+  /** A new conversation; the one on show stays in the history. */
   clear: () => void;
+  /** A notice from the app itself, shown as a failed answer. */
+  note: (text: string) => void;
+  /** Earlier conversations on this server, newest first. */
+  history: StoredConversation[];
+  open: (id: string) => void;
+  /** Forgets one conversation, or all of them without an id. */
+  forget: (id?: string) => void;
 }
 
 /** The conversation with the AI, kept while the overlay lives: going to an article and back keeps it. */
@@ -150,6 +159,38 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
   const current = useRef(messages);
   current.current = messages;
 
+  // Conversations of this server kept on the computer, newest first; the one on show has its id.
+  const storeKey = historyKey(pack.server.id);
+  const [history, setHistory] = useState<StoredConversation[]>([]);
+  const conversation = useRef(newConversationId());
+  /** Only what the player asked is saved: opening an old conversation does not make it the newest. */
+  const changed = useRef(false);
+  useEffect(() => {
+    let active = true;
+    void platform.readSetting<StoredConversation[]>(storeKey).then((saved) => {
+      if (active) setHistory(Array.isArray(saved) ? saved : []);
+    });
+    return () => {
+      active = false;
+    };
+  }, [platform, storeKey]);
+  useEffect(() => {
+    if (!changed.current || !messages.length || messages.some((m) => m.pending)) return;
+    changed.current = false;
+    const first = messages.find((m) => m.role === 'user');
+    const saved: StoredConversation = {
+      id: conversation.current,
+      updated: new Date().toISOString(),
+      title: (first?.text ?? '').slice(0, 120),
+      messages: messages.map(storeMessage),
+    };
+    setHistory((list) => {
+      const next = [saved, ...list.filter((c) => c.id !== saved.id)].slice(0, HISTORY_LIMIT);
+      void platform.writeSetting(storeKey, next);
+      return next;
+    });
+  }, [messages, platform, storeKey]);
+
   const send = useCallback(
     async (text: string, perspective?: Perspective) => {
       const question = text.trim();
@@ -157,6 +198,7 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
       const asked: AiMessage = { id: nextId.current++, role: 'user', text: question, perspective };
       const answerId = nextId.current++;
       const earlier = current.current.filter((m) => !m.pending && !m.failed);
+      changed.current = true;
       setMessages((list) => [...list, asked, { id: answerId, role: 'ai', text: '', pending: true }]);
       setBusy(true);
       const finish = (patch: Partial<AiMessage>) =>
@@ -164,7 +206,7 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
       try {
         const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
         if (!key) {
-          finish({ failed: true, text: 'Сначала вставьте ключ Gemini в настройках (⚙ → «ИИ-разбор»). Он бесплатный.' });
+          finish({ failed: true, text: NO_KEY });
           return;
         }
         // A follow-up leans on the question before it: both go into the search.
@@ -190,6 +232,109 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
     [busy, platform, pack, boostDocuments],
   );
 
-  const clear = useCallback(() => setMessages([]), []);
-  return { messages, busy, send, clear };
+  const clear = useCallback(() => {
+    conversation.current = newConversationId();
+    setMessages([]);
+  }, []);
+
+  /** An earlier conversation back on screen, to read or to go on with. */
+  const open = useCallback(
+    (id: string) => {
+      const saved = history.find((c) => c.id === id);
+      if (!saved) return;
+      conversation.current = saved.id;
+      setMessages(saved.messages.map((m) => ({ ...restoreMessage(pack, m), id: nextId.current++ })));
+    },
+    [history, pack],
+  );
+
+  const forget = useCallback(
+    (id?: string) => {
+      setHistory((list) => {
+        const next = id ? list.filter((c) => c.id !== id) : [];
+        void platform.writeSetting(storeKey, next);
+        return next;
+      });
+      if (!id || id === conversation.current) {
+        conversation.current = newConversationId();
+        setMessages([]);
+      }
+    },
+    [platform, storeKey],
+  );
+
+  /** A notice in the conversation from the app itself — the voice could not be recorded, say. */
+  const note = useCallback((text: string) => {
+    setMessages((list) => [...list, { id: nextId.current++, role: 'ai', text, failed: true }]);
+  }, []);
+
+  return { messages, busy, send, clear, note, history, open, forget };
+}
+
+// ——— The history of conversations ———
+
+/** Conversations with the AI, per server, kept in the settings on this computer. */
+export const historyKey = (server: string) => `ai.history:${server}`;
+const HISTORY_LIMIT = 30;
+
+/** A message as saved: the articles it stood on by their ids, found again in the laws when opened. */
+interface StoredMessage {
+  role: 'user' | 'ai';
+  text: string;
+  perspective?: Perspective;
+  failed?: boolean;
+  sources?: { document: string; article: string }[];
+}
+
+export interface StoredConversation {
+  id: string;
+  /** When it was last asked in (ISO). */
+  updated: string;
+  /** Its first question. */
+  title: string;
+  messages: StoredMessage[];
+}
+
+const newConversationId = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+
+function storeMessage(message: AiMessage): StoredMessage {
+  const { role, text, perspective, failed, sources } = message;
+  return {
+    role,
+    text,
+    ...(perspective ? { perspective } : {}),
+    ...(failed ? { failed } : {}),
+    ...(sources?.length ? { sources: sources.map((hit) => ({ document: hit.document.id, article: hit.article.id })) } : {}),
+  };
+}
+
+/** A saved message back as it was; an article the laws no longer have is left out of its sources. */
+function restoreMessage(pack: ServerPack, message: StoredMessage): Omit<AiMessage, 'id'> {
+  const sources = message.sources?.flatMap(({ document, article }) => {
+    const doc = pack.documents.find((d) => d.id === document);
+    const found = doc?.articles.find((a) => a.id === article);
+    return doc && found ? [{ document: doc, article: found }] : [];
+  });
+  return { role: message.role, text: message.text, perspective: message.perspective, failed: message.failed, sources };
+}
+
+// ——— Voice ———
+
+const NO_KEY = 'Сначала вставьте ключ Gemini в настройках (⚙ → «Ответы ИИ»). Он бесплатный.';
+
+const TRANSCRIBE_PROMPT =
+  'На аудио игрок RP-сервера описывает ситуацию или задаёт вопрос. Запиши дословно, что сказано, по-русски, с нормальной пунктуацией. Ответь только этим текстом, без пояснений. Если речи не слышно — ответь пустой строкой.';
+
+/** What was said in a recording (WAV, base64), as text; empty when nothing was heard. */
+export async function transcribe(platform: PlatformAdapter, wavBase64: string): Promise<string> {
+  const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
+  if (!key) throw new AiError(NO_KEY);
+  const text = await ask(key, TRANSCRIBE_PROMPT, [
+    { role: 'user', parts: [{ inlineData: { mimeType: 'audio/wav', data: wavBase64 } }, { text: 'Запиши, что сказано.' }] },
+  ]).catch((error: unknown) => {
+    // Silence can come back as an empty answer: that is nothing heard, not a failure.
+    if (error instanceof AiError && /пустой ответ/.test(error.message)) return '';
+    throw error;
+  });
+  return text.trim().replace(/^["«]|["»]$/g, '');
 }
