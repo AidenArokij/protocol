@@ -20,6 +20,9 @@
     "global-shortcut:allow-is-registered",
     "store:default",
     "updater:default",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled",
     "clipboard-manager:allow-write-text",
     {
       "identifier": "opener:allow-open-url",

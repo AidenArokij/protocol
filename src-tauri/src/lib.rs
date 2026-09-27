@@ -306,6 +306,33 @@ fn laws_write(app: AppHandle, server: String, text: String) -> Result<(), String
   std::fs::rename(&partial, &file).map_err(|e| e.to_string())
 }
 
+/// Streamer mode: every window of the app — the overlay and the pinned cards — stays on the screen but is
+/// left out of screen capture, so OBS, Discord and screenshots show the game without it. Win32 directly, not
+/// the window library: the pin window's flags must not be touched through it (see `pin_window`).
+#[tauri::command]
+#[allow(unused_variables)]
+fn set_capture_hidden(app: AppHandle, hidden: bool) -> Result<(), String> {
+  #[cfg(windows)]
+  {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{SetWindowDisplayAffinity, WDA_EXCLUDEFROMCAPTURE, WDA_NONE};
+    for window in app.webview_windows().values() {
+      let hwnd = window.hwnd().map_err(|e| e.to_string())?.0 as windows_sys::Win32::Foundation::HWND;
+      if unsafe { SetWindowDisplayAffinity(hwnd, if hidden { WDA_EXCLUDEFROMCAPTURE } else { WDA_NONE }) } == 0 {
+        return Err("Windows не дал скрыть окно от записи экрана".into());
+      }
+    }
+  }
+  Ok(())
+}
+
+/// Windows started the app at logon (the autostart entry passes this flag): it waits in the tray for the hotkey.
+const AUTOSTART_FLAG: &str = "--autostart";
+
+#[tauri::command]
+fn launched_at_startup() -> bool {
+  std::env::args().any(|arg| arg == AUTOSTART_FLAG)
+}
+
 /// The window that had focus before the overlay was shown — normally the game — as a raw HWND.
 #[derive(Default)]
 struct PreviousForeground(Mutex<Option<isize>>);
@@ -347,6 +374,8 @@ pub fn run() {
     .plugin(tauri_plugin_store::Builder::default().build())
     .plugin(tauri_plugin_clipboard_manager::init())
     .plugin(tauri_plugin_opener::init())
+    // «Запускать вместе с Windows»: an entry in the user's Run key, started with a flag to stay hidden.
+    .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec![AUTOSTART_FLAG])))
     // New versions come from the GitHub releases, signed with the project's key (endpoint and key in tauri.conf.json).
     .plugin(tauri_plugin_updater::Builder::new().build())
     .manage(PreviousForeground::default())
@@ -362,7 +391,9 @@ pub fn run() {
       pin_state,
       pin_live,
       pin_toast,
-      pin_toast_done
+      pin_toast_done,
+      set_capture_hidden,
+      launched_at_startup
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

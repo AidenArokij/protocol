@@ -34,7 +34,37 @@ export const ProtocolLogo = ({ size = 34 }: { size?: number }) => (
   </svg>
 );
 
-export const ChevronDownIcon = ({ size = 16 }: { size?: number }) => (
+/** Laws: an open book. */
+export const BookIcon = ({ size = 18 }: { size?: number }) => (
+  <Icon size={size}>
+    <path d="M12 6.5C10 5 7 4.5 4 5v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V5c-3-.5-6 0-8 1.5zM12 6.5v13" />
+  </Icon>
+);
+
+/** Frequent questions: a question mark in a circle. */
+export const HelpIcon = ({ size = 18 }: { size?: number }) => (
+  <Icon size={size}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M9.6 9.6a2.5 2.5 0 1 1 3.4 2.3c-.6.3-1 .8-1 1.5v.4M12 16.8h.01" />
+  </Icon>
+);
+
+/** About the app: an «i» in a circle. */
+export const InfoIcon = ({ size = 18 }: { size?: number }) => (
+  <Icon size={size}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 11v5.5M12 7.8h.01" />
+  </Icon>
+);
+
+/** The look of the app: a drop of paint. */
+export const PaletteIcon = ({ size = 18 }: { size?: number }) => (
+  <Icon size={size}>
+    <path d="M12 3.5s-6 6.4-6 10.5a6 6 0 0 0 12 0c0-4.1-6-10.5-6-10.5z" />
+  </Icon>
+);
+
+export const ChevronDownIcon =({ size = 16 }: { size?: number }) => (
   <Icon size={size}>
     <path d="M6 9l6 6 6-6" />
   </Icon>

@@ -24,6 +24,9 @@ export interface FakePlatform extends PlatformAdapter {
     /** What the releases offer: a newer version, none, or no connection. */
     update: AppUpdate | null | 'offline';
     updateInstalled: boolean;
+    /** Streamer mode: left out of screen capture. */
+    captureHidden: boolean;
+    autostart: boolean;
   };
   /** Simulates the user pressing the registered global hotkey. */
   pressHotkey(): void;
@@ -59,6 +62,8 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     clipboard: '',
     update: options.update ?? null,
     updateInstalled: false,
+    captureHidden: false,
+    autostart: false,
   };
   let onHotkey: (() => void) | null = null;
   let bounds: WindowBounds | null = null;
@@ -167,6 +172,19 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     async showToast(toast) {
       record('showToast', toast);
       state.toast = toast;
+    },
+
+    async setCaptureHidden(hidden) {
+      record('setCaptureHidden', hidden);
+      state.captureHidden = hidden;
+    },
+    async getAutostart() {
+      record('getAutostart');
+      return state.autostart;
+    },
+    async setAutostart(on) {
+      record('setAutostart', on);
+      state.autostart = on;
     },
 
     async writeClipboard(text) {

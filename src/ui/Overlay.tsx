@@ -29,7 +29,7 @@ import { useAiChat } from './ai';
 import { AiView } from './AiView';
 import { BackIcon, CloseIcon, MenuIcon, ProtocolLogo, SearchIcon, SettingsIcon, SparkIcon } from './icons';
 import { ServerMenu } from './ServerMenu';
-import { DEFAULT_OPACITY, DEFAULT_THEME, OPACITY_KEY, THEME_KEY, applyOpacity, applyTheme, clampOpacity, type Theme } from './overlaySettings';
+import { DEFAULT_OPACITY, DEFAULT_THEME, OPACITY_KEY, STREAMER_KEY, THEME_KEY, applyOpacity, applyTheme, clampOpacity, type Theme } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
 import { OrganizationChoice } from './OrganizationChoice';
 import { PinSurface } from './PinSurface';
@@ -617,6 +617,22 @@ export function Overlay({
     void platform.writeSetting(THEME_KEY, value);
   };
 
+  // Streamer mode is Windows' own: set again at every start, since it lives with the windows.
+  const [streamer, setStreamer] = useState(false);
+  useEffect(() => {
+    void platform.readSetting<boolean>(STREAMER_KEY).then((saved) => {
+      setStreamer(!!saved);
+      if (saved) void platform.setCaptureHidden(true).catch(() => setStreamer(false));
+    });
+  }, [platform]);
+  const changeStreamer = (on: boolean) => {
+    setStreamer(on);
+    platform.setCaptureHidden(on).then(
+      () => void platform.writeSetting(STREAMER_KEY, on),
+      () => setStreamer(!on),
+    );
+  };
+
   return (
     <>
     {/* In the browser there is no second window: the stand-in game scene shows the cards itself. */}
@@ -902,6 +918,8 @@ export function Overlay({
             onOpacity={changeOpacity}
             theme={theme}
             onTheme={changeTheme}
+            streamer={streamer}
+            onStreamer={changeStreamer}
             pinned={cardCount(groups)}
             onUnpinAll={() => setGroups([])}
             presets={presets.map((preset) => ({ id: preset.id, name: preset.name, count: cardCount(preset.groups) }))}

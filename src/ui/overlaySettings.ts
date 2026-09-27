@@ -24,6 +24,9 @@ export function applyTheme(theme: Theme): void {
   else delete document.documentElement.dataset.theme;
 }
 
+/** Streamer mode: the app is left out of screen capture (OBS, Discord, screenshots). */
+export const STREAMER_KEY = 'overlay.streamer';
+
 /** Applies the glass opacity to the whole overlay through the `--glass-alpha` token. */
 export function applyOpacity(value: number): void {
   document.documentElement.style.setProperty('--glass-alpha', String(clampOpacity(value)));

@@ -385,6 +385,237 @@ input {
   padding: 4px 16px 18px;
 }
 
+/* Settings with a menu on the left, as in SinSet-like helpers: the menu stays put, the sections scroll. */
+.settings--nav {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 18px;
+  padding: 0 10px 18px 6px;
+}
+
+.settings__side {
+  position: sticky;
+  top: 0;
+  flex: none;
+  width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.settings__who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+
+.settings__who .emblem {
+  border-radius: 50%;
+  font-size: 16px;
+}
+
+.settings__who-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 14.5px;
+}
+
+.settings__who-text span {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.settings__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settings__link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 11px;
+  border-radius: var(--radius-control);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+  text-align: left;
+}
+
+.settings__link svg {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.settings__link:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.settings__link--on {
+  background: var(--surface-active);
+  color: var(--text);
+}
+
+.settings__link--on svg {
+  color: var(--accent-text);
+}
+
+.settings__version {
+  padding: 6px 11px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.settings__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings__section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-margin-top: 8px;
+}
+
+/* Too narrow for the menu beside: it becomes a row of chips above, scrolled sideways. */
+@container overlay (max-width: 700px) {
+  .settings--nav {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 10px 18px;
+  }
+  .settings__side {
+    position: static;
+    width: auto;
+  }
+  .settings__who,
+  .settings__version {
+    display: none;
+  }
+  .settings__menu {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .settings__link {
+    flex: none;
+    padding: 7px 11px;
+    font-size: 13.5px;
+  }
+}
+
+.set__label--strong {
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* A switch: a pill with a knob, red when on. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 26px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.16);
+  transition: background-color 0.15s ease;
+}
+
+.switch__knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: transform 0.15s ease;
+}
+
+.switch--on {
+  background: var(--accent);
+}
+
+.switch--on .switch__knob {
+  transform: translateX(20px);
+}
+
+.switch:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.keys {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.keys td {
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.keys tr:first-child td {
+  border-top: 0;
+}
+
+.keys td:first-child {
+  width: 1%;
+  padding-right: 16px;
+  white-space: nowrap;
+}
+
+.keycaps {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.keycap {
+  display: inline-block;
+  min-width: 14px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.faq {
+  border-top: 1px solid var(--line);
+  padding: 9px 0 3px;
+}
+
+.faq:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.faq summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding-bottom: 6px;
+}
+
+.faq summary:hover {
+  color: var(--accent-text);
+}
+
 .set {
   display: flex;
   flex-direction: column;
