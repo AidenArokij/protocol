@@ -1,5 +1,6 @@
 import type { Article, Chapter, Jurisdiction, Note, Part } from '../core/model';
 import { parsePointsText, uniqueIds, type PointsOptions } from './points';
+import { parseSectionsText } from './sections';
 import { parseAdministrativeSanction, parseLeadingTags, parsePunishment, splitPenalty } from './sanctions';
 
 /**
@@ -8,9 +9,11 @@ import { parseAdministrativeSanction, parseLeadingTags, parsePunishment, splitPe
  * - `administrative-code` (КоАП): an offence line (optionally tagged) is followed by a «влечет …» line;
  * - `traffic-rules` (ПДД): no sanctions; chapters in Roman numerals and sub-headings between articles;
  * - `law` (any other law, code or charter): no sanctions; sections and chapters in any numbering, and
- *   articles that may start again from 1 in each chapter.
+ *   articles that may start again from 1 in each chapter;
+ * - `points` (charters, regulations, project rules): numbered points, see `parsePointsText`;
+ * - `sections` (the additional rules of a server): titled sections with no numbers, see `parseSectionsText`.
  */
-export type LawFormat = 'criminal-code' | 'administrative-code' | 'traffic-rules' | 'law' | 'points';
+export type LawFormat = 'criminal-code' | 'administrative-code' | 'traffic-rules' | 'law' | 'points' | 'sections';
 
 export interface ParseIssue {
   article?: string;
@@ -84,6 +87,7 @@ function stripTrailingDash(text: string): string {
 
 export function parseLawText(text: string, documentId: string, format: LawFormat, options: PointsOptions = {}): ParsedLaw {
   if (format === 'points') return parsePointsText(text, documentId, options);
+  if (format === 'sections') return parseSectionsText(text, documentId);
   const lines = cleanLines(text);
   const chapters: Chapter[] = [];
   const articles: Article[] = [];

@@ -1,0 +1,15 @@
+{
+  "id": "rules-server",
+  "short": "Правила",
+  "title": "Серверные правила: Форт, AirDrop",
+  "aliases": ["псерв"],
+  "kind": "rules",
+  "category": "rules",
+  "format": "sections",
+  "unit": "point",
+  "thread": 5253,
+  "url": "https://forum.russia.online/threads/pravila-napadeniya-oborony-forta-air-drop.5253/",
+  "posted": "2026-08-25T12:52:52+03:00",
+  "lastEdited": "2026-08-25T12:52:52+03:00",
+  "snapshotAt": "2026-09-27"
+}

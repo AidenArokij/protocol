@@ -3,6 +3,20 @@
     "version": "2026-09-27T21:58:06+03:00",
     "documents": [
       {
+        "documentId": "rules-war",
+        "short": "Правила",
+        "title": "Правила войны за территорию",
+        "kind": "added",
+        "articles": []
+      },
+      {
+        "documentId": "rules-server",
+        "short": "Правила",
+        "title": "Серверные правила: Форт, AirDrop",
+        "kind": "added",
+        "articles": []
+      },
+      {
         "documentId": "rules-main",
         "short": "Правила",
         "title": "Основные правила проекта",

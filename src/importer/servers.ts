@@ -22,7 +22,7 @@ export const TVERSKOI: ServerSources = {
     // Правила проекта
     'rules-main', 'rules-gov', 'rules-crime',
     'rules-leaders', 'rules-martial', 'rules-supply', 'rules-robbery', 'rules-business', 'rules-bank',
-    'rules-workshops', 'rules-fort', 'rules-software', 'rules-forum',
+    'rules-workshops', 'rules-war', 'rules-fort', 'rules-server', 'rules-software', 'rules-forum',
   ],
 };
 
@@ -45,7 +45,7 @@ export const ARBATSKIY: ServerSources = {
     // Правила проекта (общие для всех серверов)
     'rules-main', 'rules-gov', 'rules-crime',
     'rules-leaders', 'rules-martial', 'rules-supply', 'rules-robbery', 'rules-business', 'rules-bank',
-    'rules-workshops', 'rules-fort', 'rules-software', 'rules-forum',
+    'rules-workshops', 'rules-war', 'rules-fort', 'rules-server', 'rules-software', 'rules-forum',
   ],
 };
 
@@ -67,7 +67,7 @@ export const KUTUZOVSKIY: ServerSources = {
     // Правила проекта (общие для всех серверов)
     'rules-main', 'rules-gov', 'rules-crime',
     'rules-leaders', 'rules-martial', 'rules-supply', 'rules-robbery', 'rules-business', 'rules-bank',
-    'rules-workshops', 'rules-fort', 'rules-software', 'rules-forum',
+    'rules-workshops', 'rules-war', 'rules-fort', 'rules-server', 'rules-software', 'rules-forum',
   ],
 };
 

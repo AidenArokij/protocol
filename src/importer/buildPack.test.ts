@@ -36,7 +36,7 @@ describe('bundled Тверской pack', () => {
     expect(TVERSKOI_PACK.changes[2].documents).toHaveLength(10);
   });
 
-  it('holds the legislative base, the charters of the organisations and the project rules: 59 documents', () => {
+  it('holds the legislative base, the charters of the organisations and the project rules: 61 documents', () => {
     expect(TVERSKOI_PACK.documents.map((d) => d.short)).toEqual([
       'Конституция', 'УК', 'КоАП', 'ПДД', 'УПК', 'ТК', 'Этика',
       '1-ФКЗ', '2-ФКЗ', '3-ФКЗ', '4-ФКЗ',
@@ -46,10 +46,11 @@ describe('bundled Тверской pack', () => {
       'Положение', 'Положение', 'Положение', 'Положение', 'Положение', 'Положение', 'Положение', 'Положение',
       'Устав', 'Устав',
       'Правила', 'Правила', 'Правила', 'Правила', 'Правила', 'Правила', 'Правила', 'Правила', 'Правила', 'Правила', 'Правила', 'Правила', 'Правила',
+      'Правила', 'Правила',
     ]);
     expect(TVERSKOI_PACK.documents.filter((d) => d.kind === 'penal-code').map((d) => d.id)).toEqual(['uk', 'koap']);
     const byCategory = (category: string) => TVERSKOI_PACK.documents.filter((d) => d.category === category).length;
-    expect(['codes', 'fkz', 'fz', 'moscow', 'charters', 'rules'].map(byCategory)).toEqual([7, 4, 15, 4, 16, 13]);
+    expect(['codes', 'fkz', 'fz', 'moscow', 'charters', 'rules'].map(byCategory)).toEqual([7, 4, 15, 4, 16, 15]);
     // Every organisation's documents are in the pack now.
     for (const organization of TVERSKOI_PACK.organizations) {
       for (const id of organization.documents) expect(TVERSKOI_PACK.documents.map((d) => d.id)).toContain(id);
