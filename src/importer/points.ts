@@ -20,8 +20,8 @@ const joinLine = (text: string, line: string) => (/[.:;,!?—–-]$/.test(text) 
 
 /** «Глава I. …», «ГЛАВА 2. …», «Глава I | …», «Раздел II. …». */
 const CHAPTER = /^(?:Глава|Раздел)\s+([IVXLC]+|\d+)\s*(?:[.|]\s*(.*))?$/i;
-/** «1. ОБЩИЕ ПОЛОЖЕНИЯ БОЛЬНИЦЫ»: a numbered heading in capitals. */
-const CAPS_CHAPTER = /^(\d+)\.\s+([^a-zа-яё]{3,80})$/;
+/** «1. ОБЩИЕ ПОЛОЖЕНИЯ БОЛЬНИЦЫ», «I. ОБЩИЕ ПОЛОЖЕНИЯ» (СК Кутузовского): a numbered heading in capitals. */
+const CAPS_CHAPTER = /^(\d+|[IVXLC]+)\.\s+([^a-zа-яё]{3,80})$/;
 /** «1.1. …», «1.1 …», «1.1 | …», «1. …», «Статья 1.1. …» (МВД Тверского) — a bare «15 – …» is no point. */
 const POINT = /^(?:Статья\s+)?(\d{1,3}\.\d{1,3}(?:\.\d{1,3})*\.?|\d{1,3}\.)(?:\s+\|?\s*|\s*\|\s*)(\S.*)$/;
 const ITEM = /^([а-яё]|\d+)\)\s+(.*)$/;
