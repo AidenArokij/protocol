@@ -2,6 +2,8 @@
    РО Хелпер (dark grey glass, white text with shadow, blue accent) is the «Стекло» theme in the settings. */
 :root {
   --font: 'Onest', system-ui, sans-serif;
+  /* The system's own parts — scrollbars, checkboxes — drawn dark, not as white bars on the dark panel. */
+  color-scheme: dark;
 
   /* Panel. --glass-alpha is the user-adjustable background opacity; only the glass theme uses it. */
   --glass-alpha: 0.62;

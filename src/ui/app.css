@@ -1985,7 +1985,8 @@ input {
 .tag--on,
 .tag--on:hover {
   background: #fff;
-  color: var(--on-accent);
+  /* Dark on white whatever the theme: the solid theme's text on the accent is white too. */
+  color: #16171a;
   text-shadow: none;
 }
 
