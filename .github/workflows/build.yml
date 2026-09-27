@@ -1,8 +1,9 @@
 name: Сборка установщика
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:        # кнопка «Run workflow» — оставлена про запас
   push:
+    branches: [main]        # сборка запускается сама при каждом обновлении файлов
     tags: ['v*']
 
 permissions:

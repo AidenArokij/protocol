@@ -10,7 +10,7 @@
   --serif:'PT Serif',Georgia,serif; --sans:'PT Sans',-apple-system,'Segoe UI',sans-serif;
   --bg:#1B1C1F; --panel:#242529; --panel2:#2B2C31; --text:#E8E6DE; --muted:#9C9C97;
   --accent:#B79A5E; --line:#38393D; --tag:#2C2D30;
-  --ok:#7FA382; --warn:#CDB27A; --note:#8FA0AC;
+  --ok:#7FA382; --warn:#CDB27A; --note:#8FA0AC; --suspended:#C47F6E;
 }
 *{box-sizing:border-box;}
 html,body{height:100%;margin:0;}
@@ -93,6 +93,7 @@ header .meta{margin-left:auto;font-size:.74rem;color:var(--muted);}
 .badge.verified{color:var(--ok);}
 .badge.pending{color:var(--warn);}
 .badge.note{color:var(--note);}
+.badge.suspended{color:var(--suspended);border-style:dashed;}
 
 #content{flex:1;overflow-y:auto;padding:20px 26px;}
 .doc-header{margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--line);}
@@ -175,7 +176,7 @@ let currentServer = null;
 let currentDocs = [];
 let activeDocId = null;
 
-const STATUS_CLASS = { 'Проверено':'verified', 'Требует проверки':'pending', 'Устарело':'pending', 'Не найдено в источнике':'pending', 'Заметка':'note' };
+const STATUS_CLASS = { 'Проверено':'verified', 'Требует проверки':'pending', 'Приостановлено':'suspended', 'Устарело':'pending', 'Не найдено в источнике':'pending', 'Заметка':'note' };
 
 async function boot(){
   const servers = await invoke('get_servers');

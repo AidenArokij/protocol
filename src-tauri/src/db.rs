@@ -63,7 +63,7 @@ fn db_path() -> PathBuf {
 // содержимое seed_tver.json (добавили статьи, поправили текст и т.д.) — иначе
 // у пользователей, которые уже запускали программу раньше, обновление не появится:
 // база просто увидит, что документы уже есть, и не станет перезаписывать их.
-const SEED_VERSION: i64 = 4;
+const SEED_VERSION: i64 = 7;
 
 /// Открыть соединение с базой, создать таблицы и (при необходимости) загрузить/обновить seed.
 pub fn init() -> Connection {
@@ -89,7 +89,7 @@ pub fn init() -> Connection {
             code        TEXT NOT NULL,
             title       TEXT NOT NULL,
             url         TEXT,
-            status      TEXT NOT NULL,   -- Проверено / Требует проверки / Устарело / Не найдено в источнике / Заметка
+            status      TEXT NOT NULL,   -- Проверено / Требует проверки / Приостановлено / Устарело / Не найдено в источнике / Заметка
             note        TEXT,
             source_type TEXT NOT NULL    -- law | protocol_note | user_material (позже)
         );
@@ -100,7 +100,8 @@ pub fn init() -> Connection {
             article_no  TEXT NOT NULL,
             heading     TEXT NOT NULL,
             text        TEXT NOT NULL,
-            sanction    TEXT NOT NULL DEFAULT ''
+            sanction    TEXT NOT NULL DEFAULT '',
+            tags        TEXT NOT NULL DEFAULT ''
         );
 
         -- Полнотекстовый поиск: отдельная "виртуальная" таблица поверх chunks.
@@ -112,14 +113,25 @@ pub fn init() -> Connection {
 
         -- Синхронизация индекса при любых изменениях chunks (на будущее, для импортёра).
         CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks BEGIN
-            INSERT INTO chunks_fts(rowid, heading, text, tags) VALUES (new.id, new.heading, new.text, '');
+            INSERT INTO chunks_fts(rowid, heading, text, tags) VALUES (new.id, new.heading, new.text, new.tags);
         END;
         CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks BEGIN
-            INSERT INTO chunks_fts(chunks_fts, rowid, heading, text, tags) VALUES('delete', old.id, old.heading, old.text, '');
+            INSERT INTO chunks_fts(chunks_fts, rowid, heading, text, tags) VALUES('delete', old.id, old.heading, old.text, old.tags);
         END;
         "#,
     )
     .expect("не удалось создать таблицы");
+
+    // Миграция для тех, у кого база создана до появления колонки tags:
+    // CREATE TABLE IF NOT EXISTS не трогает уже существующую таблицу со старой схемой.
+    let has_tags_column: bool = conn
+        .prepare("SELECT 1 FROM pragma_table_info('chunks') WHERE name = 'tags'")
+        .and_then(|mut s| s.exists([]))
+        .unwrap_or(false);
+    if !has_tags_column {
+        conn.execute_batch("ALTER TABLE chunks ADD COLUMN tags TEXT NOT NULL DEFAULT '';")
+            .expect("не удалось добавить колонку tags");
+    }
 
     let current_version: i64 = conn
         .query_row("SELECT value FROM meta WHERE key = 'seed_version'", [], |r| r.get::<_, String>(0))
@@ -182,8 +194,8 @@ fn seed(conn: &Connection) {
 
     for c in data["chunks"].as_array().unwrap() {
         conn.execute(
-            "INSERT INTO chunks (id, document_id, article_no, heading, text, sanction)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO chunks (id, document_id, article_no, heading, text, sanction, tags)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             rusqlite::params![
                 c["id"].as_i64().unwrap(),
                 c["document_id"].as_i64().unwrap(),
@@ -191,6 +203,7 @@ fn seed(conn: &Connection) {
                 c["heading"].as_str().unwrap(),
                 c["text"].as_str().unwrap(),
                 c["sanction"].as_str().unwrap_or(""),
+                c["tags"].as_str().unwrap_or(""),
             ],
         )
         .unwrap();
