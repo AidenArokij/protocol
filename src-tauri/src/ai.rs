@@ -8,7 +8,7 @@
 use crate::db::SearchHit;
 use serde::{Deserialize, Serialize};
 
-const MODEL: &str = "gemini-2.5-flash";
+const MODEL: &str = "gemini-3.8-flash";
 
 #[derive(Serialize)]
 struct GeminiRequest {
