@@ -47,12 +47,26 @@ pub fn save_api_key(key: String) -> Result<(), String> {
     crate::settings::save_api_key(key)
 }
 
+#[derive(serde::Serialize)]
+pub struct AskAiResponse {
+    pub answer: String,
+    pub hits: Vec<HitSummary>,
+}
+
+#[derive(serde::Serialize)]
+pub struct HitSummary {
+    pub document_title: String,
+    pub document_status: String,
+    pub article_no: String,
+    pub heading: String,
+}
+
 #[tauri::command]
 pub async fn ask_ai(
     state: tauri::State<'_, AppState>,
     server: String,
     question: String,
-) -> Result<String, String> {
+) -> Result<AskAiResponse, String> {
     let api_key = crate::settings::load_api_key()
         .ok_or_else(|| "Ключ Gemini не задан. Откройте настройки и вставьте ключ.".to_string())?;
 
@@ -62,5 +76,17 @@ pub async fn ask_ai(
         db::search(&conn, &server, &question)
     };
 
-    crate::ai::ask_gemini(&api_key, &question, &hits).await
+    let hits_summary: Vec<HitSummary> = hits
+        .iter()
+        .map(|h| HitSummary {
+            document_title: h.document_title.clone(),
+            document_status: h.document_status.clone(),
+            article_no: h.chunk.article_no.clone(),
+            heading: h.chunk.heading.clone(),
+        })
+        .collect();
+
+    let answer = crate::ai::ask_gemini(&api_key, &question, &hits).await?;
+
+    Ok(AskAiResponse { answer, hits: hits_summary })
 }

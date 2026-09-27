@@ -38,6 +38,10 @@ header .meta{margin-left:auto;font-size:.74rem;color:var(--muted);}
 .ai-btn:hover{opacity:.88;}
 .ai-answer{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:16px 18px;font-size:.9rem;line-height:1.65;}
 .ai-answer p{margin:0 0 8px;}
+.hits-details{margin-top:10px;font-size:.8rem;color:var(--muted);border:1px solid var(--line);border-radius:2px;padding:8px 12px;}
+.hits-details.empty{color:var(--warn);}
+.hits-details summary{cursor:pointer;font-weight:700;}
+.hit-row{padding:4px 0 4px 4px;border-top:1px solid var(--line);margin-top:4px;}
 
 #serverScreen{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;}
 .server-cards{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;max-width:700px;}
@@ -54,8 +58,27 @@ header .meta{margin-left:auto;font-size:.74rem;color:var(--muted);}
 .toolbar{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;flex:none;}
 .toolbar input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:2px;color:var(--text);padding:7px 10px;font-family:var(--sans);font-size:.85rem;}
 .toolbar input:focus{outline:none;border-color:var(--accent);}
-.toolbar button{background:none;border:1px solid var(--line);color:var(--muted);border-radius:2px;padding:6px 10px;font-size:.78rem;cursor:pointer;}
-.toolbar button:hover{border-color:var(--accent);color:var(--accent);}
+
+.mode-switch{padding:8px 14px;border-bottom:1px solid var(--line);display:flex;gap:6px;align-items:center;flex:none;}
+.mode-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:2px;padding:7px 14px;font-size:.82rem;font-weight:700;cursor:pointer;font-family:var(--sans);}
+.mode-btn:hover{border-color:var(--accent);color:var(--accent);}
+.mode-btn.active{background:var(--accent);border-color:var(--accent);color:var(--panel);}
+.change-server-btn{margin-left:auto;background:none;border:1px solid var(--line);color:var(--muted);border-radius:2px;padding:7px 10px;font-size:.78rem;cursor:pointer;}
+.change-server-btn:hover{border-color:var(--accent);color:var(--accent);}
+.mode-view{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+.chat-messages{flex:1;overflow-y:auto;padding:16px 20px;}
+.chat-input-row{flex:none;border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:8px;}
+.chat-input-row input{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:2px;color:var(--text);padding:9px 12px;font-family:var(--sans);font-size:.9rem;}
+.chat-input-row input:focus{outline:none;border-color:var(--accent);}
+.chat-msg{margin-bottom:14px;max-width:640px;}
+.chat-msg.user{margin-left:auto;text-align:right;}
+.chat-msg .bubble{display:inline-block;text-align:left;border-radius:4px;padding:10px 14px;font-size:.88rem;line-height:1.6;}
+.chat-msg.user .bubble{background:var(--accent);color:var(--panel);}
+.chat-msg.ai .bubble{background:var(--panel);border:1px solid var(--line);}
+.chat-msg.ai .bubble h4{font-family:var(--serif);color:var(--accent);margin:8px 0 4px;font-size:.9rem;}
+.chat-msg.ai .bubble h4:first-child{margin-top:0;}
+.chat-msg.ai .bubble p{margin:0 0 6px;}
 
 .body{flex:1;display:flex;overflow:hidden;}
 #sidebar{width:280px;flex:none;border-right:1px solid var(--line);overflow-y:auto;padding:10px;}
@@ -115,14 +138,30 @@ header .meta{margin-left:auto;font-size:.74rem;color:var(--muted);}
 </section>
 
 <section id="mainScreen">
-  <div class="toolbar">
-    <button id="btnChangeServer">← сменить сервер</button>
-    <input id="search" type="text" placeholder="Опишите вопрос своими словами или впишите номер статьи...">
-    <button id="btnAskAi" class="ai-btn">🤖 Спросить ИИ</button>
+  <div class="mode-switch">
+    <button class="mode-btn active" data-mode="base">📚 База</button>
+    <button class="mode-btn" data-mode="chat">🤖 ИИ-чат</button>
+    <button id="btnChangeServer" class="change-server-btn">← сменить сервер</button>
   </div>
-  <div class="body">
-    <div id="sidebar"></div>
-    <div id="content"><div class="empty-hint">Выберите документ слева или воспользуйтесь поиском.</div></div>
+
+  <div id="baseView" class="mode-view">
+    <div class="toolbar">
+      <input id="search" type="text" placeholder="Поиск по базе: номер статьи или слово...">
+    </div>
+    <div class="body">
+      <div id="sidebar"></div>
+      <div id="content"><div class="empty-hint">Выберите документ слева или воспользуйтесь поиском.</div></div>
+    </div>
+  </div>
+
+  <div id="chatView" class="mode-view" style="display:none;">
+    <div id="chatMessages" class="chat-messages">
+      <div class="empty-hint">Опишите ситуацию своими словами — ИИ поищет по базе и ответит, опираясь только на найденное.</div>
+    </div>
+    <div class="chat-input-row">
+      <input id="chatInput" type="text" placeholder="Например: человек с электродубинкой в маске возле здания МВД...">
+      <button id="btnChatSend" class="ai-btn">Спросить</button>
+    </div>
   </div>
 </section>
 
@@ -268,7 +307,7 @@ document.getElementById('btnSaveKey').addEventListener('click', async () => {
   document.getElementById('settingsStatus').textContent = '✓ Сохранено.';
 });
 
-// ---------- Спросить ИИ ----------
+// ---------- ИИ-чат (отдельный режим) ----------
 function formatAiAnswer(text){
   return text.split('\n').filter(l => l.trim()).map(line => {
     const isHeading = /^(КРАТКО|ПОЧЕМУ|ЧТО МОЖНО|ЧТО НЕЛЬЗЯ|ИСТОЧНИКИ)\s*:/i.test(line.trim());
@@ -276,17 +315,54 @@ function formatAiAnswer(text){
   }).join('');
 }
 
-document.getElementById('btnAskAi').addEventListener('click', async () => {
-  const q = document.getElementById('search').value.trim();
+function addChatMessage(role, html){
+  const box = document.getElementById('chatMessages');
+  const empty = box.querySelector('.empty-hint');
+  if (empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  div.innerHTML = `<div class="bubble">${html}</div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+async function sendChatMessage(){
+  const input = document.getElementById('chatInput');
+  const q = input.value.trim();
   if (!q) return;
-  const content = document.getElementById('content');
-  content.innerHTML = '<div class="empty-hint">ИИ ищет по базе и формирует ответ…</div>';
+  input.value = '';
+  addChatMessage('user', q.replace(/</g,'&lt;'));
+  const loadingMsg = addChatMessage('ai', '<p>Ищу по базе и формирую ответ…</p>');
   try {
-    const answer = await invoke('ask_ai', { server: currentServer, question: q });
-    content.innerHTML = `<div class="ai-answer">${formatAiAnswer(answer)}</div>`;
+    const res = await invoke('ask_ai', { server: currentServer, question: q });
+    const hitsBlock = res.hits.length
+      ? `<details class="hits-details">
+          <summary>Что нашёл поиск: ${res.hits.length} ${res.hits.length===1?'статья':'статей'}</summary>
+          ${res.hits.map(h => `<div class="hit-row"><span class="badge ${STATUS_CLASS[h.document_status]||'pending'}">${h.document_status}</span> ${h.document_title} — ст.${h.article_no} «${h.heading}»</div>`).join('')}
+        </details>`
+      : `<div class="hits-details empty">Поиск не нашёл ни одной статьи по этому запросу.</div>`;
+    loadingMsg.querySelector('.bubble').innerHTML = formatAiAnswer(res.answer) + hitsBlock;
   } catch (err) {
-    content.innerHTML = `<div class="empty-hint">Не получилось спросить ИИ.<br>${err}<br><br>Проверьте ключ через кнопку ⚙ в шапке.</div>`;
+    loadingMsg.querySelector('.bubble').innerHTML = `<p>Не получилось спросить ИИ.<br>${err}<br><br>Проверьте ключ через кнопку ⚙ в шапке.</p>`;
   }
+  document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+}
+document.getElementById('btnChatSend').addEventListener('click', sendChatMessage);
+document.getElementById('chatInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendChatMessage();
+});
+
+// ---------- Переключение режимов База / ИИ-чат ----------
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = btn.dataset.mode;
+    document.getElementById('baseView').style.display = mode === 'base' ? 'flex' : 'none';
+    document.getElementById('chatView').style.display = mode === 'chat' ? 'flex' : 'none';
+    if (mode === 'chat') document.getElementById('chatInput').focus();
+  });
 });
 
 boot();

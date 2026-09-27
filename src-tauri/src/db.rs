@@ -59,14 +59,24 @@ fn db_path() -> PathBuf {
     dir
 }
 
-/// Открыть соединение с базой, создать таблицы и (если база пустая) загрузить seed.
-/// Вызывается один раз при старте приложения.
+// Версия "затравочных" данных. Увеличивайте это число каждый раз, когда меняете
+// содержимое seed_tver.json (добавили статьи, поправили текст и т.д.) — иначе
+// у пользователей, которые уже запускали программу раньше, обновление не появится:
+// база просто увидит, что документы уже есть, и не станет перезаписывать их.
+const SEED_VERSION: i64 = 2;
+
+/// Открыть соединение с базой, создать таблицы и (при необходимости) загрузить/обновить seed.
 pub fn init() -> Connection {
     let path = db_path();
     let conn = Connection::open(&path).expect("не удалось открыть файл базы данных");
 
     conn.execute_batch(
         r#"
+        CREATE TABLE IF NOT EXISTS meta (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS servers (
             id      TEXT PRIMARY KEY,
             name    TEXT NOT NULL,
@@ -111,12 +121,26 @@ pub fn init() -> Connection {
     )
     .expect("не удалось создать таблицы");
 
-    let already_seeded: i64 = conn
-        .query_row("SELECT COUNT(*) FROM documents", [], |r| r.get(0))
+    let current_version: i64 = conn
+        .query_row("SELECT value FROM meta WHERE key = 'seed_version'", [], |r| r.get::<_, String>(0))
+        .ok()
+        .and_then(|v| v.parse().ok())
         .unwrap_or(0);
 
-    if already_seeded == 0 {
+    if current_version < SEED_VERSION {
+        // Знания сервера/документы/статьи — это ровно те данные, которые мы полностью
+        // контролируем и перезаливаем целиком. Пользовательские данные (ключ API,
+        // избранное, история — когда они появятся) хранятся в других таблицах
+        // и этой очисткой не затрагиваются.
+        conn.execute_batch("DELETE FROM chunks; DELETE FROM documents; DELETE FROM servers;")
+            .expect("не удалось очистить старые данные перед обновлением");
         seed(&conn);
+        conn.execute(
+            "INSERT INTO meta (key, value) VALUES ('seed_version', ?1)
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            rusqlite::params![SEED_VERSION.to_string()],
+        )
+        .unwrap();
     }
 
     conn
