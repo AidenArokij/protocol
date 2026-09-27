@@ -45,12 +45,12 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": false,
+    "createUpdaterArtifacts": true,
     "publisher": "AidenArokij",
     "copyright": "© 2026 AidenArokij; основано на РО Хелпер © 2026 skyze",
     "category": "Utility",
-    "shortDescription": "Законы Russia Online поверх игры",
-    "longDescription": "Законы, уставы и правила сервера Тверской Russia Online в окне поверх игры: поиск, калькулятор срока и штрафа, закреплённая карточка.",
+    "shortDescription": "Законы Russia Online поверх игры и ИИ-разбор ситуаций",
+    "longDescription": "Законы, уставы и правила серверов Russia Online в окне поверх игры: поиск, ИИ-разбор ситуации по законам сервера, калькулятор срока и штрафа, закреплённые карточки.",
     "windows": {
       "nsis": {
         "installMode": "currentUser",
@@ -63,7 +63,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDE5NEIzRkQwOEE1MDAwOEYKUldTUEFGQ0swRDlMR1k2QnYyZ2FmVWdQdGRzT3BGU1RaUUtnb2tlT29qL2dPT1UvOEUybC96R2gK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4RkUzN0YwMDY5NDlDNDEKUldSQm5KUUc4RGYrT0dHZFlXSFpyWi8rWHhKaGhTQWhBb2NjWmQzY2ptdnJjdy9BUzEzV1NDcVcK",
       "endpoints": [
         "https://github.com/AidenArokij/protocol/releases/latest/download/latest.json"
       ],

@@ -57,10 +57,9 @@ jobs:
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Signed updates are off until ПРОТОКОЛ has its own key: then set createUpdaterArtifacts in
-          # tauri.conf.json back to true, put its public key there and pass the private one here:
-          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # The key that signs updates; the app accepts only updates signed with it.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
           releaseName: ПРОТОКОЛ ${{ github.ref_name }}
@@ -73,7 +72,7 @@ jobs:
 
             Скачайте `PROTOCOL_${{ steps.notes.outputs.version }}_x64-setup.exe` ниже и запустите. Установщик без цифровой подписи, поэтому Windows может показать «Windows защитила ваш компьютер» — нажмите «Подробнее» → «Выполнить в любом случае».
 
-            Уже установленную программу обновите так же: скачайте и запустите установщик поверх неё — настройки сохранятся.
+            Уже установленный ПРОТОКОЛ 2 предложит обновиться сам. Первую версию ПРОТОКОЛА удалите и поставьте эту: это новая программа.
           releaseDraft: true
           releaseAssetNamePattern: PROTOCOL_[version]_[arch][setup][ext]
           updaterJsonPreferNsis: true
