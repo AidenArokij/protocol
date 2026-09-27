@@ -244,16 +244,60 @@ pub fn get_chunks(conn: &Connection, document_id: i64) -> Vec<ChunkInfo> {
 
 /// Полнотекстовый поиск (FTS5, движок BM25 — встроенное ранжирование по релевантности).
 /// query — то, что напечатал пользователь. server — фильтр по серверу.
+/// Очень грубое усечение окончаний русских слов — не настоящая лемматизация,
+/// но заметно улучшает совпадение падежей/чисел ("сотрудника" -> "сотрудник")
+/// без подключения тяжёлых библиотек морфологии.
+fn stem_ru(word: &str) -> String {
+    const ENDINGS: &[&str] = &[
+        "иями", "ями", "ами", "ого", "его", "ому", "ему", "ыми", "ими",
+        "ешь", "ишь", "ать", "ять", "ить", "еть", "ует", "уют", "ает", "яет", "ают", "яют",
+        "ет", "ют", "ит", "ах", "ях", "ов", "ев", "ей", "ой", "ий", "ый", "ая", "яя", "ое", "ее",
+        "ую", "юю", "ом", "ем", "ам", "ям", "ла", "ло", "ли",
+        "ы", "и", "а", "я", "о", "е", "у", "ю", "ь", "й",
+    ];
+    for e in ENDINGS {
+        if word.chars().count() > e.chars().count() + 2 && word.ends_with(e) {
+            return word[..word.len() - e.len()].to_string();
+        }
+    }
+    word.to_string()
+}
+
+/// Строит безопасное FTS5-выражение из произвольного текста пользователя.
+/// Оставляет в каждом слове только буквы и цифры — это убирает двоеточия,
+/// кавычки и прочие символы, которые FTS5 трактует как служебный синтаксис
+/// (например, "22:00" ломало весь запрос целиком, интерпретируясь как
+/// фильтр по несуществующей колонке "22").
+fn build_fts_query(raw: &str) -> String {
+    raw.split_whitespace()
+        .filter_map(|w| {
+            let cleaned: String = w.chars().filter(|c| c.is_alphanumeric()).collect();
+            if cleaned.is_empty() {
+                return None;
+            }
+            let lower = cleaned.to_lowercase();
+            let normalized = if lower.chars().next().unwrap().is_numeric() {
+                lower
+            } else {
+                stem_ru(&lower)
+            };
+            if normalized.chars().count() < 2 {
+                return None;
+            }
+            Some(format!("{}*", normalized))
+        })
+        .collect::<Vec<_>>()
+        .join(" OR ")
+}
+
 pub fn search(conn: &Connection, server: &str, query: &str) -> Vec<SearchHit> {
     if query.trim().is_empty() {
         return vec![];
     }
-    // Простая, безопасная сборка FTS-запроса: каждое слово ищем с "*" (по началу слова).
-    let fts_query: String = query
-        .split_whitespace()
-        .map(|w| format!("{}*", w.replace('"', "")))
-        .collect::<Vec<_>>()
-        .join(" OR ");
+    let fts_query = build_fts_query(query);
+    if fts_query.is_empty() {
+        return vec![];
+    }
 
     let mut stmt = conn
         .prepare(
