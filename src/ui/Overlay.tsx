@@ -24,7 +24,9 @@ import { ArticleView } from './ArticleView';
 import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } from './CalculatorPanel';
 import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
-import { BackIcon, CloseIcon, MenuIcon, SearchIcon, SettingsIcon } from './icons';
+import { useAiChat } from './ai';
+import { AiView } from './AiView';
+import { BackIcon, CloseIcon, MenuIcon, SearchIcon, SettingsIcon, SparkIcon } from './icons';
 import { DEFAULT_OPACITY, OPACITY_KEY, applyOpacity, clampOpacity } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
 import { OrganizationChoice } from './OrganizationChoice';
@@ -130,6 +132,13 @@ export function Overlay({
   /** Where each chapter's rows start in the list ↑↓ walk through. */
   const chapterStarts = contents.map((_, g) => contents.slice(0, g).reduce((n, group) => n + group.hits.length, 0));
   const summary = [pack.server.name, organization && organization.id !== 'none' ? organization.name : null].filter(Boolean).join(' · ');
+
+  // The AI analysis: while it is open, the search field takes the situation instead of a query.
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiDraft, setAiDraft] = useState('');
+  const chat = useAiChat(platform, pack, boostDocuments);
+  /** The field is the AI's, not the search's: an article opened from the answer gives it back to the search. */
+  const aiMode = aiOpen && !open;
 
   // An empty search shows the favourites, then the recent articles without them; ↑↓ go through both.
   const lookup = useHitLookup(pack);
@@ -387,6 +396,15 @@ export function Overlay({
       clearScope();
       return;
     }
+    // In the AI analysis Enter sends the situation; the list keys have no list to walk.
+    if (aiMode) {
+      if (e.key === 'Enter' && !e.shiftKey && aiDraft.trim() && !chat.busy) {
+        e.preventDefault();
+        void chat.send(aiDraft);
+        setAiDraft('');
+      }
+      return;
+    }
     // «Что изменилось» and «было → стало» are read with the mouse; the list keys would move a hidden selection.
     if (whatsNew || settingsOpen || organizationOpen || serverOpen || notesFor || privacyOpen || diff || (changesView && !open)) return;
     if (open) {
@@ -434,6 +452,23 @@ export function Overlay({
     searchRef.current?.focus();
   };
 
+  /** Opens the AI analysis over whatever was on show; with a text — what was typed in the search — asks about it at once. */
+  const openAi = (text?: string) => {
+    setAiOpen(true);
+    setOpen(null);
+    setMenuOpen(false);
+    setSettingsOpen(false);
+    setChangesView(null);
+    setDiff(null);
+    setPrivacyOpen(false);
+    setWhatsNew(null);
+    if (text?.trim()) {
+      void chat.send(text);
+      setQuery('');
+    }
+    searchRef.current?.focus();
+  };
+
   /** Esc steps back one layer at a time: a screen over the settings → the settings → menu → article →
    * search text → document → hide the overlay. */
   const stepBack = useRef<() => void>(() => {});
@@ -448,6 +483,7 @@ export function Overlay({
     else if (changesView && settingsOpen) setChangesView(null);
     else if (settingsOpen) setSettingsOpen(false);
     else if (open) setOpen(null);
+    else if (aiOpen) setAiOpen(false);
     else if (changesView) setChangesView(null);
     else if (query) {
       setQuery('');
@@ -483,7 +519,7 @@ export function Overlay({
   // what is opened starts at its own top.
   const contentRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
-  const onList = !whatsNew && !settingsOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
+  const onList = !whatsNew && !settingsOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView && !aiOpen;
   const wasOnList = useRef(onList);
   useLayoutEffect(() => {
     const content = contentRef.current;
@@ -595,6 +631,16 @@ export function Overlay({
           {summary}
         </span>
         <button
+          className={aiOpen ? 'icon-btn icon-btn--on icon-btn--ai' : 'icon-btn icon-btn--ai'}
+          type="button"
+          aria-label="ИИ-разбор ситуации"
+          aria-pressed={aiOpen}
+          title="ИИ-разбор ситуации"
+          onClick={() => (aiMode ? setAiOpen(false) : openAi())}
+        >
+          <SparkIcon />
+        </button>
+        <button
           className={settingsOpen ? 'icon-btn icon-btn--on' : 'icon-btn'}
           type="button"
           aria-label="Настройки"
@@ -623,9 +669,9 @@ export function Overlay({
         }}
       />
 
-      <div className="search">
-        <SearchIcon />
-        {scope && (
+      <div className={aiMode ? 'search search--ai' : 'search'}>
+        {aiMode ? <SparkIcon /> : <SearchIcon />}
+        {scope && !aiMode && (
           <button className="scope" type="button" aria-label={`Искать во всех документах, а не только в ${scope.short}`} title="Искать во всех документах" onClick={clearScope}>
             <span>{scope.short}</span>
             <CloseIcon size={12} />
@@ -636,12 +682,27 @@ export function Overlay({
           className="search__input"
           type="search"
           aria-label="Поиск по законам"
-          placeholder={scope ? `Поиск: ${scope.title}` : 'Номер или слова: 65, коап 8.6, кража'}
+          placeholder={
+            aiMode
+              ? chat.messages.length
+                ? 'Уточните или опишите новую ситуацию…'
+                : 'Опишите ситуацию своими словами…'
+              : scope
+                ? `Поиск: ${scope.title}`
+                : 'Номер или слова: 65, коап 8.6, кража'
+          }
           autoComplete="off"
-          spellCheck={false}
-          value={query}
+          spellCheck={aiMode}
+          value={aiMode ? aiDraft : query}
           onChange={(e) => {
+            if (aiMode) {
+              setAiDraft(e.target.value);
+              setSettingsOpen(false);
+              setPrivacyOpen(false);
+              return;
+            }
             setQuery(e.target.value);
+            setAiOpen(false);
             setOpen(null);
             setDiff(null);
             setPrivacyOpen(false);
@@ -655,7 +716,7 @@ export function Overlay({
           }}
           onKeyDown={onSearchKey}
         />
-        <span className="kbd">Esc</span>
+        <span className="kbd">{aiMode ? 'Enter' : 'Esc'}</span>
       </div>
 
       <div
@@ -804,7 +865,7 @@ export function Overlay({
             article={open.article}
             document={open.document}
             focusPart={open.part}
-            backLabel={changesView ? 'Что изменилось' : home ? 'Избранное и недавние' : view === 'contents' ? 'Оглавление' : 'Результаты'}
+            backLabel={aiOpen ? 'ИИ-разбор' : changesView ? 'Что изменилось' : home ? 'Избранное и недавние' : view === 'contents' ? 'Оглавление' : 'Результаты'}
             changed={(() => {
               const recentChange = changeOf(open);
               return recentChange && recentChange.change.kind === 'changed'
@@ -825,6 +886,17 @@ export function Overlay({
             onFavorite={() => toggleFavorite(open)}
             pinned={pinnedArticle}
             onPin={() => togglePin(articlePinCard(open, rules))}
+          />
+        ) : aiOpen ? (
+          <AiView
+            chat={chat}
+            backLabel={query ? 'Результаты' : scope ? 'Оглавление' : 'Поиск'}
+            onBack={() => {
+              setAiOpen(false);
+              searchRef.current?.focus();
+            }}
+            onOpen={openHit}
+            onSettings={() => setSettingsOpen(true)}
           />
         ) : changesView ? (
           <ChangesView
@@ -893,23 +965,44 @@ export function Overlay({
               {hits.map((hit, i) => rowFor(hit, i))}
             </div>
             {hits.length === 0 && <div className="empty">Ничего не найдено</div>}
+            {/* A situation typed into the search finds nothing whole: the AI takes it word by word. */}
+            <button className="ai-offer" type="button" onClick={() => openAi(query)}>
+              <SparkIcon size={18} />
+              <span>
+                Разобрать с ИИ: <b>«{query.trim()}»</b>
+              </span>
+            </button>
           </>
         )}
       </div>
 
       <div className="overlay__foot">
-        <span>
-          <b>↑↓</b> выбор
-        </span>
-        <span>
-          <b>Enter</b> в калькулятор
-        </span>
-        <span>
-          <b>→</b> открыть
-        </span>
-        <span>
-          <b>Esc</b> назад
-        </span>
+        {aiMode ? (
+          <>
+            <span>
+              <b>Enter</b> спросить ИИ
+            </span>
+            <span>клик по статье — открыть</span>
+            <span>
+              <b>Esc</b> к поиску
+            </span>
+          </>
+        ) : (
+          <>
+            <span>
+              <b>↑↓</b> выбор
+            </span>
+            <span>
+              <b>Enter</b> в калькулятор
+            </span>
+            <span>
+              <b>→</b> открыть
+            </span>
+            <span>
+              <b>Esc</b> назад
+            </span>
+          </>
+        )}
       </div>
 
       {menuOpen && (

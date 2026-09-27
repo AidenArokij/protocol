@@ -25,7 +25,15 @@ export const SearchIcon = ({ size = 20 }: { size?: number }) => (
   </Icon>
 );
 
-export const MenuIcon = ({ size = 20 }: { size?: number }) => (
+/** The AI analysis: a spark. */
+export const SparkIcon = ({ size = 20 }: { size?: number }) => (
+  <Icon size={size}>
+    <path d="M12 3.5l1.9 5.1 5.1 1.9-5.1 1.9L12 17.5l-1.9-5.1L5 10.5l5.1-1.9z" />
+    <path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z" />
+  </Icon>
+);
+
+export const MenuIcon =({ size = 20 }: { size?: number }) => (
   <Icon size={size}>
     <path d="M4 6h16M4 12h16M4 18h10" />
   </Icon>

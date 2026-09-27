@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type KeyboardEvent as ReactKeyboar
 import type { Organization, ServerPack } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
 import { APP_VERSION, AUTHOR, LINKS } from './about';
+import { AI_KEY_SETTING, AI_KEY_URL } from './ai';
 import { BackIcon, CloseIcon, DiscordIcon, GitHubIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
 import { MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
@@ -130,6 +131,78 @@ function HotkeyField({ hotkey, onHotkey, onCapturing }: { hotkey: string; onHotk
           <span>Без Ctrl, Alt или Shift клавиша может пересечься с управлением в игре.</span>
         </div>
       )}
+    </>
+  );
+}
+
+/** The player's Gemini key for the AI analysis: kept in the settings file on this computer, shown only as a mask. */
+function AiKeyField() {
+  const platform = usePlatform();
+  const [saved, setSaved] = useState<boolean | null>(null);
+  const [key, setKey] = useState('');
+  const [note, setNote] = useState<string | null>(null);
+  useEffect(() => {
+    void platform.readSetting<string>(AI_KEY_SETTING).then((value) => setSaved(!!value?.trim()));
+  }, [platform]);
+  const save = (event: FormEvent) => {
+    event.preventDefault();
+    const value = key.trim();
+    if (!value) return;
+    void platform.writeSetting(AI_KEY_SETTING, value).then(() => {
+      setSaved(true);
+      setKey('');
+      setNote('Ключ сохранён');
+    });
+  };
+  const remove = () =>
+    void platform.writeSetting(AI_KEY_SETTING, '').then(() => {
+      setSaved(false);
+      setNote('Ключ удалён');
+    });
+  return (
+    <>
+      <Row label="Ключ Gemini" value={saved === null ? '…' : saved ? 'сохранён' : 'не задан'}>
+        {saved && (
+          <button className="settings__button" type="button" onClick={remove}>
+            Удалить
+          </button>
+        )}
+      </Row>
+      <form className="set__row presets__form" onSubmit={save}>
+        <input
+          className="presets__input"
+          type="password"
+          aria-label="Ключ Gemini"
+          placeholder={saved ? 'Вставьте новый ключ, чтобы заменить' : 'Вставьте ключ: AIza…'}
+          autoComplete="off"
+          spellCheck={false}
+          value={key}
+          onChange={(e) => {
+            setKey(e.target.value);
+            setNote(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && key) {
+              e.stopPropagation();
+              setKey('');
+            }
+          }}
+        />
+        <button className="settings__button" type="submit" disabled={!key.trim()}>
+          Сохранить
+        </button>
+      </form>
+      {note && (
+        <span className="settings__note" role="status">
+          {note}
+        </span>
+      )}
+      <p className="set__hint">
+        Ключ бесплатный, у каждого игрока свой. Он хранится только на этом компьютере.{' '}
+        <button className="link" type="button" onClick={() => void platform.openExternal(AI_KEY_URL)}>
+          Получить ключ на aistudio.google.com
+        </button>
+      </p>
     </>
   );
 }
@@ -264,6 +337,10 @@ export function SettingsView({
           </button>
         </Row>
         <p className="set__hint">Законы и устав вашей организации идут первыми в поиске.</p>
+      </Block>
+
+      <Block title="ИИ-разбор">
+        <AiKeyField />
       </Block>
 
       <Block title="Горячая клавиша">
