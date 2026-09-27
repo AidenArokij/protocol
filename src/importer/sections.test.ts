@@ -25,3 +25,24 @@ describe('the additional rules of a server: titled sections (real forum text)', 
     ]);
   });
 });
+
+describe('sections named by a pattern where the forum lost its list numbers (real forum text)', () => {
+  const parseWith = (server: string, id: string) => {
+    const meta = JSON.parse(readFileSync(join(root, 'data', server, 'sources', `${id}.meta.json`), 'utf8'));
+    return parseLawText(readFileSync(join(root, 'data', server, 'sources', `${id}.txt`), 'utf8'), id, 'sections', { headings: meta.headings });
+  };
+
+  it('numbers a section by its own number, and keeps a number written twice apart (УСБ ФСБ: «XI»)', () => {
+    const usb = parseWith('arbatskiy', 'ch-fsb-usb');
+    expect(usb.articles.slice(0, 2).map((a) => [a.number, a.title])).toEqual([['I', 'Общие положения'], ['II', 'Основные задачи УСБ ФСБ России']]);
+    expect(usb.articles.filter((a) => a.number === 'XI').map((a) => a.title)).toEqual(['Порядок взаимодействия', 'Заключительные положения']);
+    expect(new Set(usb.articles.map((a) => a.id)).size).toBe(usb.articles.length);
+  });
+
+  it('takes only the title lines for sections, not the lines a zero-width space happens to end (подразделения МВД)', () => {
+    const units = parseWith('kutuzovskiy', 'ch-mvd-units');
+    expect(units.articles.map((a) => a.number)).toEqual(['1', '2', '3', '4', '5', '6']);
+    expect(units.articles[0]).toMatchObject({ title: 'ОД — Отдел Дознания' });
+    expect(units.articles[0].parts[0].text).toBe('Расшифровка: Отдел дознания');
+  });
+});

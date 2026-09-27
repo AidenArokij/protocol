@@ -219,3 +219,20 @@ describe('the other rules of the project (real forum text, the same on every ser
     expect(leaders.articles.flatMap((a) => a.parts).some((p) => /^\d\.\s/.test(p.text))).toBe(false);
   });
 });
+
+describe('sections that hold chapters (Положение о структуре ВС и ФСВНГ, Тверской)', () => {
+  const structure = parse('ch-army-structure');
+
+  it('makes «ГЛАВА» the chapters and «РАЗДЕЛ» their section', () => {
+    expect(structure.chapters.slice(0, 3).map((c) => [c.number, c.title, c.section])).toEqual([
+      ['I', 'ОБЩИЕ ПОЛОЖЕНИЯ', 'Раздел I. ОБЩИЕ ПОЛОЖЕНИЯ И ШТАБ'],
+      ['II', 'ШТАБ АРМИИ', 'Раздел I. ОБЩИЕ ПОЛОЖЕНИЯ И ШТАБ'],
+      ['III', 'ВОЕННАЯ ПОЛИЦИЯ', 'Раздел II. ПОДРАЗДЕЛЕНИЯ ВООРУЖЁННЫХ СИЛ'],
+    ]);
+  });
+
+  it('keeps a chapter of text alone, with no points, in its place', () => {
+    expect(structure.chapters[0].preface.length).toBeGreaterThan(0);
+    expect(structure.chapters.map((c) => c.number)).toEqual(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII']);
+  });
+});

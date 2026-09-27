@@ -1,5 +1,31 @@
 [
   {
+    "version": "2026-09-27T23:04:04+03:00",
+    "documents": [
+      {
+        "documentId": "ch-fsb-usb",
+        "short": "Положение",
+        "title": "Об управлениях собственной безопасности ФСБ",
+        "kind": "added",
+        "articles": []
+      },
+      {
+        "documentId": "ch-news-ads",
+        "short": "Правила",
+        "title": "Правила подачи объявлений «Вести Москвы»",
+        "kind": "added",
+        "articles": []
+      },
+      {
+        "documentId": "ch-news-edit",
+        "short": "Правила",
+        "title": "Правила редактирования объявлений «Вести Москвы»",
+        "kind": "added",
+        "articles": []
+      }
+    ]
+  },
+  {
     "version": "2026-09-27T22:26:15+03:00",
     "documents": [
       {

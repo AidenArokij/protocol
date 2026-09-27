@@ -1,18 +1,30 @@
 import type { Article } from '../core/model';
 import type { ParsedLaw } from './lawText';
+import { uniqueIds } from './points';
 
 /**
  * Rules written as titled sections with no numbered points (the additional rules of each server: «Нападение на Форт»,
  * «AirDrop», «Правила перехвата поставок»). The forum marks a section's title with a zero-width space — at the end of
  * the title's own line or alone on the line right under it. Each section is an article numbered by its place, titled
  * by its title; its lines are its paragraphs, and what follows «|» on a line is a punishment (each told once).
+ *
+ * Where the forum's own list numbers are lost (a numbered list copies without its numbers) and zero-width spaces end
+ * ordinary lines too, `headings` names the title lines instead: «^[IVX]+\. » (УСБ ФСБ), «^\d+\. \S+ — » (подразделения
+ * МВД). A title's own number («IV.», «3.») then numbers its section.
  */
+
+export interface SectionsOptions {
+  /** A pattern for the title lines, in place of the zero-width space marks. */
+  headings?: string;
+}
 
 const MARK = /[​‌‍﻿]/;
 const clean = (line: string) => line.replace(/[​‌‍﻿]/g, '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+const NUMBERED = /^([IVXLC]+|\d+)\.\s+(.*)$/;
 
-export function parseSectionsText(text: string, documentId: string): ParsedLaw {
+export function parseSectionsText(text: string, documentId: string, options: SectionsOptions = {}): ParsedLaw {
   const raw = text.split(/\r?\n/);
+  const headings = options.headings ? new RegExp(options.headings) : undefined;
   const articles: Article[] = [];
   const header: string[] = [];
   let article: Article | undefined;
@@ -21,9 +33,11 @@ export function parseSectionsText(text: string, documentId: string): ParsedLaw {
     const content = clean(line);
     if (!content) return;
     const next = raw[i + 1] ?? '';
-    if (MARK.test(line.slice(-2)) || (MARK.test(next) && !clean(next))) {
-      const number = String(articles.length + 1);
-      article = { id: `${documentId}-${number}`, number, title: content.replace(/[.:]$/, ''), parts: [], notes: [] };
+    const title = headings ? headings.test(content) : MARK.test(line.slice(-2)) || (MARK.test(next) && !clean(next));
+    if (title) {
+      const numbered = headings ? NUMBERED.exec(content) : null;
+      const number = numbered?.[1] ?? String(articles.length + 1);
+      article = { id: `${documentId}-${number}`, number, title: (numbered?.[2] ?? content).replace(/[.:]$/, ''), parts: [], notes: [] };
       articles.push(article);
       return;
     }
@@ -40,5 +54,7 @@ export function parseSectionsText(text: string, documentId: string): ParsedLaw {
     }
   });
 
+  // «XI» twice (УСБ ФСБ): the second keeps its place in the ids.
+  uniqueIds(articles, documentId);
   return { chapters: [], articles, header, footer: [], issues: [] };
 }

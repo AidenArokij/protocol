@@ -8,7 +8,7 @@ const [server, doc, ...numbers] = process.argv.slice(2);
 const root = join(import.meta.dirname, '..');
 const meta = JSON.parse(readFileSync(join(root, 'data', server, 'sources', `${doc}.meta.json`), 'utf8'));
 const text = readFileSync(join(root, 'data', server, 'sources', `${doc}.txt`), 'utf8');
-const parsed = parseLawText(text, doc, meta.format as LawFormat, { subpoints: meta.subpoints, subheadings: meta.subheadings });
+const parsed = parseLawText(text, doc, meta.format as LawFormat, { subpoints: meta.subpoints, subheadings: meta.subheadings, headings: meta.headings });
 console.log(`${doc}: ${parsed.chapters.length} глав, ${parsed.articles.length} статей, не разобрано ${parsed.issues.length}`);
 for (const number of numbers) {
   const article = parsed.articles.find((a) => a.number === number);

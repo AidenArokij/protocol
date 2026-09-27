@@ -1,6 +1,6 @@
 import type { Article, Chapter, Jurisdiction, Note, Part } from '../core/model';
 import { parsePointsText, uniqueIds, type PointsOptions } from './points';
-import { parseSectionsText } from './sections';
+import { parseSectionsText, type SectionsOptions } from './sections';
 import { parseAdministrativeSanction, parseLeadingTags, parsePunishment, splitPenalty } from './sanctions';
 
 /**
@@ -85,9 +85,9 @@ function stripTrailingDash(text: string): string {
   return text.replace(/[\s,]*[-—–]$/, '').trim();
 }
 
-export function parseLawText(text: string, documentId: string, format: LawFormat, options: PointsOptions = {}): ParsedLaw {
+export function parseLawText(text: string, documentId: string, format: LawFormat, options: PointsOptions & SectionsOptions = {}): ParsedLaw {
   if (format === 'points') return parsePointsText(text, documentId, options);
-  if (format === 'sections') return parseSectionsText(text, documentId);
+  if (format === 'sections') return parseSectionsText(text, documentId, options);
   const lines = cleanLines(text);
   const chapters: Chapter[] = [];
   const articles: Article[] = [];

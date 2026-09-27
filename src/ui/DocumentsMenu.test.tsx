@@ -34,7 +34,7 @@ describe('documents menu', () => {
       'Уставы организаций',
       'Правила проекта',
     ]);
-    expect(documentRows()).toHaveLength(63);
+    expect(documentRows()).toHaveLength(66);
     expect(documentRows().slice(0, 3).map((row) => row.textContent)).toEqual([
       'КонституцияКонституция РО117',
       'УКУголовный кодекс121',

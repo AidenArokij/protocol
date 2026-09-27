@@ -99,6 +99,12 @@ export function parsePointsText(text: string, documentId: string, options: Point
   const footer: string[] = [];
   const issues: ParseIssue[] = [];
   const explicitChapters = lines.some((line) => CHAPTER.test(line) || CAPS_CHAPTER.test(line));
+  // «РАЗДЕЛ I» over «ГЛАВА I…» (Положение о структуре ВС Тверского): the sections hold the chapters, not stand for them.
+  // Only where chapters outnumber sections: one «ГЛАВА 3» among seven «Раздел» (Армия Кутузовского) is a slip.
+  const count = (pattern: RegExp) => lines.filter((line) => pattern.test(line)).length;
+  const sections = count(/^раздел\s/i);
+  const sectionsOverChapters = sections > 0 && count(/^глава\s/i) > sections;
+  let section: string | undefined;
   // Where points are «1.1», a bare «1.» is an item of a list inside a point (МВД: «1. Генерал»).
   const dotted = lines.some((line) => /^\d+\.\d+/.test(line));
   let chapter: Chapter | undefined;
@@ -162,8 +168,18 @@ export function parsePointsText(text: string, documentId: string, options: Point
       footer.push(line);
       continue;
     }
+    if (sectionsOverChapters && /^раздел\s/i.test(line) && (m = line.match(CHAPTER))) {
+      section = `Раздел ${m[1]}. ${(m[2] ?? '').replace(/\.$/, '')}`.trim();
+      continue;
+    }
     if ((m = line.match(CHAPTER)) || (m = line.match(CAPS_CHAPTER))) {
-      chapter = { number: m[1], title: (m[2] ?? '').replace(/\.$/, ''), ...(/^раздел/i.test(line) ? { kind: 'section' as const } : {}), preface: [] };
+      chapter = {
+        number: m[1],
+        title: (m[2] ?? '').replace(/\.$/, ''),
+        ...(/^раздел/i.test(line) ? { kind: 'section' as const } : {}),
+        ...(section ? { section } : {}),
+        preface: [],
+      };
       chapters.push(chapter);
       group = undefined;
       article = undefined;
@@ -260,11 +276,17 @@ export function parsePointsText(text: string, documentId: string, options: Point
   }
 
   // A table of contents lists the chapters before they come: those empty copies go. What is left
-  // follows its points, so a chapter known only from the contents (ГИБДД IV–X) stands in its place.
+  // follows its points, so a chapter known only from the contents (ГИБДД IV–X) stands in its place;
+  // a chapter of text alone, with no points (ВС Тверского: «ГЛАВА I. ОБЩИЕ ПОЛОЖЕНИЯ»), comes before the next one that has.
   const firstPoint = (c: Chapter) => articles.findIndex((a) => chapterOf.get(a) === c);
-  const kept = chapters
-    .filter((c, i) => filled.has(c) || c.preface.length || !chapters.slice(i + 1).some((later) => later.number === c.number))
-    .map((c, i) => ({ c, order: filled.has(c) ? firstPoint(c) : Number.MAX_SAFE_INTEGER, i }))
+  const withText = chapters.filter((c, i) => filled.has(c) || c.preface.length || !chapters.slice(i + 1).some((later) => later.number === c.number));
+  const order = (c: Chapter, i: number) => {
+    if (filled.has(c)) return firstPoint(c);
+    const next = c.preface.length ? withText.slice(i + 1).find((later) => filled.has(later)) : undefined;
+    return next ? firstPoint(next) : Number.MAX_SAFE_INTEGER;
+  };
+  const kept = withText
+    .map((c, i) => ({ c, order: order(c, i), i }))
     .sort((a, b) => a.order - b.order || a.i - b.i)
     .map(({ c }) => c);
 

@@ -16,9 +16,9 @@ export const TVERSKOI: ServerSources = {
     // Законы Москвы
     'msk-charter', 'msk-health', 'msk-news', 'msk-property',
     // Уставы организаций
-    'ch-mvd', 'ch-gibdd', 'ch-fso', 'ch-army', 'ch-army-discipline', 'ch-army-guard',
+    'ch-mvd', 'ch-gibdd', 'ch-fso', 'ch-army', 'ch-army-discipline', 'ch-army-guard', 'ch-army-structure', 'ch-army-id',
     'sk-main', 'sk-gsu', 'sk-inspections', 'sk-uniform', 'sk-ethics', 'sk-kso', 'sk-appeals', 'sk-ranks',
-    'ch-hospital', 'ch-news',
+    'ch-gov', 'ch-hospital', 'ch-news',
     // Правила проекта
     'rules-main', 'rules-gov', 'rules-crime',
     'rules-leaders', 'rules-martial', 'rules-supply', 'rules-robbery', 'rules-business', 'rules-bank',
@@ -39,9 +39,9 @@ export const ARBATSKIY: ServerSources = {
     'fz-police', 'fz-fsb', 'fz-fso', 'fz-army', 'fz-sk', 'fz-weapons', 'fz-docs', 'fz-territory',
     'fz-immunity', 'fz-advocacy', 'fz-business', 'fz-media', 'fz-health',
     // Уставы и положения организаций
-    'ch-mvd', 'ch-gibdd', 'ch-gibdd-discipline', 'ch-gibdd-osb', 'ch-fsb', 'ch-fso',
+    'ch-mvd', 'ch-gibdd', 'ch-gibdd-discipline', 'ch-gibdd-osb', 'ch-fsb', 'ch-fsb-usb', 'ch-fso',
     'ch-army',
-    'sk-charter', 'ch-gov', 'ch-hospital', 'ch-news',
+    'sk-charter', 'ch-gov', 'ch-hospital', 'ch-news', 'ch-news-ads', 'ch-news-edit',
     // Правила проекта (общие для всех серверов)
     'rules-main', 'rules-gov', 'rules-crime',
     'rules-leaders', 'rules-martial', 'rules-supply', 'rules-robbery', 'rules-business', 'rules-bank',
@@ -62,8 +62,8 @@ export const KUTUZOVSKIY: ServerSources = {
     'fz-police', 'fz-gibdd', 'fz-fsb', 'fz-fso', 'fz-sk', 'fz-prosecutor', 'fz-army', 'fz-weapons',
     'fz-secrets', 'fz-health', 'fz-advocacy', 'fz-service', 'fz-immunity', 'fz-territory', 'fz-parties', 'fz-business',
     // Уставы и положения организаций
-    'ch-mvd', 'ch-gibdd', 'ch-fsb', 'ch-fso', 'ch-army', 'ch-army-discipline', 'ch-army-guard',
-    'sk-appeals', 'ch-hospital', 'ch-news',
+    'ch-mvd', 'ch-mvd-units', 'ch-gibdd', 'ch-fsb', 'ch-fso', 'ch-army', 'ch-army-discipline', 'ch-army-guard',
+    'sk-main', 'sk-ranks', 'sk-appeals', 'ch-hospital', 'ch-news', 'ch-news-edit',
     // Правила проекта (общие для всех серверов)
     'rules-main', 'rules-gov', 'rules-crime',
     'rules-leaders', 'rules-martial', 'rules-supply', 'rules-robbery', 'rules-business', 'rules-bank',

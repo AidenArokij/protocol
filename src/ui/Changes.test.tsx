@@ -20,7 +20,7 @@ vi.mock('../data', async (importOriginal) => {
 });
 
 const SEEN = 'laws.seen:tverskoi';
-const VERSION = '2026-09-27T22:38:20+03:00';
+const VERSION = '2026-09-27T23:04:03+03:00';
 const search = () => screen.getByRole('searchbox', { name: 'Поиск по законам' });
 const changesScreen = () => screen.queryByRole('region', { name: 'Что изменилось' });
 

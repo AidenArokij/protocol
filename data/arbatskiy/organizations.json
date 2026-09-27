@@ -1,7 +1,7 @@
 [
   {"id": "mvd", "name": "МВД", "kind": "state", "documents": ["fz-police", "upk", "koap", "ch-mvd"]},
   {"id": "gibdd", "name": "ГИБДД", "kind": "state", "documents": ["pdd", "koap", "fz-police", "ch-gibdd", "ch-gibdd-discipline", "ch-gibdd-osb"]},
-  {"id": "fsb", "name": "ФСБ", "kind": "state", "documents": ["fz-fsb", "upk", "fz-docs", "ch-fsb"]},
+  {"id": "fsb", "name": "ФСБ", "kind": "state", "documents": ["fz-fsb", "upk", "fz-docs", "ch-fsb", "ch-fsb-usb"]},
   {"id": "fso", "name": "ФСО", "kind": "state", "documents": ["fz-fso", "fz-territory", "ch-fso"]},
   {"id": "army", "name": "Армия", "kind": "state", "documents": ["fz-army", "fz-weapons", "ch-army"]},
   {"id": "sk", "name": "Следственный комитет", "kind": "state", "documents": ["fz-sk", "upk", "sk-charter"]},
@@ -9,7 +9,7 @@
   {"id": "court", "name": "Суд", "kind": "state", "documents": ["fkz-court", "upk"]},
   {"id": "government", "name": "Правительство", "kind": "state", "documents": ["fkz-gov", "ethics", "fz-business", "ch-gov"]},
   {"id": "hospital", "name": "Больница", "kind": "state", "documents": ["fz-health", "ch-hospital"]},
-  {"id": "media", "name": "СМИ", "kind": "state", "documents": ["fz-media", "ch-news"]},
+  {"id": "media", "name": "СМИ", "kind": "state", "documents": ["fz-media", "ch-news", "ch-news-ads", "ch-news-edit"]},
   {"id": "advocate", "name": "Адвокатура", "kind": "state", "documents": ["fz-advocacy", "upk"]},
   {"id": "opg", "name": "ОПГ", "kind": "crime", "documents": ["rules-crime", "rules-war", "rules-robbery", "rules-business", "rules-bank", "rules-workshops", "rules-supply", "rules-fort", "rules-server"]},
   {"id": "none", "name": "Без организации", "documents": []}

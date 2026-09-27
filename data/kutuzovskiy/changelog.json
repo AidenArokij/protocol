@@ -1,5 +1,38 @@
 [
   {
+    "version": "2026-09-27T23:04:04+03:00",
+    "documents": [
+      {
+        "documentId": "ch-mvd-units",
+        "short": "Положение",
+        "title": "О подразделениях МВД",
+        "kind": "added",
+        "articles": []
+      },
+      {
+        "documentId": "sk-main",
+        "short": "Положение",
+        "title": "Положение о Следственном комитете",
+        "kind": "added",
+        "articles": []
+      },
+      {
+        "documentId": "sk-ranks",
+        "short": "Реестр",
+        "title": "Соответствие служебных званий и должностей СК",
+        "kind": "added",
+        "articles": []
+      },
+      {
+        "documentId": "ch-news-edit",
+        "short": "Правила",
+        "title": "Правила редактирования объявлений «Вести Москвы»",
+        "kind": "added",
+        "articles": []
+      }
+    ]
+  },
+  {
     "version": "2026-09-27T22:26:15+03:00",
     "documents": [
       {
