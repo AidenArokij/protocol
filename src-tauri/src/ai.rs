@@ -8,7 +8,6 @@
 use crate::db::SearchHit;
 use serde::{Deserialize, Serialize};
 
-const MODEL: &str = "gemini-3.8-flash";
 
 #[derive(Serialize)]
 struct GeminiRequest {
@@ -96,7 +95,30 @@ fn build_user_message(question: &str, hits: &[SearchHit]) -> String {
     )
 }
 
+// Если основная модель перегружена — пробуем по очереди эти, без участия пользователя.
+const MODELS: &[&str] = &["gemini-3.8-flash", "gemini-3.6-flash", "gemini-3.5-flash"];
+
+fn is_overload_error(msg: &str) -> bool {
+    let m = msg.to_lowercase();
+    m.contains("high demand") || m.contains("overloaded") || m.contains("503") || m.contains("unavailable")
+}
+
 pub async fn ask_gemini(api_key: &str, question: &str, hits: &[SearchHit], perspective: &str) -> Result<String, String> {
+    let mut last_err = String::from("Неизвестная ошибка.");
+    for (i, model) in MODELS.iter().enumerate() {
+        match try_model(api_key, model, question, hits, perspective).await {
+            Ok(text) => return Ok(text),
+            Err(e) if is_overload_error(&e) && i + 1 < MODELS.len() => {
+                last_err = e;
+                continue; // эта модель перегружена — пробуем следующую из списка
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    Err(format!("Все доступные модели сейчас перегружены. Последняя ошибка: {}", last_err))
+}
+
+async fn try_model(api_key: &str, model: &str, question: &str, hits: &[SearchHit], perspective: &str) -> Result<String, String> {
     let body = GeminiRequest {
         system_instruction: Content { parts: vec![Part { text: build_system_prompt(perspective) }] },
         contents: vec![Content { parts: vec![Part { text: build_user_message(question, hits) }] }],
@@ -104,7 +126,7 @@ pub async fn ask_gemini(api_key: &str, question: &str, hits: &[SearchHit], persp
 
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
-        MODEL, api_key
+        model, api_key
     );
 
     let client = reqwest::Client::new();
