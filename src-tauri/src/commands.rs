@@ -66,6 +66,7 @@ pub async fn ask_ai(
     state: tauri::State<'_, AppState>,
     server: String,
     question: String,
+    perspective: Option<String>,
 ) -> Result<AskAiResponse, String> {
     let api_key = crate::settings::load_api_key()
         .ok_or_else(|| "Ключ Gemini не задан. Откройте настройки и вставьте ключ.".to_string())?;
@@ -86,7 +87,8 @@ pub async fn ask_ai(
         })
         .collect();
 
-    let answer = crate::ai::ask_gemini(&api_key, &question, &hits).await?;
+    let persp = perspective.unwrap_or_default();
+    let answer = crate::ai::ask_gemini(&api_key, &question, &hits, &persp).await?;
 
     Ok(AskAiResponse { answer, hits: hits_summary })
 }
