@@ -88,9 +88,12 @@ export function buildPack(serverDir: string, server: ServerSources): BuildResult
     }
   }
 
-  // The pack version is the time of the newest law edit it contains, so it only changes when a law does.
-  const version = documents.map((d) => d.source.lastEdited).sort((a, b) => Date.parse(a) - Date.parse(b)).at(-1) ?? '0000-00-00';
+  // The pack version is the time of the newest law edit it contains, so it only changes when a law does — or of the
+  // newest changelog entry, where an import found changes older than the version already out (see the importer's cli).
   const changes = readJson<ChangeEntry[]>(join(serverDir, 'changelog.json'), []);
+  const version =
+    [...documents.map((d) => d.source.lastEdited), ...changes.map((c) => c.version)].sort((a, b) => Date.parse(a) - Date.parse(b)).at(-1) ??
+    '0000-00-00';
   const info = { id: server.id, name: server.name, status: server.status };
   return { pack: { format: PACK_FORMAT, server: info, ...(calculator ? { calculator } : {}), organizations, version, changes, documents, synonyms }, issues };
 }

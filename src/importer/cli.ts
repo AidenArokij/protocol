@@ -19,6 +19,15 @@ if (!servers.length) {
   process.exit(2);
 }
 
+/** «2026-09-27T22:40:05+03:00»: the time on this machine, written like the forum's edit dates. */
+function localTime(date: Date): string {
+  const pad = (n: number) => String(Math.abs(n)).padStart(2, '0');
+  const offset = -date.getTimezoneOffset();
+  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const time = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  return `${day}T${time}${offset < 0 ? '-' : '+'}${pad(Math.trunc(offset / 60))}:${pad(offset % 60)}`;
+}
+
 const describe = (changes: DocumentChange[]) => {
   for (const d of changes) {
     if (d.kind !== 'changed') {
@@ -71,6 +80,9 @@ for (const server of servers) {
   if (check) {
     console.log(`\nПроверка: пакет ${pack.server.name}, версия ${pack.version}, не сохранён.`);
   } else {
+    // Laws edited before the version already out (found late, next to a later edit) would join its entry, and whoever
+    // has seen that version would never see them: they get an entry and a version of their own, the import's time.
+    if (report.laws.length && previous && Date.parse(pack.version) <= Date.parse(previous.version)) pack.version = localTime(new Date());
     pack.changes = nextChangelog(pack.changes, pack.version, report.laws);
     writeFileSync(join(serverDir, 'changelog.json'), JSON.stringify(pack.changes, null, 2) + '\n');
     // «Built» moves only when the content does, so installed copies fetch a pack only when it is new to them.

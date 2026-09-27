@@ -21,7 +21,7 @@ const part = (number: string, partNumber?: string) => {
 describe('КоАП Тверского (real forum text)', () => {
   it('reads every chapter and article; every «влечет» line becomes a sanction', () => {
     expect(koap.chapters).toHaveLength(19);
-    expect(koap.articles).toHaveLength(136);
+    expect(koap.articles).toHaveLength(138);
     const sanctionLines = text.split('\n').filter((line) => /^\s*(влеч[её]т|влекут)\s/.test(line)).length;
     expect(koap.articles.flatMap((a) => a.parts.filter((p) => p.punishment))).toHaveLength(sanctionLines);
     expect(koap.header).toEqual(['КОДЕКС РО', 'ОБ АДМИНИСТРАТИВНЫХ ПРАВОНАРУШЕНИЯХ']);
@@ -70,9 +70,8 @@ describe('КоАП Тверского (real forum text)', () => {
     expect(part('11.4', '1').punishment?.alternatives).toEqual([{ kind: 'arrest', max: 20 }, { kind: 'fine', max: 20000 }]);
     // A multiple of the unpaid fine.
     expect(part('10.2').punishment?.alternatives[0]).toEqual({ kind: 'fine-multiple', multiplier: 2, min: 3000 });
-    // «и/или эвакуацию» and a mandatory suspension.
+    // «и/или эвакуацию» (a suspension of the business: see sanctions.test).
     expect(part('8.21').punishment?.alternatives).toEqual([{ kind: 'fine', min: 1500, max: 10000 }, { kind: 'evacuation' }]);
-    expect(part('10.5', '2').punishment?.additional).toEqual(['приостановление деятельности юрлица до 3 мес']);
   });
 
   it('keeps offence text clean and notes numbered', () => {

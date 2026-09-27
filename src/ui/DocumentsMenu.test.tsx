@@ -34,11 +34,11 @@ describe('documents menu', () => {
       'Уставы организаций',
       'Правила проекта',
     ]);
-    expect(documentRows()).toHaveLength(61);
+    expect(documentRows()).toHaveLength(63);
     expect(documentRows().slice(0, 3).map((row) => row.textContent)).toEqual([
       'КонституцияКонституция РО117',
-      'УКУголовный кодекс117',
-      'КоАПКодекс об административных правонарушениях136',
+      'УКУголовный кодекс121',
+      'КоАПКодекс об административных правонарушениях138',
     ]);
     const tags = within(menu()).getByRole('group', { name: 'Виды документов' });
     expect(within(tags).getAllByRole('button').map((b) => b.textContent)).toEqual(['Все', 'Кодексы', 'ФКЗ', 'ФЗ', 'Москва', 'Уставы', 'Правила']);
@@ -76,7 +76,7 @@ describe('documents menu', () => {
       '1-ФКЗО Правительстве46',
       '2-ФКЗО Государственной Думе35',
       '3-ФКЗО вводимых правовых режимах14',
-      '4-ФКЗО судебной системе и судопроизводстве135',
+      '4-ФКЗО судебной системе и судопроизводстве136',
     ]);
   });
 
@@ -86,9 +86,10 @@ describe('documents menu', () => {
     const [own] = groups();
     expect(own).toHaveAccessibleName('ГИБДД · ваша организация');
     expect(within(own).getAllByRole('button').map((b) => b.textContent)).toEqual([
-      'ПДДПравила дорожного движения (15-ФЗ)116',
-      'КоАПКодекс об административных правонарушениях136',
-      'УставУстав ГИБДД126',
+      'ПДДПравила дорожного движения116',
+      'КоАПКодекс об административных правонарушениях138',
+      '15-ФЗОб организации дорожного движения7',
+      'УставУстав ГИБДД89',
       '6-ФЗО полиции32',
     ]);
 
@@ -118,7 +119,11 @@ describe('documents menu', () => {
     expect(documentRows()).toHaveLength(1);
     await user.clear(filter());
     await user.type(filter(), '6-фз');
-    expect(documentRows().map((row) => row.textContent)).toEqual(['6-ФЗО полиции32', '16-ФЗО собраниях, митингах и шествиях13']);
+    expect(documentRows().map((row) => row.textContent)).toEqual([
+      '6-ФЗО полиции32',
+      '16-ФЗО собраниях, митингах и шествиях13',
+      '16-ФЗО Федеральной службе войск национальной гвардии36',
+    ]);
     await user.clear(filter());
     await user.type(filter(), 'устав города');
     expect(documentRows().map((row) => row.textContent)).toEqual(['МоскваУстав города Москвы21']);
@@ -156,9 +161,9 @@ describe('documents menu', () => {
     expect(current()).toEqual(selected());
     expect(selected()[0]).toHaveTextContent('КоАП');
 
-    // Rows: ПДД, КоАП, Устав ГИБДД, 6-ФЗ of ГИБДД, then Конституция, УК, КоАП… of the codes.
-    await user.hover(documentRows()[5]);
-    expect(selected()).toEqual([documentRows()[5]]);
+    // Rows: ПДД, КоАП, 15-ФЗ, Устав ГИБДД, 6-ФЗ of ГИБДД, then Конституция, УК, КоАП… of the codes.
+    await user.hover(documentRows()[6]);
+    expect(selected()).toEqual([documentRows()[6]]);
     await user.keyboard('{ArrowDown}{Enter}');
     expect(screen.getByRole('button', { name: /только в КоАП/ })).toBeInTheDocument();
   });
@@ -179,7 +184,7 @@ describe('searching one document', () => {
     await pick(user, /^УКУголовный кодекс/);
 
     expect(search()).toHaveAttribute('placeholder', 'Поиск: Уголовный кодекс');
-    expect(screen.getByText('117 статей')).toBeInTheDocument();
+    expect(screen.getByText('121 статья')).toBeInTheDocument();
     const toc = screen.getByLabelText('Оглавление: Уголовный кодекс');
     const [first] = within(toc).getAllByRole('region');
     expect(within(first).getByRole('heading')).toHaveTextContent('Глава 1. Задачи и принципы Уголовного кодекса РО');

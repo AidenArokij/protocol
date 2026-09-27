@@ -76,7 +76,7 @@ const MARKERS = /^(ОСОБЕННАЯ ЧАСТЬ|ОБЩАЯ ЧАСТЬ)$/i;
 const FOOTER =
   /^(?:(?:Одобрен|Подписан|Принят)\S*\s|Приложение\s+к\s|(?:Настоящий\s+)?Закон\s+принят\s|Вступает\s+в\s+юридическую\s+силу\s+после\s|Нормативно-правовой\s+акт\s+подписан\s)/;
 /** Markup debris such as a stray code fence. */
-const JUNK = /^[`*_=~]{3,}$/;
+const JUNK = /^(?:[`*_=~]{3,}|[✦❖▰◆◇═─━\s]+)$/;
 /** A short unpunctuated line right before an article heading (ПДД: «аварийные сигналы»). */
 const SUBHEADING = /^[^\d[\]()]{3,40}$/;
 
@@ -99,6 +99,8 @@ export function parseLawText(text: string, documentId: string, format: LawFormat
   /** A section whose articles come before any chapter of it: it becomes their chapter. */
   let openSection: { number: string; title: string; preface: string[] } | undefined;
   let chapter: Chapter | undefined;
+  /** Chapters that have articles of their own: an empty one repeated later is a table of contents' line. */
+  const filled = new Set<Chapter>();
   /** Only the penal codes carry punishments the calculator can use. */
   const penal = format === 'criminal-code' || format === 'administrative-code';
   let group: string | undefined;
@@ -142,7 +144,11 @@ export function parseLawText(text: string, documentId: string, format: LawFormat
     }
     if ((m = line.match(CHAPTER))) {
       started = true;
-      chapter = { number: m[1], title: m[2], section, preface: [] };
+      let title = m[2];
+      // «ГЛАВА 3.» / «ВОИНСКИЕ ЗВАНИЯ»: the title on the line under the number (Армия Арбатского).
+      const next = lines[i + 1] ?? '';
+      if (!title && /^[^a-zа-яё]{3,80}$/.test(next) && !CHAPTER.test(next) && !ARTICLE.test(next) && !JUNK.test(next)) title = lines[++i];
+      chapter = { number: m[1], title, section, preface: [] };
       chapters.push(chapter);
       openSection = undefined;
       group = undefined;
@@ -165,6 +171,7 @@ export function parseLawText(text: string, documentId: string, format: LawFormat
         title = heading[2].replace(/\.$/, '');
       }
       article = { id: `${documentId}-${m[1]}`, number: m[1], title, chapter: chapter?.number, parts: [], notes: [] };
+      if (chapter) filled.add(chapter);
       if (headingJurisdiction) article.parts.push({ text: '', points: [], jurisdiction: headingJurisdiction });
       if (group) article.group = group;
       articles.push(article);
@@ -295,6 +302,15 @@ export function parseLawText(text: string, documentId: string, format: LawFormat
     else article.parts.push({ text: format === 'administrative-code' ? stripTrailingDash(line) : line, points: [] });
   }
 
+  // A table of contents written as «ГЛАВА 1. …» lines lists the chapters before they come: those empty copies go,
+  // and so does an empty one before the first chapter with articles (a contents' line whose chapter has no heading).
+  const firstFilled = chapters.findIndex((c) => filled.has(c));
+  const kept = chapters.filter(
+    (c, i) =>
+      filled.has(c) ||
+      c.preface.length ||
+      (i > firstFilled && !chapters.slice(i + 1).some((later) => later.number === c.number)),
+  );
   uniqueIds(articles, documentId, issues);
-  return { chapters, articles, header, footer, issues };
+  return { chapters: kept, articles, header, footer, issues };
 }

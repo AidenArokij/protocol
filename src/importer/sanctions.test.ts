@@ -29,6 +29,15 @@ describe('sanction parsing', () => {
     expect(unparsed).toEqual(['конфискацию орудия']);
   });
 
+  it('takes a suspension of the business for a mandatory add-on (КоАП Тверского 10.5 ч. 2 before 21 September)', () => {
+    const { punishment, unparsed } = parseAdministrativeSanction(
+      'наложение административного штрафа в размере от 40.000 до 110.000 рублей с административным приостановлением деятельности данного юридического лица на срок до трех месяцев.',
+    );
+    expect(punishment.alternatives).toEqual([{ kind: 'fine', min: 40000, max: 110000 }]);
+    expect(punishment.additional).toEqual(['приостановление деятельности юрлица до 3 мес']);
+    expect(unparsed).toEqual([]);
+  });
+
   it('splits offence from sanction with or without «наказывается»', () => {
     expect(splitPenalty('Деяние, — наказывается штрафом в размере 5.000 рублей.')).toEqual({
       offence: 'Деяние',

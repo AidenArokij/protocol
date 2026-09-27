@@ -25,7 +25,9 @@ describe('search by article number (real Тверской data)', () => {
     expect(labels('упк 83.1')).toEqual(['УПК ст. 83.1']);
     expect(labels('конституция 1')[0]).toBe('Конституция ст. 1');
     expect(new Set(searchArticles(TVERSKOI_PACK, 'конституция 1').map((hit) => hit.document.short))).toEqual(new Set(['Конституция']));
-    expect(labels('15-фз 10.1')).toEqual(['ПДД ст. 10.1']);
+    expect(labels('пдд 10.1')).toEqual(['ПДД ст. 10.1']);
+    // ПДД are a government decree now; 15-ФЗ is the law on organising road traffic.
+    expect(labels('15-фз 1')).toEqual(['15-ФЗ ст. 1']);
   });
 
   it('accepts a document alias and «ст.» before the number', () => {

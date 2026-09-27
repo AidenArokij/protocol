@@ -9,5 +9,16 @@
         }
       }
     }
+  },
+  "uk-85.1": {
+    "reason": "Штраф написан словами: «до двухсот тысяч рублей»; разборщик читает только цифры.",
+    "parts": {
+      "1": {
+        "punishment": {
+          "alternatives": [{ "kind": "fine", "max": 200000 }, { "kind": "imprisonment", "months": 50 }],
+          "additional": []
+        }
+      }
+    }
   }
 }

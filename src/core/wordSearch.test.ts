@@ -22,7 +22,8 @@ describe('search by words (real Тверской data)', () => {
     expect(labels('ствол')[0]).toBe('УК ст. 74 ч. 1');
     expect(labels('наркота')[0]).toBe('УК ст. 75 ч. 1');
     expect(labels('теракт')[0]).toBe('УК ст. 70');
-    expect(labels('мат')[0]).toBe('КоАП ст. 11.1');
+    // «Оскорбление» (5.4, its three parts) speaks of «нецензурных слов» and «бранной лексики» in its note too.
+    expect(labels('мат').slice(0, 4)).toContain('КоАП ст. 11.1');
     expect(labels('парковка')[0]).toBe('КоАП ст. 8.12 ч. 1');
   });
 

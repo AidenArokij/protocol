@@ -14,11 +14,28 @@ const point = (id: string, number: string, chapter?: string) => {
 };
 
 /** Points of the charters, regulations and rules written in points, and articles of those written in articles. */
+/**
+ * The shape of Тверской's ГИБДД charter before 23 September (a new one replaced it): contents in «Глава I | …»,
+ * chapters IV and V named only there, 4.2.1 written twice and a point numbered 8.2 inside chapter IV.
+ */
+const OLD_GIBDD = [
+  'ОГЛАВЛЕНИЕ', 'Глава I | Общее положение', 'Глава II | Обязанности сотрудника', 'Глава III | Запреты для сотрудника',
+  'ГЛАВА IV | Положение о правах, взысканиях и поощрениях сотрудников', 'Глава V | Положение об отделах',
+  'Глава I | Общее положение', '1.1 | Настоящий устав — это внутренний нормативный акт.',
+  'Глава II | Обязанности сотрудника', '2.1. Сотрудник обязан знать устав.',
+  'Глава III | Запреты для сотрудника', '3.1. Сотруднику запрещено нарушать устав.',
+  '4.1. Дисциплина труда — обязательное для всех сотрудников подчинение Уставу.',
+  '4.2.1. За каждый совершённый проступок может быть назначено только одно дисциплинарное взыскание.',
+  '4.2.1. В случае совершения нарушения заместителем начальника ГИБДД взыскания применяет Начальник ГИБДД.',
+  '8.2. Отпуск предоставляется по рапорту.',
+  '5.1. В ГИБДД есть отделы.',
+].join('\n');
+
 const COUNTS: [string, LawFormat, number][] = [
-  ['ch-mvd', 'points', 250], ['ch-gibdd', 'points', 126], ['ch-fso', 'points', 97], ['ch-hospital', 'points', 224], ['ch-news', 'points', 157],
+  ['ch-mvd', 'points', 250], ['ch-gibdd', 'points', 89], ['ch-fso', 'points', 97], ['ch-hospital', 'points', 223], ['ch-news', 'points', 157],
   ['sk-main', 'points', 39], ['sk-gsu', 'points', 51], ['sk-inspections', 'points', 20], ['sk-ranks', 'points', 12],
   ['rules-main', 'points', 97], ['rules-gov', 'points', 117], ['rules-crime', 'points', 52],
-  ['ch-army', 'law', 60], ['ch-army-discipline', 'law', 37], ['ch-army-guard', 'law', 44],
+  ['ch-army', 'law', 65], ['ch-army-discipline', 'law', 37], ['ch-army-guard', 'law', 44],
   ['sk-uniform', 'law', 11], ['sk-ethics', 'law', 10], ['sk-kso', 'law', 10], ['sk-appeals', 'law', 14],
 ];
 
@@ -60,8 +77,8 @@ describe('charters, regulations and project rules (real Тверской forum t
     expect(point('ch-hospital', '5.12').parts.at(-1)!.text).toBe('Строгий выговор 2/3');
   });
 
-  it('a number written twice in one chapter keeps its place in the ids (ГИБДД 4.2.1)', () => {
-    const repeated = parse('ch-gibdd').articles.filter((a) => a.number === '4.2.1').map((a) => a.id);
+  it('a number written twice in one chapter keeps its place in the ids (the old ГИБДД charter: 4.2.1)', () => {
+    const repeated = parseLawText(OLD_GIBDD, 'ch-gibdd', 'points').articles.filter((a) => a.number === '4.2.1').map((a) => a.id);
     expect(repeated).toEqual(['ch-gibdd-IV-4.2.1', 'ch-gibdd-IV-4.2.1~2']);
   });
 
@@ -69,14 +86,15 @@ describe('charters, regulations and project rules (real Тверской forum t
     expect(parse('ch-hospital').articles.some((a) => /^\d{2}\.\d{2}\.\d{3,}/.test(a.number))).toBe(false);
   });
 
-  it('«1.1 | текст» and chapters known only from the contents (ГИБДД)', () => {
-    const gibdd = parse('ch-gibdd');
-    expect(gibdd.chapters.map((c) => c.number)).toEqual(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']);
-    expect(point('ch-gibdd', '1.1', 'I').parts[0].text.startsWith('Настоящий устав — это')).toBe(true);
-    expect(point('ch-gibdd', '4.1').chapter).toBe('IV');
-    // Points on leave numbered 8.x inside chapter IV stay where they stand.
-    expect(point('ch-gibdd', '8.2', 'IV').chapter).toBe('IV');
-    expect(point('ch-gibdd', '5.1').chapter).toBe('V');
+  it('«1.1 | текст» and chapters known only from the contents (the old ГИБДД charter)', () => {
+    const gibdd = parseLawText(OLD_GIBDD, 'ch-gibdd', 'points');
+    const at = (number: string) => gibdd.articles.find((a) => a.number === number)!;
+    expect(gibdd.chapters.map((c) => c.number)).toEqual(['I', 'II', 'III', 'IV', 'V']);
+    expect(at('1.1').parts[0].text.startsWith('Настоящий устав — это')).toBe(true);
+    expect(at('4.1').chapter).toBe('IV');
+    // A point on leave numbered 8.x inside chapter IV stays where it stands.
+    expect(at('8.2').chapter).toBe('IV');
+    expect(at('5.1').chapter).toBe('V');
   });
 
   it('a numbered heading in capitals, punishments after «|» and «➤ Исключение к п. …» (больница)', () => {
@@ -155,10 +173,10 @@ const parseOn = (server: string, id: string, format: LawFormat) =>
 
 describe('charters of Арбатский and Кутузовский (real forum text)', () => {
   const CHARTERS: [string, string, LawFormat, number][] = [
-    ['arbatskiy', 'ch-mvd', 'law', 68], ['arbatskiy', 'ch-gibdd', 'law', 32], ['arbatskiy', 'ch-fsb', 'law', 23],
-    ['arbatskiy', 'ch-army', 'law', 78], ['arbatskiy', 'ch-army-guard', 'points', 41], ['arbatskiy', 'sk-charter', 'law', 67],
-    ['arbatskiy', 'ch-hospital', 'points', 125], ['arbatskiy', 'ch-news', 'points', 208],
-    ['kutuzovskiy', 'ch-mvd', 'points', 85], ['kutuzovskiy', 'ch-gibdd', 'law', 35], ['kutuzovskiy', 'ch-army-discipline', 'points', 86],
+    ['arbatskiy', 'ch-mvd', 'law', 80], ['arbatskiy', 'ch-gibdd', 'law', 32], ['arbatskiy', 'ch-fsb', 'law', 21],
+    ['arbatskiy', 'ch-army', 'law', 78], ['arbatskiy', 'sk-charter', 'law', 67],
+    ['arbatskiy', 'ch-hospital', 'points', 125], ['arbatskiy', 'ch-news', 'points', 225],
+    ['kutuzovskiy', 'ch-mvd', 'points', 337], ['kutuzovskiy', 'ch-gibdd', 'law', 33], ['kutuzovskiy', 'ch-army-discipline', 'points', 86],
     ['kutuzovskiy', 'ch-hospital', 'points', 156], ['kutuzovskiy', 'ch-news', 'points', 141], ['kutuzovskiy', 'sk-appeals', 'law', 29],
   ];
 

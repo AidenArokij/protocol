@@ -49,7 +49,9 @@ describe('manual fixes in a server build', () => {
     dir = mkdtempSync(join(tmpdir(), 'ro-helper-'));
     cpSync(join(root, 'data', 'tverskoi', 'sources'), join(dir, 'sources'), { recursive: true });
     cpSync(join(root, 'data', 'tverskoi', 'calculator.json'), join(dir, 'calculator.json'));
-    writeFileSync(join(dir, 'overrides.json'), JSON.stringify({ 'uk-999': { reason: 'test', title: 'x' } }));
+    // The server's own fixes to the УК stay, so what they resolve is not reported; the one for a missing article is added.
+    const uk = Object.fromEntries(Object.entries(overrides).filter(([id]) => id.startsWith('uk-')));
+    writeFileSync(join(dir, 'overrides.json'), JSON.stringify({ ...uk, 'uk-999': { reason: 'test', title: 'x' } }));
     const { issues } = buildPack(dir, { id: 't', name: 'T', status: 'active', documents: ['uk'] });
     expect(issues).toEqual([{ article: 'uk-999', line: 'uk-999', reason: 'Правка для несуществующей статьи' }]);
   });

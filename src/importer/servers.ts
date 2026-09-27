@@ -11,8 +11,8 @@ export const TVERSKOI: ServerSources = {
     'const', 'uk', 'koap', 'pdd', 'upk', 'tk', 'ethics',
     // Федеральные конституционные законы
     'fkz1', 'fkz2', 'fkz3', 'fkz4',
-    // Федеральные законы (15-ФЗ — это ПДД)
-    'fz1', 'fz2', 'fz3', 'fz4', 'fz5', 'fz6', 'fz7', 'fz8', 'fz9', 'fz10', 'fz11', 'fz12', 'fz13', 'fz14', 'fz16',
+    // Федеральные законы (16-ФЗ на форуме у двух законов: о собраниях и о Росгвардии)
+    'fz1', 'fz2', 'fz3', 'fz4', 'fz5', 'fz6', 'fz7', 'fz8', 'fz9', 'fz10', 'fz11', 'fz12', 'fz13', 'fz14', 'fz15', 'fz16', 'fz16-fsvng',
     // Законы Москвы
     'msk-charter', 'msk-health', 'msk-news', 'msk-property',
     // Уставы организаций
@@ -40,7 +40,7 @@ export const ARBATSKIY: ServerSources = {
     'fz-immunity', 'fz-advocacy', 'fz-business', 'fz-media', 'fz-health',
     // Уставы и положения организаций
     'ch-mvd', 'ch-gibdd', 'ch-gibdd-discipline', 'ch-gibdd-osb', 'ch-fsb', 'ch-fso',
-    'ch-army', 'ch-army-discipline', 'ch-army-guard', 'ch-army-drill', 'ch-army-service', 'ch-army-ethics', 'ch-army-checkpoint',
+    'ch-army',
     'sk-charter', 'ch-gov', 'ch-hospital', 'ch-news',
     // Правила проекта (общие для всех серверов)
     'rules-main', 'rules-gov', 'rules-crime',

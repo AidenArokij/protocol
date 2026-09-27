@@ -50,7 +50,7 @@ describe('comparing two versions of the laws', () => {
 
   it('notices a new title, a new punishment and a new note', () => {
     const retitled = structuredClone(uk);
-    retitled.articles.find((a) => a.id === 'uk-66')!.title = 'Грабеж';
+    retitled.articles.find((a) => a.id === 'uk-66')!.title = 'Открытое хищение';
     const noted = structuredClone(uk);
     noted.articles.find((a) => a.id === 'uk-66')!.notes.push({ label: 'Примечание', text: 'Новое примечание' });
     expect(diffPacks(pack(uk), pack(retitled))[0].articles.map((c) => c.articleId)).toEqual(['uk-66']);

@@ -13,10 +13,11 @@ const article = (id: string, number: string, chapter?: string) => {
 
 /** Articles in each thread of the Тверской legislative base, counted on the forum. */
 const FORUM_COUNTS: Record<string, number> = {
-  const: 117, upk: 165, tk: 40, ethics: 27,
-  fkz1: 46, fkz2: 35, fkz3: 14, fkz4: 135,
+  // УПК lost its part three, «Судебное производство», to 4-ФКЗ on 21 September.
+  const: 117, upk: 129, tk: 40, ethics: 27,
+  fkz1: 46, fkz2: 35, fkz3: 14, fkz4: 136,
   fz1: 42, fz2: 23, fz3: 37, fz4: 20, fz5: 26, fz6: 32, fz7: 31,
-  fz8: 40, fz9: 20, fz10: 4, fz11: 18, fz12: 10, fz13: 65, fz14: 15, fz16: 13,
+  fz8: 40, fz9: 20, fz10: 4, fz11: 18, fz12: 10, fz13: 71, fz14: 15, fz15: 7, fz16: 13, 'fz16-fsvng': 36,
   'msk-charter': 21, 'msk-health': 17, 'msk-news': 26, 'msk-property': 51,
 };
 
@@ -84,8 +85,7 @@ describe('laws without punishments (real Тверской forum text)', () => {
   it('numbers the parts written «ч. 1.», «ч. 1» and «Часть 1.»', () => {
     expect(article('upk', '1').parts.map((p) => p.number)).toEqual(['1', '2']);
     expect(article('fkz4', '1').parts.map((p) => p.number)).toEqual(['1', '2']);
-    // «Исключение: …» after ч. 1 stays where it is, as a paragraph of its own.
-    expect(article('fz8', '1', 'VIII').parts.map((p) => p.number)).toEqual(['1', undefined, '2', '3', '4']);
+    expect(article('fz8', '1', 'VIII').parts.map((p) => p.number)).toEqual(['1', '2', '3', '4']);
   });
 
   it('leaves the adoption lines of the Moscow laws out of the last article', () => {

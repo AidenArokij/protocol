@@ -34,7 +34,7 @@ describe('ПДД Тверского (real forum text)', () => {
   });
 
   it('keeps lists, sub-numbered parts and notes', () => {
-    expect(article('1.2').parts[0].points).toHaveLength(24);
+    expect(article('1.2').parts[0].points).toHaveLength(25);
     expect(article('1.2').parts[0].points[0]).toEqual({ marker: '1', text: 'велосипедист - лицо, управляющее велосипедом;' });
     expect(article('15.5').parts.map((p) => p.number)).toEqual(['15.5.1', '15.5.2']);
     expect(article('3.6').parts[0].points.map((p) => p.marker)).toEqual(['а', 'б', 'в', 'г', 'д']);
@@ -43,9 +43,9 @@ describe('ПДД Тверского (real forum text)', () => {
 
   it('leaves the appendix reference and adoption lines out of the last article', () => {
     expect(pdd.footer).toEqual([
+      // A decree of the government since 21 September: signed, not passed by the Duma.
       'Приложение к ПДД - дорожные знаки, разметка и пр.',
-      'Принят Государственной Думой 27 августа 2026 года',
-      'Подписан Премьер-Министром РО 27 августа 2026 года',
+      'Подписано Премьер-Министром РО 27 августа 2026 года',
     ]);
     expect(article('15.19').parts).toHaveLength(1);
   });
