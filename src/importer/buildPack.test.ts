@@ -24,14 +24,16 @@ describe('bundled Тверской pack', () => {
     // Never edited since posting: current as of the post itself.
     expect(TVERSKOI_PACK.documents.find((d) => d.id === 'fkz2')?.source).toMatchObject({ thread: 14682, lastEdited: '2026-09-02T21:44:37+03:00' });
     expect(TVERSKOI_PACK.server).toEqual({ id: 'tverskoi', name: 'Тверской', status: 'active' });
-    // The version is the newest edit: the new charter of the МВД, 24 September, in a thread of its own. Before it,
-    // the only update added the other rules of the project.
-    expect(TVERSKOI_PACK.version).toBe('2026-09-24T15:52:15+03:00');
+    // The version is the newest edit: the project rules checked on 27 September (three of them edited without a
+    // mark on the forum). Before them: the new charter of the МВД, 24 September, in a thread of its own; and the
+    // update that added the other rules of the project.
+    expect(TVERSKOI_PACK.version).toBe('2026-09-27T21:58:06+03:00');
     expect(TVERSKOI_PACK.documents.find((d) => d.id === 'ch-mvd')?.source).toMatchObject({ thread: 27660 });
-    expect(TVERSKOI_PACK.changes).toHaveLength(2);
-    expect(TVERSKOI_PACK.changes[0].documents.map((d) => d.documentId)).toEqual(['ch-mvd']);
-    expect(TVERSKOI_PACK.changes[1].documents.every((d) => d.kind === 'added' && d.documentId.startsWith('rules-'))).toBe(true);
-    expect(TVERSKOI_PACK.changes[1].documents).toHaveLength(10);
+    expect(TVERSKOI_PACK.changes).toHaveLength(3);
+    expect(TVERSKOI_PACK.changes[0].documents.every((d) => d.documentId.startsWith('rules-'))).toBe(true);
+    expect(TVERSKOI_PACK.changes[1].documents.map((d) => d.documentId)).toEqual(['ch-mvd']);
+    expect(TVERSKOI_PACK.changes[2].documents.every((d) => d.kind === 'added' && d.documentId.startsWith('rules-'))).toBe(true);
+    expect(TVERSKOI_PACK.changes[2].documents).toHaveLength(10);
   });
 
   it('holds the legislative base, the charters of the organisations and the project rules: 59 documents', () => {

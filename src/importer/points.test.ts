@@ -17,7 +17,7 @@ const point = (id: string, number: string, chapter?: string) => {
 const COUNTS: [string, LawFormat, number][] = [
   ['ch-mvd', 'points', 250], ['ch-gibdd', 'points', 126], ['ch-fso', 'points', 97], ['ch-hospital', 'points', 224], ['ch-news', 'points', 157],
   ['sk-main', 'points', 39], ['sk-gsu', 'points', 51], ['sk-inspections', 'points', 20], ['sk-ranks', 'points', 12],
-  ['rules-main', 'points', 96], ['rules-gov', 'points', 117], ['rules-crime', 'points', 49],
+  ['rules-main', 'points', 97], ['rules-gov', 'points', 117], ['rules-crime', 'points', 52],
   ['ch-army', 'law', 60], ['ch-army-discipline', 'law', 37], ['ch-army-guard', 'law', 44],
   ['sk-uniform', 'law', 11], ['sk-ethics', 'law', 10], ['sk-kso', 'law', 10], ['sk-appeals', 'law', 14],
 ];
