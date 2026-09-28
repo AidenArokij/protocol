@@ -73,23 +73,32 @@ export interface Laws {
 export function useLaws(server: string | null): Laws {
   const platform = usePlatform();
   const bundled = packFor(server ?? '');
-  const [pack, setPack] = useState(bundled);
-  const [status, setStatus] = useState<LawsStatus>({ kind: 'idle' });
+  // Each kept with the server it is for: another server shows its built-in laws and a fresh status at once,
+  // while rendering, rather than after an effect has put them back.
+  const [loaded, setLoaded] = useState({ server, pack: bundled });
+  const [said, setSaid] = useState<{ server: string | null; status: LawsStatus }>({ server, status: { kind: 'idle' } });
+  const pack = loaded.server === server ? loaded.pack : bundled;
+  const status: LawsStatus = said.server === server ? said.status : { kind: 'idle' };
+  const setStatus = useCallback((next: LawsStatus) => setSaid({ server, status: next }), [server]);
   // Read inside the downloads, which outlive a render: the pack in use and the server it is for.
-  const current = useRef(bundled);
+  const current = useRef(pack);
   const serverRef = useRef(server);
   const busy = useRef(false);
-
-  const use = (next: ServerPack) => {
-    current.current = next;
-    setPack(next);
-  };
-
-  // The server's built-in laws at once, then the ones downloaded before if they are newer.
   useEffect(() => {
+    current.current = pack;
     serverRef.current = server;
-    use(bundled);
-    setStatus({ kind: 'idle' });
+  }, [pack, server]);
+
+  const use = useCallback(
+    (next: ServerPack) => {
+      current.current = next;
+      setLoaded({ server, pack: next });
+    },
+    [server],
+  );
+
+  // The laws downloaded before, if they are newer than the built-in ones.
+  useEffect(() => {
     if (!server) return;
     let active = true;
     platform.readLaws(server).then(
@@ -102,7 +111,7 @@ export function useLaws(server: string | null): Laws {
     return () => {
       active = false;
     };
-  }, [platform, server, bundled]);
+  }, [platform, server, use]);
 
   const run = useCallback(
     async (manual: boolean) => {
@@ -144,7 +153,7 @@ export function useLaws(server: string | null): Laws {
         busy.current = false;
       }
     },
-    [platform, server],
+    [platform, server, use, setStatus],
   );
 
   // By itself at start and every few hours, as the updates of the app, and only while those are on.

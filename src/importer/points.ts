@@ -56,7 +56,12 @@ function ordinal(number: string): number {
 
 function toRoman(n: number): string {
   let out = '';
-  for (const [value, letters] of ROMAN) while (n >= value) (out += letters), (n -= value);
+  for (const [value, letters] of ROMAN) {
+    while (n >= value) {
+      out += letters;
+      n -= value;
+    }
+  }
   return out;
 }
 

@@ -1,26 +1,34 @@
-// The AI analysis of a situation: Gemini reads only the articles the search found in the server's laws.
-// It never sees the whole pack, so it cannot cite an article it was not given — that is the guard against
-// made-up laws, not a request in the prompt alone.
+// The AI in the app: which service to ask (from the settings), the conversation with its history, and speech.
+// The legal pipeline itself — context, answer format, checks, calculator — is the protocol core (src/protocol).
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { findForSituation, sourcesText, type SearchHit, type ServerPack } from '../core';
+import type { Organization, ServerPack } from '../core';
+import {
+  AiError,
+  analyse,
+  calculateCharges,
+  geminiProvider,
+  lawTerms as findLawTerms,
+  serverProvider,
+  validateAnswer,
+  type AiProvider as AiService,
+  type Analysis,
+  type CaseState,
+  type Depth,
+  type LegalAnswer,
+  type Perspective,
+  type Turn,
+} from '../protocol';
 import type { PlatformAdapter } from '../platform/types';
 import { AI_SERVER } from './about';
 import { recognize } from './localSpeech';
 import { wavBase64, type RecordedAudio } from './voice';
 
+export { AiError, SOURCES } from '../protocol';
+export type { Perspective } from '../protocol';
+
 /** The player's own Gemini key, in the settings file on this computer. */
 export const AI_KEY_SETTING = 'ai.key';
 export const AI_KEY_URL = 'https://aistudio.google.com/apikey';
-
-/** If the first model is overloaded, the next one is asked, without troubling the player. */
-const MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
-const API = 'https://generativelanguage.googleapis.com/v1beta/models';
-/** Articles given to the AI for one question. */
-export const SOURCES = 14;
-/** Earlier questions and answers sent along, so a follow-up («а если он в маске?») is understood. */
-const HISTORY_TURNS = 6;
-
-export type Perspective = 'state' | 'citizen' | 'lawyer' | 'crime';
 
 export const PERSPECTIVES: { id: Perspective; label: string }[] = [
   { id: 'state', label: 'Государство' },
@@ -29,80 +37,8 @@ export const PERSPECTIVES: { id: Perspective; label: string }[] = [
   { id: 'crime', label: 'Крайм' },
 ];
 
-const PERSPECTIVE_PROMPTS: Record<Perspective, string> = {
-  state:
-    'ПЕРСПЕКТИВА — ГОСУДАРСТВО (сотрудник МВД/госслужащий): какие у него полномочия и основания для действий; какой порядок процедуры; какие ограничения; что он обязан сделать; не превышает ли он полномочия.',
-  citizen:
-    'ПЕРСПЕКТИВА — ГРАЖДАНСКИЙ: какие у игрока права; что от него законно требуют; обязан ли он это выполнять; что он вправе проверить или оспорить; как корректно продолжить RP.',
-  lawyer:
-    'ПЕРСПЕКТИВА — АДВОКАТ: соблюдена ли законность процедуры; какие права доверителя затронуты; были ли основания у другой стороны; что проверить или потребовать; что можно обжаловать — только если это видно из источников, не выдумывай нарушений.',
-  crime:
-    'ПЕРСПЕКТИВА — КРАЙМ: какие риски у игрока-преступника; какие статьи к нему могут применить; какие RP-варианты у него дальше. Не поощряй и не оправдывай преступление — только правовые последствия по фактам.',
-};
-
-function systemPrompt(pack: ServerPack, perspective?: Perspective): string {
-  return [
-    `Ты — юридический ассистент для игрового RP-сервера Russia Online (GTA 5 RP), сервер «${pack.server.name}». У сервера своё вымышленное законодательство — оно НЕ совпадает с законами РФ.`,
-    'ФОРМАТ ОТВЕТА на вопрос по законам или RP-ситуации:\nСуть: одна-две фразы — что происходит и главный вывод.\nСтатьи: каждая применимая статья отдельной строкой, начиная с «- », в точности как она подписана в источниках (например «- УК ст. 65 «Кража» — почему подходит»).\nДетали: 1–3 предложения, что это значит на практике, только по тексту источников.',
-    'Если сообщение не вопрос по законам (приветствие, вопрос о тебе) — ответь коротко обычным текстом, без формата.',
-    'СТРОГИЕ ПРАВИЛА:\n1. Используй только источники из сообщения игрока. Никогда не ссылайся на законы РФ (УК РФ, КоАП РФ и т.д.).\n2. Не придумывай статьи, части, санкции и номера, которых нет в источниках.\n3. Если среди источников нет ничего по делу — прямо напиши «В законах сервера по этой ситуации ничего не нашлось» и посоветуй, какими словами поискать.\n4. Если статья подходит лишь частично — так и скажи в «Деталях».\n5. Наказание называй только так, как оно записано в источнике.',
-    perspective ? PERSPECTIVE_PROMPTS[perspective] : '',
-  ]
-    .filter(Boolean)
-    .join('\n\n');
-}
-
-/** The answer goes on a small card over the game, read in the middle of an RP scene. */
-const BRIEF =
-  '\n\nОТВЕТ ДЛЯ КАРТОЧКИ ПОВЕРХ ИГРЫ: не больше 4 коротких строк — «Суть: …», «Статья: …» (с наказанием, если оно есть в источнике), «Что делать: …». Без вступлений и пояснений. Вопрос записан с голоса: если он обрывочный, непонятный или не о законах и правилах — ответь одной строкой «Не понял вопрос: …» с тем, что расслышал, и попроси спросить ещё раз. Не отвечай на то, чего не спрашивали.';
-
-const TERMS_PROMPT =
-  'Игрок описал ситуацию на RP-сервере своими словами. Перескажи её 4–8 короткими поисковыми фразами (2–4 слова) на языке законов: юридические термины, названия правонарушений, участники, предметы («незаконное ношение оружия», «сокрытие лица», «неповиновение сотруднику полиции»). Не называй номеров статей и названий законов. Ответь только JSON-массивом строк.';
-
-export interface GeminiTurn {
-  role: 'user' | 'model';
-  /** Text, or a file sent along with it — a voice recording. */
-  parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[];
-}
-
-export class AiError extends Error {
-  constructor(
-    message: string,
-    readonly overloaded = false,
-  ) {
-    super(message);
-  }
-}
-
-async function generate(key: string, model: string, system: string, contents: GeminiTurn[], json = false): Promise<string> {
-  let response: Response;
-  try {
-    response = await fetch(`${API}/${model}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents,
-        ...(json ? { generationConfig: { responseMimeType: 'application/json' } } : {}),
-      }),
-    });
-  } catch {
-    throw new AiError('Нет связи с Gemini — проверьте интернет.');
-  }
-  const body = (await response.json().catch(() => null)) as {
-    candidates?: { content?: { parts?: { text?: string }[] } }[];
-    error?: { message?: string; status?: string };
-  } | null;
-  if (!response.ok || body?.error) {
-    const message = body?.error?.message ?? `код ${response.status}`;
-    const overloaded = response.status === 503 || response.status === 429 || /overload|high demand|unavailable/i.test(message);
-    if (/api key not valid|API_KEY_INVALID/i.test(message)) throw new AiError('Ключ Gemini не подходит. Проверьте его в настройках.');
-    throw new AiError(`Gemini вернул ошибку: ${message}`, overloaded);
-  }
-  const text = body?.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('') ?? '';
-  if (!text.trim()) throw new AiError('Gemini прислал пустой ответ.');
-  return text;
-}
+/** A message to the AI: text, or a file sent along with it — a voice recording. */
+export type GeminiTurn = Turn;
 
 // ——— Where the questions go ———
 
@@ -124,7 +60,7 @@ export async function connect(platform: PlatformAdapter): Promise<AiConnection> 
   const provider = (await platform.readSetting<AiProvider>(AI_PROVIDER_SETTING)) ?? 'protocol';
   if (provider === 'gemini') {
     const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
-    if (!key) throw new AiError(NO_KEY);
+    if (!key) throw new AiError(NO_KEY, 'key');
     return { provider, key };
   }
   let device = await platform.readSetting<string>(DEVICE_SETTING);
@@ -136,87 +72,46 @@ export async function connect(platform: PlatformAdapter): Promise<AiConnection> 
   return { provider: 'protocol', server, device };
 }
 
-async function viaServer(connection: Extract<AiConnection, { provider: 'protocol' }>, path: string, body: unknown): Promise<string> {
-  let response: Response;
-  try {
-    response = await fetch(`${connection.server}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Device': connection.device },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    throw new AiError('Нет связи с сервером ПРОТОКОЛА — проверьте интернет.');
-  }
-  const answer = (await response.json().catch(() => null)) as { text?: string; error?: string } | null;
-  if (!response.ok || answer?.error) throw new AiError(answer?.error ?? `Сервер ПРОТОКОЛА не ответил (код ${response.status}).`);
-  return answer?.text ?? '';
-}
-
-/** The turns as the server takes them: OpenAI's roles, text only. */
-const asMessages = (contents: GeminiTurn[]) =>
-  contents.map((turn) => ({
-    role: turn.role === 'model' ? 'assistant' : 'user',
-    content: turn.parts.map((part) => ('text' in part ? part.text : '')).join('\n'),
-  }));
+/** The service behind a connection. */
+export const serviceFor = (connection: AiConnection): AiService =>
+  connection.provider === 'protocol' ? serverProvider(connection.server, connection.device) : geminiProvider(connection.key);
 
 /**
  * Asks the AI. Through ПРОТОКОЛ's server, `counts` says whether this is a question of the player's daily
- * limit or only a step of one (the law terms, the trainer's questions); Gemini is asked model by model while
- * they are overloaded.
+ * limit or only a step of one (the law terms, the trainer's questions); `think` lets the model reason longer.
  */
-/** `think`: the question needs reasoning, not just a lookup — ПРОТОКОЛ's server lets the model think longer. */
-export async function ask(connection: AiConnection, system: string, contents: GeminiTurn[], json = false, counts = true, think = false): Promise<string> {
-  if (connection.provider === 'protocol') {
-    const text = await viaServer(connection, '/v1/chat', { system, messages: asMessages(contents), json, counts, ...(think ? { think } : {}) });
-    if (!text.trim()) throw new AiError('ИИ прислал пустой ответ — попробуйте ещё раз.');
-    return text;
-  }
-  const key = connection.key;
-  let last: unknown;
-  for (const model of MODELS) {
-    try {
-      return await generate(key, model, system, contents, json);
-    } catch (error) {
-      last = error;
-      if (!(error instanceof AiError && error.overloaded)) throw error;
-    }
-  }
-  throw new AiError(`Все модели Gemini сейчас перегружены. ${last instanceof Error ? last.message : ''}`.trim());
+export function ask(connection: AiConnection, system: string, contents: Turn[], json = false, counts = true, think = false): Promise<string> {
+  return serviceFor(connection).complete({ system, turns: contents, json, counts, think });
 }
 
 /** The situation in the words of the law, for the search; nothing when the AI could not say. */
-export async function lawTerms(connection: AiConnection, situation: string): Promise<string[]> {
-  try {
-    const text = await ask(connection, TERMS_PROMPT, [{ role: 'user', parts: [{ text: situation }] }], true, false);
-    const parsed: unknown = JSON.parse(text);
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string').slice(0, 10) : [];
-  } catch {
-    // The search still has the situation's own words.
-    return [];
-  }
-}
+export const lawTerms = (connection: AiConnection, situation: string) => findLawTerms(serviceFor(connection), situation);
 
 export interface AiMessage {
   id: number;
   role: 'user' | 'ai';
   text: string;
   perspective?: Perspective;
-  /** What the answer stands on: the articles given to the AI. */
-  sources?: SearchHit[];
+  /** The analysis: its blocks, the articles it stood on, the checks and the calculator's count. */
+  analysis?: Analysis;
   /** The AI could not answer: the text says why. */
   failed?: boolean;
   pending?: boolean;
 }
 
 export interface SendOptions {
-  /** A few short lines for a card over the game, not a full analysis. */
+  /** A few short lines for a card over the game: always the quick analysis. */
   brief?: boolean;
 }
 
 export interface AiChat {
   messages: AiMessage[];
   busy: boolean;
-  /** Asks about a situation, or the last one again from a side. */
+  /** Quick (article → punishment) or full (facts → norms → alternatives → procedure). */
+  depth: Depth;
+  setDepth: (depth: Depth) => void;
+  /** The case so far: its facts, assumptions and articles; null before the first answer. */
+  current: CaseState | null;
   /** Asks; resolves with the answer, or a failed one saying why — or nothing while another question is on its way. */
   send: (text: string, perspective?: Perspective, options?: SendOptions) => Promise<AiMessage | undefined>;
   /** A new conversation; the one on show stays in the history. */
@@ -230,13 +125,36 @@ export interface AiChat {
   forget: (id?: string) => void;
 }
 
+export const DEPTH_SETTING = 'ai.depth';
+
+/** The case the latest analysis left, if any. */
+const caseOf = (messages: AiMessage[]): CaseState | undefined =>
+  [...messages].reverse().find((m) => m.analysis && !m.analysis.answer.reply)?.analysis?.case;
+
 /** The conversation with the AI, kept while the overlay lives: going to an article and back keeps it. */
-export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocuments?: string[]): AiChat {
+export function useAiChat(platform: PlatformAdapter, pack: ServerPack, organization?: Organization): AiChat {
   const [messages, setMessages] = useState<AiMessage[]>([]);
   const [busy, setBusy] = useState(false);
+  const [depth, setDepthState] = useState<Depth>('quick');
   const nextId = useRef(1);
+  // The messages as last rendered, for a question asked from an event: read there, never while rendering.
   const current = useRef(messages);
-  current.current = messages;
+  useEffect(() => {
+    current.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    void platform.readSetting<Depth>(DEPTH_SETTING).then((saved) => {
+      if (saved) setDepthState(saved === 'full' ? 'full' : 'quick');
+    });
+  }, [platform]);
+  const setDepth = useCallback(
+    (next: Depth) => {
+      setDepthState(next);
+      void platform.writeSetting(DEPTH_SETTING, next);
+    },
+    [platform],
+  );
 
   // Conversations of this server kept on the computer, newest first; the one on show has its id.
   const storeKey = historyKey(pack.server.id);
@@ -276,7 +194,8 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
       if (!question || busy) return undefined;
       const asked: AiMessage = { id: nextId.current++, role: 'user', text: question, perspective };
       const answerId = nextId.current++;
-      const earlier = current.current.filter((m) => !m.pending && !m.failed);
+      // The case the last answer left: a follow-up changes it rather than telling the story again.
+      const previous = caseOf(current.current);
       changed.current = true;
       setMessages((list) => [...list, asked, { id: answerId, role: 'ai', text: '', pending: true }]);
       setBusy(true);
@@ -286,29 +205,25 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
         return done;
       };
       try {
-        const key = await connect(platform);
-        // A follow-up leans on the question before it: both go into the search.
-        const previous = [...earlier].reverse().find((m) => m.role === 'user')?.text ?? '';
-        const context = perspective ? question : `${previous}\n${question}`.trim();
-        const terms = await lawTerms(key, context);
-        const sources = findForSituation(pack, context, { boostDocuments, lawTerms: terms, limit: SOURCES });
-        const history: GeminiTurn[] = earlier.slice(-HISTORY_TURNS * 2).map((m) => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.text }],
-        }));
-        const prompt = sources.length
-          ? `Вопрос игрока: ${question}\n\nНайденные в законах сервера источники (используй только их):\n\n${sourcesText(sources)}`
-          : `Вопрос игрока: ${question}\n\nПоиск по законам сервера ничего не нашёл. Источников нет — скажи об этом честно, ничего не придумывай.`;
-        const system = systemPrompt(pack, perspective) + (options.brief ? BRIEF : '');
-        const answer = await ask(key, system, [...history, { role: 'user', parts: [{ text: prompt }] }]);
-        return finish({ text: answer.trim(), sources, perspective });
+        const connection = await connect(platform);
+        const side = PERSPECTIVES.find((p) => p.id === perspective)?.label;
+        const analysis = await analyse({
+          provider: serviceFor(connection),
+          pack,
+          organization,
+          message: perspective && previous ? `Разбери это же дело с точки зрения: ${side}.` : question,
+          previous,
+          perspective,
+          depth: options.brief ? 'quick' : depth,
+        });
+        return finish({ text: answerText(analysis.answer), analysis, perspective });
       } catch (error) {
         return finish({ failed: true, text: error instanceof Error ? error.message : String(error) });
       } finally {
         setBusy(false);
       }
     },
-    [busy, platform, pack, boostDocuments],
+    [busy, platform, pack, organization, depth],
   );
 
   const clear = useCallback(() => {
@@ -347,7 +262,20 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
     setMessages((list) => [...list, { id: nextId.current++, role: 'ai', text, failed: true }]);
   }, []);
 
-  return { messages, busy, send, clear, note, history, open, forget };
+  return { messages, busy, depth, setDepth, current: caseOf(messages) ?? null, send, clear, note, history, open, forget };
+}
+
+/** The analysis as plain lines: for the card over the game, copying, and the saved history. */
+export function answerText(answer: LegalAnswer): string {
+  if (answer.reply) return answer.reply;
+  return [
+    answer.situation && `Суть: ${answer.situation}`,
+    answer.norms.length ? `Статьи: ${answer.norms.map((n) => n.ref + (n.part ? ` ч. ${n.part}` : '')).join(', ')}` : '',
+    answer.punishment && `Наказание: ${answer.punishment}`,
+    answer.procedure[0] && `Что делать: ${answer.procedure[0]}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 // ——— The history of conversations ———
@@ -356,13 +284,18 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
 export const historyKey = (server: string) => `ai.history:${server}`;
 const HISTORY_LIMIT = 30;
 
-/** A message as saved: the articles it stood on by their ids, found again in the laws when opened. */
+/**
+ * A message as saved: the analysis as the AI gave it, and the articles it was shown by their ids — found again in
+ * the laws when opened, and checked again against them, so an old answer is judged by today's laws.
+ */
 interface StoredMessage {
   role: 'user' | 'ai';
   text: string;
   perspective?: Perspective;
   failed?: boolean;
-  sources?: { document: string; article: string }[];
+  answer?: LegalAnswer;
+  sources?: { id?: string; document: string; article: string; part?: string }[];
+  case?: CaseState;
 }
 
 export interface StoredConversation {
@@ -377,24 +310,50 @@ export interface StoredConversation {
 const newConversationId = () => `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
 function storeMessage(message: AiMessage): StoredMessage {
-  const { role, text, perspective, failed, sources } = message;
+  const { role, text, perspective, failed, analysis } = message;
   return {
     role,
     text,
     ...(perspective ? { perspective } : {}),
     ...(failed ? { failed } : {}),
-    ...(sources?.length ? { sources: sources.map((hit) => ({ document: hit.document.id, article: hit.article.id })) } : {}),
+    ...(analysis
+      ? {
+          answer: analysis.answer,
+          case: analysis.case,
+          sources: analysis.sources.map(({ id, hit }) => ({
+            id,
+            document: hit.document.id,
+            article: hit.article.id,
+            ...(hit.part?.number ? { part: hit.part.number } : {}),
+          })),
+        }
+      : {}),
   };
 }
 
-/** A saved message back as it was; an article the laws no longer have is left out of its sources. */
+/** A saved message back as it was, its answer checked again against the laws as they are now. */
 function restoreMessage(pack: ServerPack, message: StoredMessage): Omit<AiMessage, 'id'> {
-  const sources = message.sources?.flatMap(({ document, article }) => {
+  const restored: Omit<AiMessage, 'id'> = { role: message.role, text: message.text, perspective: message.perspective, failed: message.failed };
+  if (!message.answer) return restored;
+  // Under the ids the AI cited them by; an article the laws no longer have is missing, and the checks say so.
+  const sources = (message.sources ?? []).flatMap(({ id, document, article, part }, i) => {
     const doc = pack.documents.find((d) => d.id === document);
     const found = doc?.articles.find((a) => a.id === article);
-    return doc && found ? [{ document: doc, article: found }] : [];
+    if (!doc || !found) return [];
+    const piece = part ? found.parts.find((p) => p.number === part) : undefined;
+    return [{ id: id ?? `S${i + 1}`, hit: { document: doc, article: found, ...(piece ? { part: piece } : {}) } }];
   });
-  return { role: message.role, text: message.text, perspective: message.perspective, failed: message.failed, sources };
+  const validation = validateAnswer(pack, sources, message.answer);
+  return {
+    ...restored,
+    analysis: {
+      answer: message.answer,
+      sources,
+      validation,
+      calculation: calculateCharges(pack, validation),
+      case: message.case ?? { facts: message.answer.facts, assumptions: message.answer.assumptions, norms: [], conclusion: message.answer.situation },
+    },
+  };
 }
 
 // ——— Voice ———

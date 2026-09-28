@@ -71,9 +71,13 @@ export function useUpdates(): Updates {
   // Only once the setting is known: turned off, the app does not go online by itself at all.
   useEffect(() => {
     if (!auto) return;
-    void run(false);
+    // The first check right after the first render, then every few hours.
+    const first = setTimeout(() => void run(false), 0);
     const timer = setInterval(() => void run(false), CHECK_EVERY_MS);
-    return () => clearInterval(timer);
+    return () => {
+      clearTimeout(first);
+      clearInterval(timer);
+    };
   }, [auto, run]);
 
   const setAuto = (on: boolean) => {

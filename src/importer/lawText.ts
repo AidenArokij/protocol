@@ -38,7 +38,7 @@ export interface ParsedLaw {
 /** Zero-width spaces and non-breaking spaces from the forum markup; blank lines dropped. */
 export function cleanLines(text: string): string[] {
   return text
-    .replace(/[​‌‍﻿]/g, '')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
     .replace(/ /g, ' ')
     .split(/\r?\n/)
     .map((line) => line.replace(/\s+/g, ' ').trim())

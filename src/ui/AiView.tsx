@@ -1,6 +1,7 @@
-import { useEffect, useRef, type ReactNode } from 'react';
-import { articleLabel, type SearchHit } from '../core';
-import { PERSPECTIVES, type AiChat, type AiMessage } from './ai';
+import { useEffect, useRef } from 'react';
+import { articleLabel, type SearchHit, type Stage } from '../core';
+import { PERSPECTIVES, type AiChat } from './ai';
+import { AnswerView } from './AnswerView';
 import { BackIcon, WarnIcon } from './icons';
 
 /** «УК ст. 65» — how an answer names an article, without its title. */
@@ -49,43 +50,6 @@ export function AiTabs({ tab, onTab }: { tab: AiTab; onTab: (tab: AiTab) => void
   );
 }
 
-const SECTION = /^(Суть|Статьи|Статья|Детали)\s*:\s*/i;
-
-/** The answer as the AI wrote it: its sections in bold, and every line citing a found article opens that article. */
-function Answer({ message, onOpen }: { message: AiMessage; onOpen: (hit: SearchHit) => void }) {
-  const sources = message.sources ?? [];
-  const lines = message.text.split('\n').map((line) => line.replace(/\*\*/g, '').trim()).filter(Boolean);
-  return (
-    <div className="ai__answer">
-      {lines.map((line, i) => {
-        const section = line.match(SECTION);
-        const rest = section ? line.slice(section[0].length) : line.replace(/^[-•*]\s+/, '');
-        const cited = citedIn(rest, sources);
-        const body: ReactNode = cited ? (
-          <button type="button" className="ai__cite" title="Открыть статью" onClick={() => onOpen(cited)}>
-            {rest}
-          </button>
-        ) : (
-          rest
-        );
-        if (section) {
-          return (
-            <p key={i} className="ai__line">
-              <b className="ai__section">{section[1]}</b>
-              {rest && <> {body}</>}
-            </p>
-          );
-        }
-        return (
-          <p key={i} className={/^[-•*]\s+/.test(line) ? 'ai__line ai__line--item' : 'ai__line'}>
-            {body}
-          </p>
-        );
-      })}
-    </div>
-  );
-}
-
 export function AiView({
   chat,
   backLabel,
@@ -93,8 +57,18 @@ export function AiView({
   onOpen,
   onSettings,
   onTab,
+  calculable,
+  onCharge,
+  onPinArticle,
+  onCopy,
 }: {
   chat: AiChat;
+  /** Documents the calculator counts. */
+  calculable: string[];
+  /** Puts articles into the calculator and shows it. */
+  onCharge: (hits: (SearchHit & { stage?: Stage })[]) => void;
+  onPinArticle: (hit: SearchHit) => void;
+  onCopy: (text: string) => Promise<void>;
   backLabel: string;
   onBack: () => void;
   /** Opens a found article, as from the search. */
@@ -126,6 +100,32 @@ export function AiView({
         )}
       </div>
       <AiTabs tab="chat" onTab={onTab} />
+      <div className="ai__depth" role="radiogroup" aria-label="Глубина разбора">
+        {(
+          [
+            ['quick', 'Быстрый разбор', 'Статья → нарушение → наказание → источник'],
+            ['full', 'Полный разбор', 'Факты → нормы → альтернативы → процедура → расчёт; дольше'],
+          ] as const
+        ).map(([id, label, title]) => (
+          <button key={id} type="button" role="radio" aria-checked={chat.depth === id} title={title} className={chat.depth === id ? 'chip-btn chip-btn--on' : 'chip-btn'} onClick={() => chat.setDepth(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {chat.current && chat.current.facts.length > 0 && (
+        <details className="ai__facts">
+          <summary>Факты дела: {chat.current.facts.length}</summary>
+          <ul className="answer__list">
+            {chat.current.facts.map((fact) => (
+              <li key={fact} className={/\(изменено\)\s*$/.test(fact) ? 'fact fact--changed' : 'fact'}>
+                {fact}
+              </li>
+            ))}
+          </ul>
+          {chat.current.norms.length > 0 && <p className="set__hint">Статьи: {chat.current.norms.join(', ')}</p>}
+          <p className="set__hint">Исправьте факт или спросите «а если…» в поле сверху — ИИ пересмотрит только то, что изменилось.</p>
+        </details>
+      )}
 
       {chat.messages.length === 0 && (
         <div className="ai__intro">
@@ -166,22 +166,29 @@ export function AiView({
           ) : message.failed ? (
             <div key={message.id} className="warn" role="alert">
               <WarnIcon />
-              <span>{message.text}</span>
+              <span>
+                {message.text} ИИ сейчас недоступен — вы можете продолжить{' '}
+                <button className="link" type="button" onClick={onBack}>
+                  поиск по законам
+                </button>
+                , он работает и без ИИ.
+              </span>
             </div>
           ) : (
             <div key={message.id} className="ai__reply">
-              <Answer message={message} onOpen={onOpen} />
-              {message.sources && message.sources.length > 0 && (
-                <details className="ai__sources">
-                  <summary>Статьи, которые видел ИИ: {message.sources.length}</summary>
-                  <div className="ai__chips">
-                    {message.sources.map((hit) => (
-                      <button key={hit.article.id} type="button" className="ai__chip" title={hit.article.title || hit.document.title} onClick={() => onOpen(hit)}>
-                        {shortLabel(hit)}
-                      </button>
-                    ))}
-                  </div>
-                </details>
+              {message.analysis ? (
+                <AnswerView
+                  analysis={message.analysis}
+                  busy={chat.busy}
+                  calculable={calculable}
+                  onOpen={onOpen}
+                  onCharge={onCharge}
+                  onPinArticle={onPinArticle}
+                  onCopy={onCopy}
+                  onClarify={(text) => void chat.send(text)}
+                />
+              ) : (
+                <p className="ai__line">{message.text}</p>
               )}
             </div>
           ),

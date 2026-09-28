@@ -13,6 +13,7 @@ import {
   type ChargeItem,
   type LawDocument,
   type Mode,
+  type Stage,
   type Offender,
   type Part,
   type SearchHit,
@@ -27,6 +28,7 @@ import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
 import { transcribe, useAiChat } from './ai';
 import { AiView, type AiTab } from './AiView';
+import { cardText } from './AnswerView';
 import { DocumentView } from './DocumentView';
 import { TrainerView } from './TrainerView';
 import { LawyerView } from './LawyerView';
@@ -171,7 +173,7 @@ export function Overlay({
   // The AI analysis: while it is open, the search field takes the situation instead of a query.
   const [aiOpen, setAiOpen] = useState(false);
   const [aiDraft, setAiDraft] = useState('');
-  const chat = useAiChat(platform, pack, boostDocuments);
+  const chat = useAiChat(platform, pack, organization);
   // The AI screen has two tabs: analysing a situation, and writing a document about it.
   const [aiTab, setAiTab] = useState<AiTab>('chat');
   const writer = useDocumentWriter(platform, pack, boostDocuments);
@@ -299,6 +301,15 @@ export function Overlay({
       list.some((c) => c.key === key) ? list.filter((c) => c.key !== key) : [...list, { key, hit, stage: 'done', amount: '', days: '', unpaid: '' }],
     );
     searchRef.current?.focus();
+  };
+  /** Articles the AI found, into the calculator: the ones not in it yet, at the stage the AI saw. */
+  const addCharges = (hits: (SearchHit & { stage?: Stage })[]) => {
+    const fresh = hits.filter((hit) => addable(hit) && !inCalculator(hit));
+    fresh.forEach(remember);
+    setCharges((list) => [
+      ...list,
+      ...fresh.filter((hit) => !list.some((c) => c.key === hitKey(hit))).map((hit) => ({ key: hitKey(hit), hit, stage: hit.stage ?? 'done', amount: '', days: '', unpaid: '' })),
+    ]);
   };
   const items = useMemo(
     () =>
@@ -487,7 +498,7 @@ export function Overlay({
       const answer = await chat.send(question, undefined, { brief: true });
       if (!answer) return notice('ИИ ещё отвечает на прошлый вопрос');
       if (answer.failed) return notice('ИИ не ответил', answer.text);
-      setGroups((list) => pinCard(list, aiPinCard(answer.id, question, answer.text), surface()));
+      setGroups((list) => pinCard(list, aiPinCard(answer.id, question, answer.analysis ? cardText(answer.analysis) : answer.text), surface()));
     } catch (error) {
       notice('ИИ не ответил', error instanceof Error ? error.message : String(error));
     } finally {
@@ -1254,6 +1265,10 @@ export function Overlay({
             }}
             onOpen={openHit}
             onSettings={() => setSettingsOpen(true)}
+            calculable={calculable}
+            onCharge={addCharges}
+            onPinArticle={(hit) => setGroups((list) => (hasCard(list, hitKey(hit)) ? list : pinCard(list, articlePinCard(hit, rules), surface())))}
+            onCopy={(text) => platform.writeClipboard(text)}
             onTab={(tab) => {
               setAiTab(tab);
               searchRef.current?.focus();

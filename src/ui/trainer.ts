@@ -1,7 +1,7 @@
 // The exam trainer: questions on the laws of the player's organisation, as in a faction's attestation. The app
 // picks a real article of the server's laws; the AI only turns it into a question and checks the answer against
 // that article's text — so a question never rests on a law the server does not have.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { articleText, sourceLabel, type LawDocument, type SearchHit, type ServerPack } from '../core';
 import type { PlatformAdapter } from '../platform/types';
 import { AiError, ask, connect } from './ai';
@@ -80,11 +80,13 @@ export function useTrainer(platform: PlatformAdapter, pack: ServerPack, organisa
   const [error, setError] = useState<string | null>(null);
   const [asked, setAsked] = useState<Set<string>>(new Set());
 
-  // Another server, another organisation: the choice starts over.
-  useEffect(() => {
+  // Another server, another organisation: the choice starts over — set while rendering, not in an effect after it.
+  const [basis, setBasis] = useState({ pack, organisation });
+  if (basis.pack !== pack || basis.organisation !== organisation) {
+    setBasis({ pack, organisation });
     setDocuments(defaultDocuments(pack, organisation));
     setPhase('idle');
-  }, [pack, organisation]);
+  }
 
   const key = useCallback(async () => {
     return connect(platform);

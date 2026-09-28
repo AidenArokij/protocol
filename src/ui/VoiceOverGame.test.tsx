@@ -1,5 +1,6 @@
 import { act, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { analysisOf, fakeGeminiFetch, isAnalysis } from '../test/fakeAi';
 import { pinnedCards, renderApp } from '../test/renderApp';
 import { AI_KEY_SETTING, AI_PROVIDER_SETTING, historyKey, type StoredConversation } from './ai';
 import { DEFAULT_VOICE_HOTKEY, VOICE_HOTKEY_KEY } from './overlaySettings';
@@ -16,21 +17,10 @@ vi.mock('./voice', async (original) => ({
 // Speech on the computer itself (Vosk), for the players on ПРОТОКОЛ's server: it hears the question at once.
 vi.mock('./localSpeech', () => ({ recognize: vi.fn(async () => 'Какое наказание за кражу') }));
 
-const ANSWER = 'Суть: это кража.\nСтатья: УК ст. 65 — штраф до 50 000 ₽ либо 30 мес.\nЧто делать: заявить в полицию.';
-
-/** Gemini: writes down the recording, gives the law terms, then the short answer. */
+/** Gemini: writes down the recording, gives the law terms, then the analysis. */
 function fakeGemini() {
   const bodies: string[] = [];
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (_url: string, init: RequestInit) => {
-      const raw = String(init.body);
-      bodies.push(raw);
-      const body = JSON.parse(raw) as { generationConfig?: { responseMimeType?: string } };
-      const text = raw.includes('inlineData') ? 'у меня украли телефон' : body.generationConfig?.responseMimeType === 'application/json' ? '["кража"]' : ANSWER;
-      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }), { status: 200 });
-    }),
-  );
+  vi.stubGlobal('fetch', vi.fn(fakeGeminiFetch({}, bodies)));
   return bodies;
 }
 
@@ -54,7 +44,11 @@ describe('a question over the game', () => {
     await vi.waitFor(() => expect(pinnedCards(platform).some((card) => card.kind === 'ai')).toBe(true));
     const card = pinnedCards(platform).find((c) => c.kind === 'ai')!;
     expect(card.heading).toBe('у меня украли телефон');
-    expect(card.lines).toEqual(['Суть: это кража.', 'Статья: УК ст. 65 — штраф до 50 000 ₽ либо 30 мес.', 'Что делать: заявить в полицию.']);
+    // The article's punishment comes from the laws and the total from the calculator, not from the AI's words.
+    expect(card.lines[0]).toBe('Суть: Это кража телефона.');
+    expect(card.lines[1]).toMatch(/^УК ст\. 65 ч\. 1 — штраф до 50\s000\s₽ либо 30\sмес$/);
+    expect(card.lines.some((line) => /^Итог: 30\sмес/.test(line))).toBe(true);
+    expect(card.lines.at(-1)).toBe('Что делать: заявить в полицию');
     const saved = platform.settings.get(historyKey('tverskoi')) as StoredConversation[];
     expect(saved[0].title).toBe('у меня украли телефон');
   });
@@ -109,7 +103,7 @@ describe('a question over the game', () => {
     await vi.waitFor(() => expect(platform.state.toast?.title).toBe('Слушаю…'));
     await speak();
     await act(async () => platform.releaseVoiceHotkey());
-    await vi.waitFor(() => expect(bodies.some((b) => b.includes('ОТВЕТ ДЛЯ КАРТОЧКИ ПОВЕРХ ИГРЫ'))).toBe(true));
+    await vi.waitFor(() => expect(bodies.some((b) => b.includes('РЕЖИМ — БЫСТРЫЙ РАЗБОР'))).toBe(true));
   });
 
   it('says so over the game when the AI cannot answer', async () => {
@@ -129,8 +123,8 @@ describe('a question over the game', () => {
       'fetch',
       vi.fn(async (url: string, init: RequestInit) => {
         calls.push(url);
-        const body = JSON.parse(String(init.body)) as { json?: boolean };
-        const text = body.json ? '["кража"]' : 'Суть: это кража.';
+        const body = JSON.parse(String(init.body)) as { system: string; messages: { content: string }[] };
+        const text = isAnalysis(body.system) ? analysisOf(body.messages.at(-1)!.content) : '["кража"]';
         return new Response(JSON.stringify({ text }), { status: 200 });
       }),
     );

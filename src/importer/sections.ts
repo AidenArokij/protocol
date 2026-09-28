@@ -18,8 +18,8 @@ export interface SectionsOptions {
   headings?: string;
 }
 
-const MARK = /[​‌‍﻿]/;
-const clean = (line: string) => line.replace(/[​‌‍﻿]/g, '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+const MARK = /[\u200B-\u200D\uFEFF]/;
+const clean = (line: string) => line.replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
 const NUMBERED = /^([IVXLC]+|\d+)\.\s+(.*)$/;
 
 export function parseSectionsText(text: string, documentId: string, options: SectionsOptions = {}): ParsedLaw {

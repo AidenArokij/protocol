@@ -4,12 +4,13 @@
 - `npm run dev` — the app in a browser at http://127.0.0.1:1420, with a fake platform adapter and a stand-in game scene
 - `npm test` — Vitest (law core, importer, UI with React Testing Library)
 - `npm run typecheck` — TypeScript, no emit
+- `npm run lint` — oxlint (`.oxlintrc.json`; typescript-eslint does not support TypeScript 7); run with test, typecheck and build after every change
 - `npm run build` — typecheck + production bundle
 - `npm run import` — rebuild `src/data/tverskoi.json` from the forum snapshots in `data/tverskoi/sources`, list anything the parser could not read and report what changed against the previous pack: changes to documents whose forum post was edited go into `data/tverskoi/changelog.json` (kept 90 days, shown in «Что изменилось»), other differences are the parser's and are only printed; `-- --check` reports without saving; a test fails if the bundled pack is stale
 
 - Laws without a release: `npm run import` also writes `src/data/manifest.json` (each pack's `built` time and the `PACK_FORMAT`); installed copies poll it on `main` (`raw.githubusercontent.com`) and download a server's pack when it was built later than theirs, keeping it in `%APPDATA%\com.skyze.rohelper\laws`. So a law fix reaches players by committing the rebuilt packs to `main` — no tag. `built` changes only when a pack's content does. Bump `PACK_FORMAT` (`src/core/model.ts`) whenever the pack's shape changes in a way an older app would misread: older copies then keep their laws until they update
 - Releases: the version lives only in `package.json`, «Что нового» in a `## <version>` section of `CHANGELOG.md` (the build fails without one; write it for every release, in Russian, for players); a pushed tag `v*` runs `.github/workflows/release.yml` (tests, NSIS installer, signed update, draft release with `latest.json` that installed copies poll). The update signing key is the user's (`%USERPROFILE%\.tauri\protocol.key`, its password beside it in `protocol.key.password.txt`; GitHub secrets of AidenArokij/protocol) — never generate or replace it
-- This is ПРОТОКОЛ, a fork of skyyyzeee/ro-helper with the AI analysis added (`src/core/situation.ts`, `src/ui/ai.ts`, `src/ui/AiView.tsx`); the remote `upstream` is the original, to take its law and code updates from
+- This is ПРОТОКОЛ, a fork of skyyyzeee/ro-helper with the AI analysis added (`src/protocol`, `src/core/situation.ts`, `src/ui/ai.ts`, `src/ui/AiView.tsx`, `src/ui/AnswerView.tsx`); the remote `upstream` is the original, to take its law and code updates from
 - Backlog of known defects and ideas put off for later: `.scratch/backlog/` (one ticket per file)
 - `node scripts/readme-screenshots.mjs` — retake the README's `docs/screenshots` from the running browser preview (headless Edge over the DevTools protocol)
 
@@ -25,6 +26,8 @@ The user wrote the Tverskoi law texts and allows copying them. The forum sits be
 - Each result must be 50,000–51,200 characters of pretty-printed JSON: a smaller one comes back inline instead of as a file, a larger one is cut at 50 KB by the browser tool. Pad a short chunk with a last key (`zz`) holding the document's own text repeated, sized by measuring `JSON.stringify(out, null, 2).length` (aim at ~50,800). Dashes or random letters don't work: too light or too heavy in tokens.
 - One chunk per call (a batch joins the outputs), at most two calls at a time — more in parallel get dropped. Keep each thread's text in `sessionStorage` on the first visit (a new session starts a new tab, so it is gone then), then return the chunks without opening the threads again. Wait for `article.message .bbWrapper` before reading: the anti-DDoS page can come first.
 - `src/core` — law core: pure TypeScript, no React/Tauri/UI/importer imports (a boundary test enforces it)
+- `src/protocol` — the legal AI pipeline over the core, pure as well: context, answer format, checks against the laws, calculator link, AI providers. The AI interprets found articles and is never a source of law: see `docs/AI_PIPELINE.md` and `docs/SOURCE_GROUNDING.md`
+- `data/<server>/synonyms.json` — players' words → the law's words for the search («украл» → «кража»); `npm run import` builds them into the packs
 - `src/platform` — `PlatformAdapter` interface over everything native; `fake` for tests, `browser` for the preview, `tauri` for the app (window bounds and settings in the store plugin's `settings.json`)
 - `src-tauri` — native side: plugins (global-shortcut, store, clipboard, opener, single-instance), tray menu, and `remember_foreground` / `restore_foreground` commands that hand focus back to the game when the overlay hides
 - `src/ui` — React UI; visual tokens in `tokens.css` come from the approved mockup in `design/mockup`

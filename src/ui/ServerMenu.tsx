@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { changedArticles, recentChanges } from '../core';
 import { packFor } from '../data';
 import { CheckIcon, ChevronDownIcon } from './icons';
@@ -18,12 +18,14 @@ export function ServerEmblem({ id, name, size = 22 }: { id: string; name: string
 
 /** «+3»: how many articles of a server's laws changed lately. */
 function useNews(): Record<string, number> {
-  return useMemo(() => {
+  // Counted once, when the menu first shows: today's date is read then, not at every render.
+  const [news] = useState(() => {
     const now = new Date();
     return Object.fromEntries(
       SERVERS.filter((s) => s.status === 'active').map((s) => [s.id, changedArticles(recentChanges(packFor(s.id), now, NEWS_DAYS)).size]),
     );
-  }, []);
+  });
+  return news;
 }
 
 /** The server in the header, and the list to switch it, as in the header of SinSet-like helpers. */
