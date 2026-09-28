@@ -127,7 +127,7 @@ input {
   font-size: 13px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.82);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
   padding: 6px 12px;
   border-radius: 99px;
 }
@@ -144,12 +144,12 @@ input {
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
   color: var(--text);
 }
 
 .icon-btn--on {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(255 255 255 / calc(0.14 * var(--tint-scale)));
   color: var(--text);
 }
 
@@ -217,7 +217,7 @@ input {
   gap: 8px;
   padding: 12px 14px 14px;
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / calc(0.06 * var(--tint-scale)));
 }
 
 .set__title {
@@ -290,7 +290,7 @@ input {
   gap: 8px;
   padding: 6px 6px 6px 12px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / calc(0.05 * var(--tint-scale)));
   font-size: 14px;
 }
 
@@ -307,7 +307,7 @@ input {
   padding: 7px 10px;
   border: 0;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
   color: var(--text);
   font-size: 13.5px;
   outline: none;
@@ -357,11 +357,11 @@ input {
   font-size: 13.5px;
   padding: 7px 12px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
 }
 
 .settings__button:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgb(255 255 255 / calc(0.16 * var(--tint-scale)));
 }
 
 .settings__button:disabled {
@@ -428,7 +428,7 @@ input {
   font-size: 13px;
   padding: 1px 5px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
   overflow-wrap: anywhere;
 }
 
@@ -437,7 +437,7 @@ input {
   font-size: 12.5px;
   padding: 0 5px;
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
 }
 
 .md__when {
@@ -506,8 +506,8 @@ input {
   margin: 0 16px 12px;
   padding: 10px 10px 10px 14px;
   border-radius: var(--radius-card);
-  background: oklch(0.78 0.1 245 / 0.14);
-  box-shadow: inset 0 0 0 1px oklch(0.78 0.1 245 / 0.3);
+  background: oklch(0.78 0.1 var(--accent-hue) / 0.14);
+  box-shadow: inset 0 0 0 1px oklch(0.78 0.1 var(--accent-hue) / 0.3);
   color: var(--accent-text);
   flex: none;
   animation: drop-in 0.2s ease-out;
@@ -540,7 +540,7 @@ input {
   flex: 1 0 100%;
   height: 4px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
   overflow: hidden;
 }
 
@@ -601,7 +601,7 @@ input {
   height: 56px;
   border-radius: var(--radius-field);
   background: var(--surface);
-  box-shadow: inset 0 0 0 1px oklch(0.78 0.1 245 / 0.65);
+  box-shadow: inset 0 0 0 1px oklch(0.78 0.1 var(--accent-hue) / 0.65);
   color: rgba(255, 255, 255, 0.6);
   flex: none;
 }
@@ -631,7 +631,7 @@ input {
   font-size: 12px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.65);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
   border-radius: 7px;
   padding: 3px 7px;
   text-shadow: none;
@@ -648,7 +648,7 @@ input {
 }
 
 .overlay__content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(255 255 255 / calc(0.14 * var(--tint-scale)));
   border-radius: 8px;
 }
 
@@ -710,7 +710,7 @@ input {
 }
 
 .row:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
 }
 
 .row__main {
@@ -733,11 +733,11 @@ input {
   border-radius: var(--radius-control);
   flex: none;
   color: rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
 }
 
 .add:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgb(255 255 255 / calc(0.15 * var(--tint-scale)));
 }
 
 .add--on,
@@ -748,7 +748,7 @@ input {
 
 .row--selected,
 .row--selected:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgb(255 255 255 / calc(0.12 * var(--tint-scale)));
 }
 
 .row__line {
@@ -778,7 +778,7 @@ input {
   font-size: 12px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.09);
+  background: rgb(255 255 255 / calc(0.09 * var(--tint-scale)));
   padding: 3px 8px;
   border-radius: 99px;
   flex: none;
@@ -854,7 +854,7 @@ input {
 }
 
 .back:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
   color: var(--text);
 }
 
@@ -893,7 +893,7 @@ input {
   gap: 8px;
   padding: 14px 16px;
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / calc(0.06 * var(--tint-scale)));
 }
 
 .part-card__head {
@@ -919,7 +919,7 @@ input {
 }
 
 .part-card--focus {
-  box-shadow: inset 0 0 0 1.5px oklch(0.78 0.1 245 / 0.7);
+  box-shadow: inset 0 0 0 1.5px oklch(0.78 0.1 var(--accent-hue) / 0.7);
 }
 
 .part-card__pen {
@@ -980,7 +980,7 @@ input {
   gap: 6px;
   padding: 14px 16px;
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / calc(0.05 * var(--tint-scale)));
 }
 
 .note--penalty {
@@ -1153,7 +1153,7 @@ input {
 
 .pin--live {
   pointer-events: auto;
-  box-shadow: 0 0 0 2px oklch(0.78 0.1 245 / 0.55);
+  box-shadow: 0 0 0 2px oklch(0.78 0.1 var(--accent-hue) / 0.55);
 }
 
 .pin--live .pin__head,
@@ -1163,12 +1163,12 @@ input {
 
 .pin--drag {
   transform: scale(1.015);
-  box-shadow: 0 0 0 2px oklch(0.78 0.1 245 / 0.55), 0 18px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 2px oklch(0.78 0.1 var(--accent-hue) / 0.55), 0 18px 40px rgba(0, 0, 0, 0.45);
 }
 
 /* The block the dragged one would join, with a bar on the edge the cards would go in on. */
 .pin--drop {
-  box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px oklch(0.78 0.1 245 / 0.2);
+  box-shadow: 0 0 0 2px var(--accent), 0 0 0 6px oklch(0.78 0.1 var(--accent-hue) / 0.2);
 }
 
 .pin--drop::after {
@@ -1262,7 +1262,7 @@ input {
 
 .pin__cards::-webkit-scrollbar-thumb {
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgb(255 255 255 / calc(0.18 * var(--tint-scale)));
 }
 
 .pin__card {
@@ -1335,7 +1335,7 @@ input {
 
 .x--on {
   color: var(--accent-text);
-  background: rgba(255, 255, 255, 0.12);
+  background: rgb(255 255 255 / calc(0.12 * var(--tint-scale)));
 }
 
 .pin__head {
@@ -1575,12 +1575,12 @@ input {
   font-weight: 500;
   padding: 6px 12px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgb(255 255 255 / calc(0.07 * var(--tint-scale)));
   color: rgba(255, 255, 255, 0.78);
 }
 
 .tag:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgb(255 255 255 / calc(0.12 * var(--tint-scale)));
 }
 
 .tag--on,
@@ -1616,16 +1616,16 @@ input {
 }
 
 .doc-row:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgb(255 255 255 / calc(0.07 * var(--tint-scale)));
 }
 
 .doc-row--selected,
 .doc-row--selected:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
 }
 
 .doc-row--on {
-  box-shadow: inset 0 0 0 1.5px oklch(0.78 0.1 245 / 0.7);
+  box-shadow: inset 0 0 0 1.5px oklch(0.78 0.1 var(--accent-hue) / 0.7);
 }
 
 .doc-row__name {
@@ -1652,13 +1652,13 @@ input {
   height: 44px;
   padding: 0 18px;
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
   font-size: 15px;
   font-weight: 600;
 }
 
 .btn:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgb(255 255 255 / calc(0.16 * var(--tint-scale)));
 }
 
 .btn--primary {
@@ -1677,7 +1677,7 @@ input {
 }
 
 .btn--ghost:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
 }
 
 .warn {
@@ -1818,7 +1818,7 @@ input {
 .ob__progress span {
   height: 4px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgb(255 255 255 / calc(0.14 * var(--tint-scale)));
 }
 
 .ob__progress span.on {
@@ -1961,7 +1961,7 @@ input {
 }
 
 .ob__hotkey--listen {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
   box-shadow: inset 0 0 0 1.5px var(--accent);
 }
 
@@ -1970,7 +1970,7 @@ input {
   font-weight: 600;
   padding: 10px 18px;
   border-radius: var(--radius-control);
-  background: rgba(255, 255, 255, 0.13);
+  background: rgb(255 255 255 / calc(0.13 * var(--tint-scale)));
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3);
 }
 
@@ -2005,7 +2005,7 @@ input {
   margin: 0;
   padding: 12px 16px;
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / calc(0.05 * var(--tint-scale)));
   font-size: 14px;
   line-height: 1.5;
   color: rgba(255, 255, 255, 0.78);
@@ -2076,7 +2076,7 @@ input {
 
 .link-btn:hover {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
 }
 
 .calc__body {
@@ -2107,7 +2107,7 @@ input {
 }
 
 .seg button[aria-checked='true'] {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgb(255 255 255 / calc(0.18 * var(--tint-scale)));
   color: var(--text);
 }
 
@@ -2146,7 +2146,7 @@ input {
   gap: 8px;
   padding: 10px 10px 10px 14px;
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / calc(0.06 * var(--tint-scale)));
 }
 
 .ci__row,
@@ -2195,7 +2195,7 @@ input {
 }
 
 .x:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
   color: var(--text);
 }
 
@@ -2204,11 +2204,11 @@ input {
   color: rgba(255, 255, 255, 0.62);
   padding: 4px 10px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / calc(0.06 * var(--tint-scale)));
 }
 
 .mod:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgb(255 255 255 / calc(0.12 * var(--tint-scale)));
 }
 
 .mod--on,
@@ -2229,7 +2229,7 @@ input {
 .ci__level select {
   font: inherit;
   color: var(--text);
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
   border: 0;
   border-radius: 8px;
   padding: 3px 6px;
@@ -2242,7 +2242,7 @@ input {
   gap: 12px;
   padding: 16px 18px;
   border-radius: var(--radius-field);
-  background: rgba(255, 255, 255, 0.09);
+  background: rgb(255 255 255 / calc(0.09 * var(--tint-scale)));
 }
 
 .total--fine {
@@ -2291,7 +2291,7 @@ input {
   height: 54px;
   padding: 0 14px;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
   font-size: 24px;
   font-weight: 600;
 }
@@ -2379,7 +2379,7 @@ input {
   height: 34px;
   padding: 0 10px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgb(255 255 255 / calc(0.1 * var(--tint-scale)));
   font-size: 14px;
   font-weight: 600;
   flex: none;
@@ -2520,7 +2520,7 @@ input {
   gap: 4px;
   padding: 10px 8px 8px;
   border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.05);
+  background: rgb(255 255 255 / calc(0.05 * var(--tint-scale)));
 }
 
 .changes__doc-head {
@@ -2578,7 +2578,7 @@ input {
 }
 
 .art__changed:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
   color: var(--text);
 }
 
@@ -2659,4 +2659,81 @@ input {
 .diff > .link {
   align-self: flex-start;
   font-size: 14px;
+}
+
+/* The look (settings → «Внешний вид»): a theme, and the accent as swatches. */
+.themes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 6px 0 4px;
+}
+
+.theme {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.18);
+  font-size: 12.5px;
+  text-align: left;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.theme:hover {
+  background: var(--surface-hover);
+}
+
+.theme--on {
+  border-color: var(--accent);
+}
+
+.theme__swatch {
+  height: 30px;
+  border-radius: 7px;
+}
+
+.theme__swatch--glass {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.05));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.theme__swatch--dense {
+  background: #23252a;
+}
+
+.theme__swatch--minimal {
+  background: #0c0c0e;
+  border-bottom: 2px solid var(--accent);
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 0 10px;
+}
+
+.swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: oklch(0.78 0.1 var(--swatch-hue));
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+/* «Как у организации»: its hue, ringed so it reads as «automatic». */
+.swatch--organization {
+  background: radial-gradient(circle, oklch(0.78 0.1 var(--swatch-hue)) 45%, transparent 48%),
+    conic-gradient(oklch(0.78 0.1 245), oklch(0.78 0.1 145), oklch(0.78 0.1 25), oklch(0.78 0.1 290), oklch(0.78 0.1 245));
+}
+
+.swatch--on {
+  border-color: #fff;
 }

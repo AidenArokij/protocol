@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { PinBridge, ShownToast } from '../platform/tauri';
-import type { PinArea, PinCard, PinGroup } from '../platform/types';
+import type { PinArea, PinCard, PinGroup, PinLook } from '../platform/types';
+import { applyAppearance, isTheme } from './appearance';
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon, CompactIcon, DownloadIcon, GripIcon, PagesIcon, PinIcon, ResizeIcon, StarIcon } from './icons';
 import { CARD_WIDTH, MIN_HEIGHT, compactGroup, detachCard, dropSide, joinGroups, moveGroup, pageGroup, resizeGroup, unpinCard, unpinGroup, type DropSide } from './pinLayout';
 
@@ -428,6 +429,13 @@ export function PinWindow({ bridge }: { bridge: PinBridge }) {
   const [groups, setGroups] = useState<PinGroup[]>([]);
   const [live, setLive] = useState(false);
   const [toast, setToast] = useState<ShownToast | null>(null);
+
+  // The theme and the accent of the overlay: the last one kept, then each change it sends.
+  useEffect(() => {
+    const apply = (look: PinLook | undefined) => look && applyAppearance(isTheme(look.theme) ? look.theme : 'glass', look.hue);
+    void bridge.look().then(apply);
+    return bridge.onLook(apply);
+  }, [bridge]);
 
   useEffect(() => {
     void bridge.state().then((state) => {

@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import type { Organization, ServerPack } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
+import { ACCENT_HUES, THEMES, organizationHue, type AppearanceControl } from './appearance';
 import { APP_VERSION, AUTHOR, LINKS } from './about';
 import { BackIcon, CloseIcon, DiscordIcon, GitHubIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
@@ -134,6 +135,57 @@ function HotkeyField({ hotkey, onHotkey, onCapturing }: { hotkey: string; onHotk
   );
 }
 
+/** The theme, and the accent: the organisation's, or one of a few hues. */
+function AppearancePicker({ appearance, organization }: { appearance: AppearanceControl; organization: string }) {
+  const { theme, accent, setTheme, setAccent } = appearance;
+  return (
+    <>
+      <div className="themes" role="radiogroup" aria-label="Тема">
+        {THEMES.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            role="radio"
+            aria-checked={theme === option.id}
+            className={theme === option.id ? 'theme theme--on' : 'theme'}
+            onClick={() => setTheme(option.id)}
+          >
+            <span className={`theme__swatch theme__swatch--${option.id}`} />
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <div className="set__row">
+        <span className="set__label">Акцент</span>
+      </div>
+      <div className="swatches" role="radiogroup" aria-label="Акцент">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={accent === 'organization'}
+          aria-label="Как у организации"
+          title="Как у организации"
+          className={accent === 'organization' ? 'swatch swatch--organization swatch--on' : 'swatch swatch--organization'}
+          style={{ '--swatch-hue': organizationHue(organization) } as CSSProperties}
+          onClick={() => setAccent('organization')}
+        />
+        {ACCENT_HUES.map((hue) => (
+          <button
+            key={hue}
+            type="button"
+            role="radio"
+            aria-checked={accent === hue}
+            aria-label={`Оттенок ${hue}`}
+            className={accent === hue ? 'swatch swatch--on' : 'swatch'}
+            style={{ '--swatch-hue': hue } as CSSProperties}
+            onClick={() => setAccent(hue)}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
 /** «1 карточка», «3 карточки», «5 карточек». */
 function cardsLabel(n: number): string {
   const mod10 = n % 10;
@@ -194,6 +246,8 @@ export interface SettingsViewProps {
   onCapturing: (capturing: boolean) => void;
   opacity: number;
   onOpacity: (value: number) => void;
+  /** The theme and the accent; without it (a bare overlay in tests) the choice is not shown. */
+  appearance?: AppearanceControl;
   /** Cards pinned over the game: how many, and unpinning them all at once. */
   pinned: number;
   onUnpinAll: () => void;
@@ -227,6 +281,7 @@ export function SettingsView({
   onCapturing,
   opacity,
   onOpacity,
+  appearance,
   pinned,
   onUnpinAll,
   presets,
@@ -271,6 +326,7 @@ export function SettingsView({
       </Block>
 
       <Block title="Внешний вид">
+        {appearance && <AppearancePicker appearance={appearance} organization={organization?.id ?? 'none'} />}
         <label className="set__row">
           <span className="set__label">Прозрачность фона</span>
           <span className="sp" />

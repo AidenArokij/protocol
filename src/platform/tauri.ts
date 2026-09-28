@@ -1,12 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
+import { emitTo, listen } from '@tauri-apps/api/event';
 import { PhysicalPosition, PhysicalSize, availableMonitors, currentMonitor, getCurrentWindow, primaryMonitor } from '@tauri-apps/api/window';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { isRegistered, register, unregister } from '@tauri-apps/plugin-global-shortcut';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { load } from '@tauri-apps/plugin-store';
 import { check, type Update } from '@tauri-apps/plugin-updater';
-import type { PinArea, PinGroup, PlatformAdapter, Toast, WindowBounds } from './types';
+import type { PinArea, PinGroup, PinLook, PlatformAdapter, Toast, WindowBounds } from './types';
 
 /** True inside the Tauri app, false in a plain browser. */
 export function isTauri(): boolean {
@@ -24,6 +24,9 @@ const PIN_LIVE_EVENT = 'pin-live';
 const PIN_LAYOUT_EVENT = 'pin-layout';
 /** A notice to show over the game. */
 const PIN_TOAST_EVENT = 'pin-toast';
+/** The theme and accent of the cards: sent by the overlay, and kept in the settings for the window's next start. */
+const PIN_LOOK_EVENT = 'pin-look';
+const PIN_LOOK_KEY = 'pin.look';
 
 /** True in the window of the pinned cards, which renders them instead of the overlay. */
 export function isPinWindow(): boolean {
@@ -48,6 +51,9 @@ export interface PinBridge {
   onToast(listener: (toast: ShownToast) => void): () => void;
   /** The notice has gone: the window may hide again when nothing is pinned. */
   toastDone(): Promise<void>;
+  /** The look the overlay last gave the cards, and its changes. */
+  look(): Promise<PinLook | undefined>;
+  onLook(listener: (look: PinLook) => void): () => void;
 }
 
 export function createPinBridge(): PinBridge {
@@ -63,6 +69,8 @@ export function createPinBridge(): PinBridge {
     areas: (areas) => invoke('pin_areas', { areas }),
     onToast: (listener) => subscribe(PIN_TOAST_EVENT, listener),
     toastDone: () => invoke('pin_toast_done'),
+    look: async () => (await load('settings.json', { defaults: {}, autoSave: 300 })).get<PinLook>(PIN_LOOK_KEY),
+    onLook: (listener) => subscribe(PIN_LOOK_EVENT, listener),
   };
 }
 
@@ -219,6 +227,10 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
     setAlwaysOnTop: (on) => win.setAlwaysOnTop(on),
 
     setPins: (groups) => invoke('pin_set', { groups }),
+    async setPinLook(look) {
+      await store.set(PIN_LOOK_KEY, look);
+      await emitTo(PIN_LABEL, PIN_LOOK_EVENT, look);
+    },
     showToast: (toast) => invoke('pin_toast', { toast }),
     async download(url) {
       const response = await fetch(url, { cache: 'no-store' });

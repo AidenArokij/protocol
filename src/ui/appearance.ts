@@ -1,0 +1,110 @@
+import { useCallback, useEffect, useState } from 'react';
+import type { PlatformAdapter } from '../platform/types';
+
+/**
+ * The look of the app: a theme (the glass and the surfaces) and an accent hue. The accent follows the player's
+ * organisation unless they chose one. Both windows — the overlay and the pinned cards — apply the same.
+ */
+
+export const THEME_KEY = 'appearance.theme';
+export const ACCENT_KEY = 'appearance.accent';
+
+export type Theme = 'glass' | 'dense' | 'minimal';
+/** The organisation's hue, or a hue the player chose. */
+export type Accent = 'organization' | number;
+
+export const THEMES: { id: Theme; label: string }[] = [
+  { id: 'glass', label: 'Стекло' },
+  { id: 'dense', label: 'Плотная' },
+  { id: 'minimal', label: 'Минимализм' },
+];
+
+/** Hues to choose from by hand: blue, green, violet, yellow, red, teal, pink. */
+export const ACCENT_HUES = [245, 150, 290, 85, 25, 200, 330];
+
+/** The blue of the approved mockup: the accent of a player without an organisation. */
+export const DEFAULT_HUE = 245;
+
+/** Each organisation's hue (oklch), the same on every server. */
+const ORGANIZATION_HUES: Record<string, number> = {
+  mvd: 245,
+  gibdd: 85,
+  fsb: 290,
+  fso: 25,
+  army: 145,
+  sk: 200,
+  prosecutor: 55,
+  court: 320,
+  government: 15,
+  duma: 270,
+  hospital: 350,
+  news: 65,
+  media: 65,
+  advocate: 180,
+  opg: 5,
+  none: DEFAULT_HUE,
+};
+
+export const organizationHue = (organization: string): number => ORGANIZATION_HUES[organization] ?? DEFAULT_HUE;
+
+export function accentHue(accent: Accent, organization: string): number {
+  return accent === 'organization' ? organizationHue(organization) : accent;
+}
+
+export const isTheme = (value: unknown): value is Theme => THEMES.some((t) => t.id === value);
+export const isAccent = (value: unknown): value is Accent =>
+  value === 'organization' || (typeof value === 'number' && Number.isFinite(value));
+
+/** Puts the theme and the accent on the page: `data-theme` on the root, and the `--accent-hue` token. */
+export function applyAppearance(theme: Theme, hue: number, root: HTMLElement = document.documentElement): void {
+  if (theme === 'glass') delete root.dataset.theme;
+  else root.dataset.theme = theme;
+  root.style.setProperty('--accent-hue', String(hue));
+}
+
+/** The look as the settings show and change it. */
+export interface AppearanceControl {
+  theme: Theme;
+  accent: Accent;
+  setTheme: (theme: Theme) => void;
+  setAccent: (accent: Accent) => void;
+}
+
+/**
+ * The saved theme and accent, applied to the page at once and again whenever the organisation changes
+ * (a faction accent follows it). Until the settings are read the page keeps the default look.
+ */
+export function useAppearance(platform: Pick<PlatformAdapter, 'readSetting' | 'writeSetting' | 'setPinLook'>, organization: string): AppearanceControl {
+  const [theme, setThemeState] = useState<Theme>('glass');
+  const [accent, setAccentState] = useState<Accent>('organization');
+
+  useEffect(() => {
+    void Promise.all([platform.readSetting<unknown>(THEME_KEY), platform.readSetting<unknown>(ACCENT_KEY)]).then(([savedTheme, savedAccent]) => {
+      if (isTheme(savedTheme)) setThemeState(savedTheme);
+      if (isAccent(savedAccent)) setAccentState(savedAccent);
+    });
+  }, [platform]);
+
+  // The page, and the pinned cards in their own window.
+  useEffect(() => {
+    const hue = accentHue(accent, organization);
+    applyAppearance(theme, hue);
+    void platform.setPinLook({ theme, hue });
+  }, [platform, theme, accent, organization]);
+
+  const setTheme = useCallback(
+    (next: Theme) => {
+      setThemeState(next);
+      void platform.writeSetting(THEME_KEY, next);
+    },
+    [platform],
+  );
+  const setAccent = useCallback(
+    (next: Accent) => {
+      setAccentState(next);
+      void platform.writeSetting(ACCENT_KEY, next);
+    },
+    [platform],
+  );
+  return { theme, accent, setTheme, setAccent };
+}

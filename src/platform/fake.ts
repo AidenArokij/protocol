@@ -149,6 +149,9 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
       pinListeners.add(listener);
       return () => pinListeners.delete(listener);
     },
+    async setPinLook(look) {
+      record('setPinLook', look);
+    },
     async download(url) {
       record('download', url);
       if (state.remote === 'offline') throw new Error('offline');

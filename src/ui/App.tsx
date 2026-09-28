@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePlatform } from '../platform/PlatformContext';
+import { useAppearance } from './appearance';
 import { Onboarding } from './Onboarding';
 import { useLaws } from './laws';
 import { Overlay } from './Overlay';
@@ -20,6 +21,8 @@ export function App() {
   const [newUser, setNewUser] = useState(false);
   // The laws of the chosen server: built in, or newer ones from GitHub.
   const laws = useLaws(profile ? profile.server : null);
+  // The theme and the accent, which follows the organisation: on every screen, the first launch included.
+  const appearance = useAppearance(platform, profile?.organization ?? 'none');
 
   useEffect(() => {
     void platform.readSetting<Profile>(PROFILE_KEY).then((saved) => {
@@ -65,6 +68,7 @@ export function App() {
         laws={laws}
         newUser={newUser}
         profile={profile}
+        appearance={appearance}
         onEditProfile={() => setEditing(true)}
         onProfile={save}
         onCapturing={setCapturing}

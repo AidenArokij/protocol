@@ -370,6 +370,8 @@ describe('the cards over the game', () => {
       areas: vi.fn(async () => {}),
       onToast: () => () => {},
       toastDone: vi.fn(async () => {}),
+      look: async () => undefined,
+      onLook: () => () => {},
     };
     render(<PinWindow bridge={bridge} />);
     expect(await screen.findByText('УК ст. 104. Оскорбление')).toBeInTheDocument();

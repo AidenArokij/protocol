@@ -80,6 +80,12 @@ export interface UpdateProgress {
 /** Edge or corner of the frameless overlay window being dragged to resize it. */
 export type ResizeEdge = 'East' | 'North' | 'NorthEast' | 'NorthWest' | 'South' | 'SouthEast' | 'SouthWest' | 'West';
 
+/** How the pinned cards look: a theme id («glass», «dense», «minimal») and the accent hue. */
+export interface PinLook {
+  theme: string;
+  hue: number;
+}
+
 export interface PlatformAdapter {
   readonly kind: 'browser' | 'tauri' | 'fake';
 
@@ -119,6 +125,8 @@ export interface PlatformAdapter {
   setPins(groups: PinGroup[]): Promise<void>;
   /** Called when the user moves, joins or closes something there. Returns an unsubscribe function. */
   onPinsChanged(listener: (groups: PinGroup[]) => void): () => void;
+  /** The theme and the accent hue the pinned cards are drawn in: the overlay's own, kept for the next start too. */
+  setPinLook(look: PinLook): Promise<void>;
   /** Downloads a text file (the laws on GitHub). Throws when offline or when the file is not there. */
   download(url: string): Promise<string>;
   /** The laws of a server downloaded before, kept on the computer, or nothing. */

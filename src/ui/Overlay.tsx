@@ -20,6 +20,7 @@ import {
 import { packFor } from '../data';
 import type { PinCard, PinGroup, Toast } from '../platform/types';
 import { usePlatform } from '../platform/PlatformContext';
+import type { AppearanceControl } from './appearance';
 import { ArticleView } from './ArticleView';
 import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } from './CalculatorPanel';
 import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
@@ -95,9 +96,12 @@ export function Overlay({
   onCapturing,
   laws,
   newUser = false,
+  appearance,
 }: {
   pack: ServerPack;
   profile: Profile;
+  /** The theme and the accent, changed in the settings. */
+  appearance?: AppearanceControl;
   /** Opens the first-launch steps again: server, organisation and hotkey in a row. */
   onEditProfile: () => void;
   /** Saves a changed profile — the server, the organisation or the hotkey, changed in the settings. */
@@ -783,6 +787,7 @@ export function Overlay({
             onCapturing={onCapturing}
             opacity={opacity}
             onOpacity={changeOpacity}
+            appearance={appearance}
             pinned={cardCount(groups)}
             onUnpinAll={() => setGroups([])}
             presets={presets.map((preset) => ({ id: preset.id, name: preset.name, count: cardCount(preset.groups) }))}
