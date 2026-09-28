@@ -22,9 +22,13 @@ node --version
 echo "== Сервер ПРОТОКОЛА в $DIR"
 id protocol >/dev/null 2>&1 || useradd --system --home "$DIR" --shell /usr/sbin/nologin protocol
 mkdir -p "$DIR"
-curl -fsSL "$REPO/server.mjs" -o "$DIR/server.mjs"
-curl -fsSL "$REPO/set-key.sh" -o "$DIR/set-key.sh"
-curl -fsSL "$REPO/env.example" -o "$DIR/env.example"
+# Fresh copies every time: GitHub keeps its answers a few minutes, a missing file's too.
+fetch() {
+  curl -fsSL "$REPO/$1?t=$(date +%s)" -o "$DIR/$1" || { echo "Не скачался файл $1 — подождите пару минут и запустите установку снова."; exit 1; }
+}
+fetch server.mjs
+fetch set-key.sh
+fetch env.example
 [ -f "$DIR/.env" ] || cp "$DIR/env.example" "$DIR/.env"
 chown -R protocol:protocol "$DIR"
 chmod 600 "$DIR/.env"
