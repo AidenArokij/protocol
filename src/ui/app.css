@@ -3451,3 +3451,68 @@ select option {
   background: var(--surface-hover);
   color: var(--text);
 }
+
+/* «Требования адвоката»: a card per demand, its edge coloured by the verdict; the reply to give at the end. */
+.demands {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.demand {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--text-faint);
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.demand__head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.demand__verdict {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.demand__what {
+  font-size: 15px;
+  font-weight: 600;
+}
+.demand__row {
+  margin: 0;
+}
+.demand__label {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.demand--lawful { border-color: var(--now-text); }
+.demand--lawful .demand__verdict { color: var(--now-text); }
+.demand--unlawful { border-color: var(--penalty-text); }
+.demand--unlawful .demand__verdict { color: var(--penalty-text); }
+.demand--partly { border-color: var(--was-text); }
+.demand--partly .demand__verdict { color: var(--was-text); }
+.demand--unclear .demand__verdict { color: var(--text-muted); }
+.lawyer__reply {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
+}
+.lawyer__reply p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  user-select: text;
+}

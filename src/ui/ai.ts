@@ -164,9 +164,10 @@ const asMessages = (contents: GeminiTurn[]) =>
  * limit or only a step of one (the law terms, the trainer's questions); Gemini is asked model by model while
  * they are overloaded.
  */
-export async function ask(connection: AiConnection, system: string, contents: GeminiTurn[], json = false, counts = true): Promise<string> {
+/** `think`: the question needs reasoning, not just a lookup — ПРОТОКОЛ's server lets the model think longer. */
+export async function ask(connection: AiConnection, system: string, contents: GeminiTurn[], json = false, counts = true, think = false): Promise<string> {
   if (connection.provider === 'protocol') {
-    const text = await viaServer(connection, '/v1/chat', { system, messages: asMessages(contents), json, counts });
+    const text = await viaServer(connection, '/v1/chat', { system, messages: asMessages(contents), json, counts, ...(think ? { think } : {}) });
     if (!text.trim()) throw new AiError('ИИ прислал пустой ответ — попробуйте ещё раз.');
     return text;
   }

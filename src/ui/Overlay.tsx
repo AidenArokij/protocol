@@ -29,6 +29,8 @@ import { transcribe, useAiChat } from './ai';
 import { AiView, type AiTab } from './AiView';
 import { DocumentView } from './DocumentView';
 import { TrainerView } from './TrainerView';
+import { LawyerView } from './LawyerView';
+import { useLawyerCheck } from './lawyer';
 import { useTrainer } from './trainer';
 import { useDocumentWriter } from './documents';
 import { HistoryView } from './HistoryView';
@@ -174,6 +176,7 @@ export function Overlay({
   const [aiTab, setAiTab] = useState<AiTab>('chat');
   const writer = useDocumentWriter(platform, pack, boostDocuments);
   const trainer = useTrainer(platform, pack, boostDocuments);
+  const lawyer = useLawyerCheck(platform, pack, boostDocuments);
   /** The field is the AI's, not the search's: an article opened from the answer gives it back to the search. */
   const aiMode = aiOpen && !open;
 
@@ -551,10 +554,11 @@ export function Overlay({
     }
     // In the AI analysis Enter sends the situation; the list keys have no list to walk.
     if (aiMode) {
-      if (e.key === 'Enter' && !e.shiftKey && aiDraft.trim() && !(aiTab === 'document' ? writer.busy : aiTab === 'trainer' ? trainer.phase !== 'answering' : chat.busy)) {
+      if (e.key === 'Enter' && !e.shiftKey && aiDraft.trim() && !(aiTab === 'document' ? writer.busy : aiTab === 'trainer' ? trainer.phase !== 'answering' : aiTab === 'lawyer' ? lawyer.busy : chat.busy)) {
         e.preventDefault();
         if (aiTab === 'document') void writer.write(aiDraft);
         else if (aiTab === 'trainer') void trainer.reply(aiDraft);
+        else if (aiTab === 'lawyer') void lawyer.check(aiDraft);
         else void chat.send(aiDraft);
         setAiDraft('');
       }
@@ -632,6 +636,7 @@ export function Overlay({
       const text = await transcribe(platform, await current.stop(), downloadingSpeech);
       if (text && aiOpen && aiTab === 'document') void writer.write(text);
       else if (text && aiOpen && aiTab === 'trainer') void trainer.reply(text);
+      else if (text && aiOpen && aiTab === 'lawyer') void lawyer.check(text);
       else if (text) openAi(text);
       else voiceFailed('Не расслышал вопрос. Нажмите 🎤 и говорите чуть громче или ближе к микрофону.');
     } catch (error) {
@@ -882,6 +887,8 @@ export function Overlay({
                   ? 'Опишите, что произошло: кто, где, что сделал…'
                   : aiTab === 'trainer'
                     ? 'Ваш ответ своими словами…'
+                    : aiTab === 'lawyer'
+                      ? 'Что требует адвокат: свидание, копию протокола…'
                     : chat.messages.length
                   ? 'Уточните или опишите новую ситуацию…'
                   : 'Опишите ситуацию своими словами…'
@@ -1194,6 +1201,20 @@ export function Overlay({
             }}
             onForget={chat.forget}
           />
+        ) : aiOpen && aiTab === 'lawyer' ? (
+          <LawyerView
+            lawyer={lawyer}
+            backLabel={query ? 'Результаты' : scope ? 'Оглавление' : 'Поиск'}
+            onBack={() => {
+              setAiOpen(false);
+              searchRef.current?.focus();
+            }}
+            onOpen={openHit}
+            onTab={(tab) => {
+              setAiTab(tab);
+              searchRef.current?.focus();
+            }}
+          />
         ) : aiOpen && aiTab === 'trainer' ? (
           <TrainerView
             trainer={trainer}
@@ -1320,7 +1341,7 @@ export function Overlay({
         {aiMode ? (
           <>
             <span>
-              <b>Enter</b> {aiTab === 'document' ? 'составить документ' : aiTab === 'trainer' ? 'ответить' : 'спросить ИИ'}
+              <b>Enter</b> {aiTab === 'document' ? 'составить документ' : aiTab === 'trainer' ? 'ответить' : aiTab === 'lawyer' ? 'проверить требования' : 'спросить ИИ'}
             </span>
             <span>клик по статье — открыть</span>
             <span>

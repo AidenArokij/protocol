@@ -137,7 +137,7 @@ async function inTurn(models, call) {
   throw last;
 }
 
-async function chat({ system, messages, json }) {
+async function chat({ system, messages, json, think }) {
   const body = await inTurn(CONFIG.models, (model) =>
     upstream(
       '/chat/completions',
@@ -147,9 +147,10 @@ async function chat({ system, messages, json }) {
         body: JSON.stringify({
           model,
           messages: [{ role: 'system', content: system }, ...messages],
-          max_completion_tokens: CONFIG.maxOutputTokens,
-          // GPT-5 models think before answering, and the thinking is paid for: a law lookup needs little of it.
-          ...(model.startsWith('gpt-5') ? { reasoning_effort: 'minimal' } : {}),
+          // The thinking is paid for and counts toward the tokens: a law lookup needs little of it, weighing a lawyer's
+          // demands against the law needs more — the answer must still fit after it.
+          max_completion_tokens: think ? CONFIG.maxOutputTokens * 4 : CONFIG.maxOutputTokens,
+          ...(model.startsWith('gpt-5') ? { reasoning_effort: think ? 'low' : 'minimal' } : {}),
           ...(json ? { response_format: { type: 'json_object' } } : {}),
         }),
       },
@@ -248,7 +249,7 @@ const server = createServer(async (request, response) => {
       ? input.messages.filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string').slice(-14)
       : [];
     if (!messages.length || typeof input.system !== 'string') return send(response, 400, { error: 'Пустой вопрос.' });
-    const { text, rubles } = await chat({ system: input.system.slice(0, 8000), messages, json: !!input.json });
+    const { text, rubles } = await chat({ system: input.system.slice(0, 8000), messages, json: !!input.json, think: input.think === true });
     count(device, ip, kind, rubles);
     return send(response, 200, { text });
   } catch (error) {

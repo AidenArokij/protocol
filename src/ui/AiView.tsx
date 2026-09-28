@@ -27,7 +27,7 @@ export const EXAMPLES = [
 ];
 
 /** What the AI does for the player: analyses a situation, or writes a document about it. */
-export type AiTab = 'chat' | 'document' | 'trainer';
+export type AiTab = 'chat' | 'document' | 'lawyer' | 'trainer';
 
 /** The two things the AI does, as the heading of its screen. */
 export function AiTabs({ tab, onTab }: { tab: AiTab; onTab: (tab: AiTab) => void }) {
@@ -37,6 +37,7 @@ export function AiTabs({ tab, onTab }: { tab: AiTab; onTab: (tab: AiTab) => void
         [
           ['chat', 'Разбор ситуации'],
           ['document', 'Составить документ'],
+          ['lawyer', 'Требования адвоката'],
           ['trainer', 'Тренажёр'],
         ] as const
       ).map(([id, label]) => (
