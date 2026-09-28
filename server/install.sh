@@ -24,8 +24,8 @@ id protocol >/dev/null 2>&1 || useradd --system --home "$DIR" --shell /usr/sbin/
 mkdir -p "$DIR"
 curl -fsSL "$REPO/server.mjs" -o "$DIR/server.mjs"
 curl -fsSL "$REPO/set-key.sh" -o "$DIR/set-key.sh"
-curl -fsSL "$REPO/.env.example" -o "$DIR/.env.example"
-[ -f "$DIR/.env" ] || cp "$DIR/.env.example" "$DIR/.env"
+curl -fsSL "$REPO/env.example" -o "$DIR/env.example"
+[ -f "$DIR/.env" ] || cp "$DIR/env.example" "$DIR/.env"
 chown -R protocol:protocol "$DIR"
 chmod 600 "$DIR/.env"
 
