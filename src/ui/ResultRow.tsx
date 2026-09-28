@@ -13,9 +13,11 @@ export interface ResultRowProps {
   inChapter?: boolean;
   /** Changed in a recent update of the laws. */
   changed?: boolean;
+  /** A tile of the favourites on the home screen: the article and its punishment, no excerpt and no tags. */
+  tile?: boolean;
 }
 
-export function ResultRow({ hit, selected, onOpen, calculator, inChapter, changed }: ResultRowProps) {
+export function ResultRow({ hit, selected, onOpen, calculator, inChapter, changed, tile }: ResultRowProps) {
   const { article, document } = hit;
   const part = hit.part ?? leadPart(article);
   const chapter = document.chapters.find((c) => c.number === article.chapter);
@@ -33,7 +35,7 @@ export function ResultRow({ hit, selected, onOpen, calculator, inChapter, change
   }, [selected]);
 
   return (
-    <div className={selected ? 'row row--selected' : 'row'}>
+    <div className={['row', selected && 'row--selected', tile && 'row--tile'].filter(Boolean).join(' ')}>
       <button ref={ref} className="row__main" type="button" aria-current={selected ? 'true' : undefined} tabIndex={-1} onClick={onOpen}>
         <span className="row__line">
           <DocBadge document={document} />
@@ -41,10 +43,10 @@ export function ResultRow({ hit, selected, onOpen, calculator, inChapter, change
           <span className="ttl">{articleTitle(article)}</span>
           {changed && <span className="chg chg--changed chg--small">изменено</span>}
           <span className="sp" />
-          {part?.jurisdiction && <JurisdictionPill jurisdiction={part.jurisdiction} />}
-          {part?.stars && <Stars stars={part.stars} />}
+          {!tile && part?.jurisdiction && <JurisdictionPill jurisdiction={part.jurisdiction} />}
+          {!tile && part?.stars && <Stars stars={part.stars} />}
         </span>
-        {hit.part && article.title && <span className="row__excerpt">{hit.part.text}</span>}
+        {!tile && hit.part && article.title && <span className="row__excerpt">{hit.part.text}</span>}
         <span className="row__line">
           {part?.punishment ? (
             <span className="pen">{formatPunishment(part.punishment)}</span>

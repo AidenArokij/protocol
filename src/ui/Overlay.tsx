@@ -25,7 +25,7 @@ import { ArticleView } from './ArticleView';
 import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } from './CalculatorPanel';
 import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
-import { BackIcon, CalculatorIcon, ChevronDownIcon, CloseIcon, DocumentsIcon, MemoIcon, MenuIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon } from './icons';
+import { BackIcon, CalculatorIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, DocumentsIcon, MemoIcon, MenuIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon } from './icons';
 import { SideRail } from './SideRail';
 import { DEFAULT_OPACITY, OPACITY_KEY, RAIL_TIP_KEY, applyOpacity, clampOpacity } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
@@ -36,6 +36,7 @@ import { ReleaseNotesView } from './ReleaseNotesView';
 import { articlePinCard, calculatorPinCard } from './pinCards';
 import { CALCULATOR_ID, hasCard, keepableGroups, pinCard, restoreGroups, surfaceNow, unpinCard, updateCard } from './pinLayout';
 import { applyPreset, cardCount, deletePreset, nextPresetName, presetsKey, readPresets, savePreset, type PinPreset } from './pinPresets';
+import { formatDate } from './lawBits';
 import { ResizeEdges } from './ResizeEdges';
 import { ResultRow } from './ResultRow';
 import { RECENT_LIMIT, entryPart, favoritesKey, hitKey, recentKey, useHitLookup, useStoredKeys } from './saved';
@@ -223,6 +224,21 @@ export function Overlay({
       if (seen !== pack.version) void platform.writeSetting(key, pack.version);
     });
   }, [platform, pack]);
+  // The home screen's banner: the latest update of the laws, until its changes have been on screen once.
+  const latestChange = useMemo(() => recentChanges(pack, new Date(), CHANGED_DAYS)[0], [pack]);
+  const bannerKey = `changes.banner:${pack.server.id}`;
+  const [bannerSeen, setBannerSeen] = useState<string | null | undefined>(null);
+  useEffect(() => {
+    setBannerSeen(null);
+    void platform.readSetting<string>(bannerKey).then(setBannerSeen);
+  }, [platform, bannerKey]);
+  useEffect(() => {
+    if (!changesView || !latestChange || bannerSeen === latestChange.version) return;
+    setBannerSeen(latestChange.version);
+    void platform.writeSetting(bannerKey, latestChange.version);
+  }, [changesView, latestChange, bannerSeen, platform, bannerKey]);
+  const banner = latestChange && bannerSeen !== null && bannerSeen !== latestChange.version ? latestChange : undefined;
+
   const showRecentChanges = () => {
     setOpen(null);
     setDiff(null);
@@ -528,12 +544,13 @@ export function Overlay({
 
   /** The article's part as a hit of its own, for the calculator. */
   const partHit = (hit: SearchHit, part?: Part): SearchHit => ({ article: hit.article, document: hit.document, part: part ?? entryPart(hit.article) });
-  const rowFor = (hit: SearchHit, i: number, inChapter = false) => (
+  const rowFor = (hit: SearchHit, i: number, inChapter = false, tile = false) => (
     <div role="listitem" key={hitKey(hit)}>
       <ResultRow
         hit={hit}
         selected={i === current}
         inChapter={inChapter}
+        tile={tile}
         changed={!!changeOf(hit)}
         onOpen={() => openHit(hit)}
         calculator={addable(hit) ? { added: inCalculator(hit), onToggle: () => toggleCharge(hit) } : undefined}
@@ -957,11 +974,21 @@ export function Overlay({
           />
         ) : home ? (
           <>
+            {banner && (
+              <button className="home__banner" type="button" onClick={showRecentChanges}>
+                <span>
+                  Законы обновлены <b>{formatDate(banner.version).slice(0, 5)}</b> — {plural(banner.documents.length, ['документ', 'документа', 'документов'])}
+                </span>
+                <span className="sp" />
+                <b>Что изменилось</b>
+                <ChevronRightIcon />
+              </button>
+            )}
             {favorites.length > 0 && (
               <>
                 <div className="sec-t home__title">Избранное</div>
-                <div className="list" role="list" aria-label="Избранное">
-                  {favorites.map((hit, i) => rowFor(hit, i))}
+                <div className="list list--tiles" role="list" aria-label="Избранное">
+                  {favorites.map((hit, i) => rowFor(hit, i, false, true))}
                 </div>
               </>
             )}
