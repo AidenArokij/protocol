@@ -15,8 +15,12 @@ const CONFIG = {
   /** The OpenAI-compatible API and its key: ProxyAPI, VseGPT or another. */
   apiBase: env('AI_BASE_URL', 'https://api.proxyapi.ru/openai/v1').replace(/\/$/, ''),
   apiKey: env('AI_API_KEY', ''),
-  model: env('AI_MODEL', 'gpt-5-nano'),
-  transcribeModel: env('AI_TRANSCRIBE_MODEL', 'whisper-1'),
+  /**
+   * Models to ask, in turn: when one is busy (429 — the provider's limit for that model is taken up), the next
+   * is tried. The first is AI_MODEL; AI_MODELS, comma-separated, replaces the whole list.
+   */
+  models: env('AI_MODELS', `${env('AI_MODEL', 'gpt-5-nano')},gpt-4.1-nano,gpt-4o-mini`).split(',').map((m) => m.trim()).filter(Boolean),
+  transcribeModels: env('AI_TRANSCRIBE_MODELS', `${env('AI_TRANSCRIBE_MODEL', 'whisper-1')},gpt-4o-mini-transcribe`).split(',').map((m) => m.trim()).filter(Boolean),
   /** Rubles per 1M tokens, in and out, for counting the budget; and per minute of speech. */
   priceIn: num('PRICE_IN_RUB', 20),
   priceOut: num('PRICE_OUT_RUB', 104),
@@ -98,7 +102,7 @@ class UpstreamError extends Error {
  * One call to the AI API. A «too many requests» (429) or a busy backend (502–504) is tried again after a pause,
  * twice, before the player is told: a short burst of requests over the API's rate should not reach the player.
  */
-async function upstream(path, init) {
+async function upstream(path, init, tries = 3) {
   for (let attempt = 0; ; attempt++) {
     const response = await fetch(`${CONFIG.apiBase}${path}`, init);
     const raw = await response.text();
@@ -109,7 +113,7 @@ async function upstream(path, init) {
       // Not JSON: the raw text says what happened.
     }
     if (response.ok) return body;
-    const retry = [429, 502, 503, 504].includes(response.status) && attempt < 2;
+    const retry = [429, 502, 503, 504].includes(response.status) && attempt < tries - 1;
     const error = new UpstreamError(response.status, body, raw);
     console.error(new Date().toISOString(), retry ? `retrying: ${error.message}` : error.message);
     if (!retry) throw error;
@@ -118,19 +122,41 @@ async function upstream(path, init) {
   }
 }
 
+/** Asks each model in turn while they are busy; any other failure is final. */
+async function inTurn(models, call) {
+  let last;
+  for (const model of models) {
+    try {
+      return await call(model);
+    } catch (error) {
+      last = error;
+      const busy = error instanceof UpstreamError && [429, 502, 503, 504].includes(error.status);
+      if (!busy) throw error;
+    }
+  }
+  throw last;
+}
+
 async function chat({ system, messages, json }) {
-  const body = await upstream('/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CONFIG.apiKey}` },
-    body: JSON.stringify({
-      model: CONFIG.model,
-      messages: [{ role: 'system', content: system }, ...messages],
-      max_completion_tokens: CONFIG.maxOutputTokens,
-      // GPT-5 models think before answering, and the thinking is paid for: a law lookup needs little of it.
-      ...(CONFIG.model.startsWith('gpt-5') ? { reasoning_effort: 'minimal' } : {}),
-      ...(json ? { response_format: { type: 'json_object' } } : {}),
-    }),
-  });
+  const body = await inTurn(CONFIG.models, (model) =>
+    upstream(
+      '/chat/completions',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CONFIG.apiKey}` },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'system', content: system }, ...messages],
+          max_completion_tokens: CONFIG.maxOutputTokens,
+          // GPT-5 models think before answering, and the thinking is paid for: a law lookup needs little of it.
+          ...(model.startsWith('gpt-5') ? { reasoning_effort: 'minimal' } : {}),
+          ...(json ? { response_format: { type: 'json_object' } } : {}),
+        }),
+      },
+      // With another model to go to, one pause is enough before moving on.
+      2,
+    ),
+  );
   const text = body?.choices?.[0]?.message?.content ?? '';
   const usage = body?.usage ?? {};
   const rubles = ((usage.prompt_tokens ?? 0) * CONFIG.priceIn + (usage.completion_tokens ?? 0) * CONFIG.priceOut) / 1e6;
@@ -139,18 +165,16 @@ async function chat({ system, messages, json }) {
 
 async function transcribe(wavBase64) {
   const audio = Buffer.from(wavBase64, 'base64');
-  const form = new FormData();
-  form.append('file', new Blob([audio], { type: 'audio/wav' }), 'question.wav');
-  form.append('model', CONFIG.transcribeModel);
-  form.append('language', 'ru');
-  const body = await upstream('/audio/transcriptions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${CONFIG.apiKey}` },
-    body: form,
+  const body = await inTurn(CONFIG.transcribeModels, (model) => {
+    const form = new FormData();
+    form.append('file', new Blob([audio], { type: 'audio/wav' }), 'question.wav');
+    form.append('model', model);
+    form.append('language', 'ru');
+    return upstream('/audio/transcriptions', { method: 'POST', headers: { Authorization: `Bearer ${CONFIG.apiKey}` }, body: form }, 2);
   });
-  // 16-bit mono WAV: 2 bytes a sample; the header's rate tells the seconds.
+  // 16-bit mono WAV: 2 bytes a sample; the header's rate tells the seconds. The API bills every started minute.
   const rate = audio.length > 28 ? audio.readUInt32LE(24) : 16000;
-  const minutes = Math.max(0, audio.length - 44) / 2 / rate / 60;
+  const minutes = Math.max(1, Math.ceil(Math.max(0, audio.length - 44) / 2 / rate / 60));
   return { text: body?.text ?? '', rubles: minutes * CONFIG.pricePerMinute };
 }
 
@@ -234,4 +258,4 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(CONFIG.port, '127.0.0.1', () => console.log(`ПРОТОКОЛ server on 127.0.0.1:${CONFIG.port}, model ${CONFIG.model}`));
+server.listen(CONFIG.port, '127.0.0.1', () => console.log(`ПРОТОКОЛ server on 127.0.0.1:${CONFIG.port}, models ${CONFIG.models.join(' → ')}; voice ${CONFIG.transcribeModels.join(' → ')}`));
