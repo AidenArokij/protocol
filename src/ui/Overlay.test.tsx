@@ -1,12 +1,13 @@
 import { act, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../test/renderApp';
 
 describe('overlay', () => {
   it('opens with the brand and the cursor in the search field', async () => {
     await renderApp();
     expect(screen.getByText('РО Хелпер')).toBeInTheDocument();
-    expect(screen.getByRole('searchbox', { name: 'Поиск по законам' })).toHaveFocus();
+    // The field takes the focus in an effect, which a loaded test machine may run a moment after the field appears.
+    await vi.waitFor(() => expect(screen.getByRole('searchbox', { name: 'Поиск по законам' })).toHaveFocus());
   });
 
   it('puts the cursor back in the search field when the overlay is shown again', async () => {
