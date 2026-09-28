@@ -28,6 +28,13 @@ input {
   font-family: var(--font);
 }
 
+/* The list of a <select> is drawn by Windows: without colours of its own it comes up white, with the light text
+   of the dark panel on it (the trainer's documents, the calculator's wanted level). */
+select option {
+  background: #232326;
+  color: #f2f2f3;
+}
+
 .sp {
   flex: 1;
 }
@@ -3425,43 +3432,3 @@ input {
   background: color-mix(in oklch, var(--accent) 14%, transparent);
   font-size: 16px;
 }
-
-/* «Проверка отыгровки»: the pasted chat, then ticks for what was right and crosses for what was missed. */
-.check__log {
-  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  font-size: 13px;
-}
-.check__quote {
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: var(--radius-card);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
-  font: 12.5px/1.55 ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  max-height: 160px;
-  overflow-y: auto;
-}
-.check__items {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.check__item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  font-size: 14px;
-  line-height: 1.5;
-}
-.check__mark {
-  display: inline-flex;
-  flex: none;
-  margin-top: 2px;
-}
-.check__item--ok .check__mark { color: var(--now-text); }
-.check__item--miss .check__mark { color: var(--penalty-text); }
