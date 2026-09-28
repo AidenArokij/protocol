@@ -1,5 +1,5 @@
 // ПРОТОКОЛ server: the app asks the AI through it, so players need no key of their own. The AI key lives only
-// here, in the environment of this server (see .env.example) — never in the app, which anyone can take apart.
+// here, in the environment of this server (see env.example) — never in the app, which anyone can take apart.
 //
 // It forwards to any OpenAI-compatible API (ProxyAPI, VseGPT…) and keeps the spending in check:
 // a few questions a day per computer and per address, and a daily budget in rubles for everyone together.
@@ -85,8 +85,41 @@ function count(device, ip, kind, rubles) {
 
 // ——— The AI ———
 
+/** The AI API's own words on what went wrong: ProxyAPI writes them in `detail`, OpenAI-style APIs in `error.message`. */
+class UpstreamError extends Error {
+  constructor(status, body, raw) {
+    const said = body?.detail ?? body?.error?.message ?? (raw || '').slice(0, 300);
+    super(`AI API ${status}: ${typeof said === 'string' ? said : JSON.stringify(said)}`);
+    this.status = status;
+  }
+}
+
+/**
+ * One call to the AI API. A «too many requests» (429) or a busy backend (502–504) is tried again after a pause,
+ * twice, before the player is told: a short burst of requests over the API's rate should not reach the player.
+ */
+async function upstream(path, init) {
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(`${CONFIG.apiBase}${path}`, init);
+    const raw = await response.text();
+    let body = null;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      // Not JSON: the raw text says what happened.
+    }
+    if (response.ok) return body;
+    const retry = [429, 502, 503, 504].includes(response.status) && attempt < 2;
+    const error = new UpstreamError(response.status, body, raw);
+    console.error(new Date().toISOString(), retry ? `retrying: ${error.message}` : error.message);
+    if (!retry) throw error;
+    const wait = Number(response.headers.get('retry-after')) * 1000 || 1500 * (attempt + 1);
+    await new Promise((resolve) => setTimeout(resolve, Math.min(wait, 8000)));
+  }
+}
+
 async function chat({ system, messages, json }) {
-  const response = await fetch(`${CONFIG.apiBase}/chat/completions`, {
+  const body = await upstream('/chat/completions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${CONFIG.apiKey}` },
     body: JSON.stringify({
@@ -98,8 +131,6 @@ async function chat({ system, messages, json }) {
       ...(json ? { response_format: { type: 'json_object' } } : {}),
     }),
   });
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.error?.message ?? `AI API: ${response.status}`);
   const text = body?.choices?.[0]?.message?.content ?? '';
   const usage = body?.usage ?? {};
   const rubles = ((usage.prompt_tokens ?? 0) * CONFIG.priceIn + (usage.completion_tokens ?? 0) * CONFIG.priceOut) / 1e6;
@@ -112,13 +143,11 @@ async function transcribe(wavBase64) {
   form.append('file', new Blob([audio], { type: 'audio/wav' }), 'question.wav');
   form.append('model', CONFIG.transcribeModel);
   form.append('language', 'ru');
-  const response = await fetch(`${CONFIG.apiBase}/audio/transcriptions`, {
+  const body = await upstream('/audio/transcriptions', {
     method: 'POST',
     headers: { Authorization: `Bearer ${CONFIG.apiKey}` },
     body: form,
   });
-  const body = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(body?.error?.message ?? `AI API: ${response.status}`);
   // 16-bit mono WAV: 2 bytes a sample; the header's rate tells the seconds.
   const rate = audio.length > 28 ? audio.readUInt32LE(24) : 16000;
   const minutes = Math.max(0, audio.length - 44) / 2 / rate / 60;
@@ -199,8 +228,9 @@ const server = createServer(async (request, response) => {
     count(device, ip, kind, rubles);
     return send(response, 200, { text });
   } catch (error) {
-    console.error(new Date().toISOString(), error);
-    return send(response, 502, { error: 'ИИ сейчас не отвечает. Попробуйте через минуту.' });
+    if (!(error instanceof UpstreamError)) console.error(new Date().toISOString(), error);
+    const busy = error instanceof UpstreamError && error.status === 429;
+    return send(response, 502, { error: busy ? 'ИИ сейчас перегружен. Попробуйте через минуту.' : 'ИИ сейчас не отвечает. Попробуйте через минуту.' });
   }
 });
 
