@@ -20,6 +20,11 @@
   --surface-hover: rgba(255, 255, 255, 0.11);
   --surface-active: rgba(255, 255, 255, 0.14);
   --line: rgba(255, 255, 255, 0.08);
+  /* The cards pinned over the game and the notices there: see-through enough to keep the game in sight. */
+  --pin-bg: rgba(14, 14, 17, 0.52);
+  --pin-text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+  --toast-bg: rgba(14, 14, 17, 0.88);
+
   /* How strongly the white fills of rows, buttons and blocks show: themes thin them out or leave them. */
   --tint-scale: 1;
 
@@ -78,6 +83,9 @@
   --glass-filter: none;
   --glass-border: rgba(255, 255, 255, 0.07);
   --text-shadow: none;
+  --pin-bg: rgb(23 24 28 / 0.9);
+  --pin-text-shadow: none;
+  --toast-bg: rgb(23 24 28 / 0.97);
   --surface: rgba(255, 255, 255, 0.06);
   --surface-hover: rgba(255, 255, 255, 0.1);
   --surface-active: rgba(255, 255, 255, 0.13);
@@ -94,6 +102,8 @@
   --surface-active: rgba(255, 255, 255, 0.09);
   --line: rgba(255, 255, 255, 0.06);
   --tint-scale: 0.5;
+  --pin-bg: rgb(10 10 12 / 0.7);
+  --toast-bg: rgb(10 10 12 / 0.92);
   --radius-panel: 16px;
   --radius-field: 12px;
   --radius-card: 10px;
