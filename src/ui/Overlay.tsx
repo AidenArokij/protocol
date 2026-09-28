@@ -25,7 +25,7 @@ import { ArticleView } from './ArticleView';
 import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } from './CalculatorPanel';
 import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
-import { BackIcon, CloseIcon, MenuIcon, SearchIcon, SettingsIcon } from './icons';
+import { BackIcon, ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon, ServerIcon, SettingsIcon } from './icons';
 import { DEFAULT_OPACITY, OPACITY_KEY, applyOpacity, clampOpacity } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
 import { OrganizationChoice } from './OrganizationChoice';
@@ -186,6 +186,8 @@ export function Overlay({
   }, [found, platform, profile.hotkey]);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [organizationOpen, setOrganizationOpen] = useState(false);
+  /** The server and the organisation picked from the header, both on one screen. */
+  const [switchOpen, setSwitchOpen] = useState(false);
   const [serverOpen, setServerOpen] = useState(false);
   // «Что нового»: once after the app was updated — every version since the one last run — and the whole
   // history from the settings.
@@ -392,7 +394,7 @@ export function Overlay({
       return;
     }
     // «Что изменилось» and «было → стало» are read with the mouse; the list keys would move a hidden selection.
-    if (whatsNew || settingsOpen || organizationOpen || serverOpen || notesFor || privacyOpen || diff || (changesView && !open)) return;
+    if (whatsNew || settingsOpen || switchOpen || organizationOpen || serverOpen || notesFor || privacyOpen || diff || (changesView && !open)) return;
     if (open) {
       // Enter in an open article puts its part into the calculator, or takes it out.
       if (e.key === 'Enter' && addable(open)) {
@@ -444,6 +446,7 @@ export function Overlay({
   stepBack.current = () => {
     if (menuOpen) setMenuOpen(false);
     else if (whatsNew) setWhatsNew(null);
+    else if (switchOpen) setSwitchOpen(false);
     else if (organizationOpen) setOrganizationOpen(false);
     else if (serverOpen) setServerOpen(false);
     else if (notesFor) setNotesOpen(false);
@@ -487,7 +490,7 @@ export function Overlay({
   // what is opened starts at its own top.
   const contentRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
-  const onList = !whatsNew && !settingsOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
+  const onList = !whatsNew && !settingsOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
   const wasOnList = useRef(onList);
   useLayoutEffect(() => {
     const content = contentRef.current;
@@ -587,7 +590,10 @@ export function Overlay({
           aria-label="Все документы"
           aria-expanded={menuOpen}
           title="Все документы"
-          onClick={() => setMenuOpen((v) => !v)}
+          onClick={() => {
+            setMenuOpen((v) => !v);
+            setSwitchOpen(false);
+          }}
         >
           <MenuIcon />
         </button>
@@ -595,16 +601,32 @@ export function Overlay({
           РО Хелпер
         </span>
         <span className="sp" data-tauri-drag-region />
-        <span className="chip" data-tauri-drag-region>
-          {summary}
-        </span>
+        <button
+          className={switchOpen ? 'chip chip--switch chip--on' : 'chip chip--switch'}
+          type="button"
+          aria-label="Сервер и организация"
+          aria-expanded={switchOpen}
+          title="Сменить сервер или организацию"
+          onClick={() => {
+            setSwitchOpen((v) => !v);
+            setSettingsOpen(false);
+            setMenuOpen(false);
+          }}
+        >
+          <ServerIcon id={pack.server.id} size={16} />
+          <span>{summary}</span>
+          <ChevronDownIcon size={16} />
+        </button>
         <button
           className={settingsOpen ? 'icon-btn icon-btn--on' : 'icon-btn'}
           type="button"
           aria-label="Настройки"
           aria-expanded={settingsOpen}
           title="Настройки"
-          onClick={() => setSettingsOpen((v) => !v)}
+          onClick={() => {
+            setSettingsOpen((v) => !v);
+            setSwitchOpen(false);
+          }}
         >
           <SettingsIcon />
         </button>
@@ -679,6 +701,38 @@ export function Overlay({
               searchRef.current?.focus();
             }}
           />
+        ) : switchOpen ? (
+          <section className="art art--switch" aria-label="Сервер и организация">
+            <button
+              className="back"
+              type="button"
+              onClick={() => {
+                setSwitchOpen(false);
+                searchRef.current?.focus();
+              }}
+            >
+              <BackIcon />
+              <span>Поиск</span>
+            </button>
+            <h2 className="art__title">Сервер и организация</h2>
+            <ServerChoice
+              value={profile.server}
+              onPick={(id) => {
+                // The screen stays open: the organisation is picked next, from the new server's own.
+                const keep = packFor(id).organizations.some((o) => o.id === profile.organization);
+                onProfile({ ...profile, server: id, organization: keep ? profile.organization : 'none' });
+              }}
+            />
+            <OrganizationChoice
+              pack={pack}
+              value={profile.organization}
+              onPick={(id) => {
+                onProfile({ ...profile, organization: id });
+                setSwitchOpen(false);
+                searchRef.current?.focus();
+              }}
+            />
+          </section>
         ) : organizationOpen ? (
           <section className="art" aria-label="Ваша организация">
             <button

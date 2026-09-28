@@ -2737,3 +2737,53 @@ input {
 .swatch--on {
   border-color: #fff;
 }
+
+/* Servers and organisations with their marks (first launch, settings, the switcher in the header). */
+.ob__option-mark {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.ob__org {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.ob__org-mark {
+  display: inline-flex;
+  color: oklch(0.82 0.1 var(--org-hue));
+}
+
+/* The server and organisation in the header: a button that opens the switcher. */
+.chip--switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 8px;
+  cursor: pointer;
+}
+
+.chip--switch:hover,
+.chip--on {
+  background: rgb(255 255 255 / calc(0.14 * var(--tint-scale)));
+}
+
+.chip--switch > svg:last-child {
+  color: var(--text-faint);
+}
+
+/* Both choices on one screen: the organisation's under the server's. */
+.art--switch .ob__groups {
+  margin-top: 14px;
+}
+
+.ob__org--on .ob__org-mark {
+  color: inherit;
+}

@@ -439,7 +439,7 @@ export function SettingsView({
             <DiscordIcon />
           </button>
         </div>
-        <p className="set__hint">Иконки — Material Symbols от Google, лицензия Apache 2.0.</p>
+        <p className="set__hint">Иконки — Material Symbols от Google (лицензия Apache 2.0), значки серверов — с вики Russia Online.</p>
         <div className="set__row set__links">
           <button className="link" type="button" onClick={onPrivacy}>
             Политика конфиденциальности

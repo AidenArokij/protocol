@@ -1,4 +1,7 @@
+import type { CSSProperties } from 'react';
 import type { Organization, ServerPack } from '../core';
+import { organizationHue } from './appearance';
+import { OrganizationIcon } from './icons';
 
 /** The groups the organisations are chosen from; «Без организации» belongs to none and stands apart. */
 const GROUPS: { kind: NonNullable<Organization['kind']>; title: string }[] = [
@@ -17,7 +20,10 @@ export function OrganizationChoice({ pack, value, onPick }: { pack: ServerPack; 
       className={value === org.id ? 'ob__org ob__org--on' : 'ob__org'}
       onClick={() => onPick(org.id)}
     >
-      {org.name}
+      <span className="ob__org-mark" style={{ '--org-hue': organizationHue(org.id) } as CSSProperties}>
+        <OrganizationIcon id={org.id} size={20} />
+      </span>
+      <span>{org.name}</span>
     </button>
   );
 

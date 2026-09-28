@@ -1,3 +1,4 @@
+import { ServerIcon } from './icons';
 import { SERVERS } from './profile';
 
 /** Picking a server: at the first launch and from the settings, the same list. */
@@ -14,6 +15,9 @@ export function ServerChoice({ value, onPick }: { value: string; onPick: (id: st
           className={value === choice.id ? 'ob__option ob__option--on' : 'ob__option'}
           onClick={() => onPick(choice.id)}
         >
+          <span className="ob__option-mark">
+            <ServerIcon id={choice.id} size={20} />
+          </span>
           <span className="ob__option-name">{choice.name}</span>
           <span className="sp" />
           {(choice.status === 'soon' || choice.note) && (

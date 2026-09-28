@@ -125,6 +125,6 @@ Privacy / Конфиденциальность: see the [privacy policy](PRIVACY
 
 Код — [MIT](LICENSE). Тексты законов, уставов и правил принадлежат проекту Russia Online и их авторам; лицензия MIT на них не распространяется.
 
-Иконки — [Material Symbols](https://fonts.google.com/icons) от Google, лицензия [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0); они встроены в программу (`src/ui/symbols.ts`, собираются `node scripts/icons.mjs`).
+Иконки — [Material Symbols](https://fonts.google.com/icons) от Google, лицензия [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0); они встроены в программу (`src/ui/symbols.ts`, собираются `node scripts/icons.mjs`). Значки и цвета серверов — с [вики Russia Online](https://wiki.russia.online/ru/servers).
 
 РО Хелпер — неофициальная программа, она не связана с администрацией Russia Online.
