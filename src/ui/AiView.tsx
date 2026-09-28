@@ -17,6 +17,16 @@ export function citedIn(line: string, sources: SearchHit[]): SearchHit | undefin
   });
 }
 
+/** Questions to try the AI with the first time: situations players meet, on laws every server has. */
+export const EXAMPLES = [
+  'Человек в маске с электродубинкой стоит у здания МВД — что ему грозит?',
+  'Сотрудник остановил меня без причины и требует показать документы — я обязан?',
+  'Какое наказание за кражу телефона у прохожего?',
+  'Задержанный просит адвоката — сотрудник обязан дать ему позвонить?',
+  'Водитель проехал на красный и уехал от полиции — какие статьи?',
+  'Игрок продаёт игровую валюту за реальные деньги в чате — что за это будет?',
+];
+
 /** What the AI does for the player: analyses a situation, or writes a document about it. */
 export type AiTab = 'chat' | 'document' | 'trainer';
 
@@ -124,7 +134,14 @@ export function AiView({
             Опишите ситуацию своими словами в поле сверху и нажмите <b>Enter</b>. ИИ найдёт статьи в законах сервера и объяснит,
             что к чему. Он опирается только на найденные статьи — по ссылке каждую можно открыть и проверить.
           </p>
-          <p className="set__hint ai__example">Например: «человек в маске с электродубинкой стоит у здания МВД — что ему грозит?»</p>
+          <div className="ai__examples" aria-label="Примеры вопросов">
+            <span className="set__label">Попробуйте:</span>
+            {EXAMPLES.map((example) => (
+              <button key={example} type="button" className="ai__example" disabled={chat.busy} onClick={() => void chat.send(example)}>
+                {example}
+              </button>
+            ))}
+          </div>
           <p className="set__hint">
             Нужен бесплатный ключ Gemini:{' '}
             <button className="link" type="button" onClick={() => void platform.openExternal(AI_KEY_URL)}>

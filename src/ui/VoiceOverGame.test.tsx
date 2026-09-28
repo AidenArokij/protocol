@@ -28,8 +28,9 @@ function fakeGemini() {
   return bodies;
 }
 
-/** Holding the key while speaking: longer than a tap. */
-const speak = () => act(() => new Promise((resolve) => setTimeout(resolve, 450)));
+const wait = (ms: number) => act(() => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+/** Speaking with the key held down: longer than a tap and than the shortest question. */
+const speak = () => wait(900);
 
 describe('a question over the game', () => {
   beforeEach(() => void fakeGemini());
@@ -64,6 +65,34 @@ describe('a question over the game', () => {
     await speak();
     await act(async () => platform.holdVoiceHotkey());
     await vi.waitFor(() => expect(pinnedCards(platform).some((card) => card.kind === 'ai')).toBe(true));
+  });
+
+  it('keeps listening while Windows repeats the held key, «let go» between the repeats and all, and asks once they stop', async () => {
+    const { platform } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    await vi.waitFor(() => expect(platform.state.voiceHotkey).toBe(DEFAULT_VOICE_HOTKEY));
+    await act(async () => platform.holdVoiceHotkey());
+    await vi.waitFor(() => expect(platform.state.toast?.title).toBe('Слушаю…'));
+    for (let i = 0; i < 20; i++) {
+      await wait(50);
+      await act(async () => platform.releaseVoiceHotkey());
+      await act(async () => platform.holdVoiceHotkey());
+    }
+    // Still listening while the key repeats: nothing asked yet.
+    expect(platform.state.toast?.title).toBe('Слушаю…');
+    expect(pinnedCards(platform)).toEqual([]);
+    await vi.waitFor(() => expect(pinnedCards(platform).some((card) => card.kind === 'ai')).toBe(true), { timeout: 3000 });
+  });
+
+  it('does not send a recording too short to hold a question', async () => {
+    const { platform } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    await vi.waitFor(() => expect(platform.state.voiceHotkey).toBe(DEFAULT_VOICE_HOTKEY));
+    await act(async () => platform.holdVoiceHotkey());
+    await vi.waitFor(() => expect(platform.state.toast?.title).toBe('Слушаю…'));
+    await act(async () => platform.releaseVoiceHotkey());
+    await wait(300);
+    await act(async () => platform.holdVoiceHotkey());
+    await vi.waitFor(() => expect(platform.state.toast?.title).toBe('Слишком коротко'));
+    expect(pinnedCards(platform)).toEqual([]);
   });
 
   it('asks the AI for a short answer, fit for a card', async () => {

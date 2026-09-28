@@ -65,6 +65,13 @@ function plural(n: number, [one, few, many]: [string, string, string]): string {
   return `${n} ${many}`;
 }
 
+/**
+ * Timings of the push-to-talk key, in milliseconds: a «pressed» sooner than `repeat` after the last event is the key
+ * repeating while held; a hold ends `holdEnd` after the repeats stop; a «let go» sooner than `tap` after the start is
+ * a tap; a recording shorter than `shortest` holds no question.
+ */
+export const TALK = { repeat: 250, holdEnd: 450, tap: 700, shortest: 800 };
+
 /** What the search looks through, picked in the header: the laws of the game world, or the rules of the project. */
 type Kind = 'all' | 'laws' | 'rules';
 const KINDS: { id: Kind; label: string; title: string }[] = [
@@ -391,63 +398,82 @@ export function Overlay({
     void platform.writeSetting(VOICE_HOTKEY_KEY, accelerator);
   };
   /**
-   * Held and let go asks the question. So does a second press: a quick tap starts the recording and the next
-   * press ends it — for when Windows does not report the key being let go, or the player prefers to tap.
+   * Two ways to ask, told apart by what Windows reports of the key:
+   * - held: a key held down repeats «pressed» every few dozen milliseconds (and may report «let go» between the
+   *   repeats); the question ends a moment after the repeats stop — when the key is really let go;
+   * - tapped: a press, then a pause, then another press ends the question.
+   * A «let go» ends it only when the key is not repeating and was held a while: a quick one is the tap's own.
    */
   const talk = useRef({
     recording: null as Recording | null,
     startedAt: 0,
-    lastPress: 0,
-    tapped: false,
+    lastEvent: 0,
+    held: false,
+    toldTap: false,
+    holdTimer: undefined as ReturnType<typeof setTimeout> | undefined,
     starting: false,
-    letGo: false,
     thinking: false,
   });
   const notice = (title: string, text?: string) => void platform.showToast({ id: `talk-${Date.now()}`, title, ...(text ? { text } : {}) });
   const talkDown = useRef(async () => {});
-  const talkUp = useRef(async (_end?: boolean) => {});
+  const talkUp = useRef(async () => {});
+  const finishTalk = useRef(async () => {});
   talkDown.current = async () => {
     const state = talk.current;
     const now = Date.now();
-    const gap = now - state.lastPress;
-    state.lastPress = now;
+    const gap = now - state.lastEvent;
+    state.lastEvent = now;
     if (state.recording) {
-      // A key held down repeats «pressed» every few dozen milliseconds; a new press after a pause ends the question.
-      if (state.tapped || gap > 600) await talkUp.current(true);
+      if (gap < TALK.repeat) {
+        // The key repeats: it is being held. The question ends when the repeats stop.
+        state.held = true;
+        clearTimeout(state.holdTimer);
+        state.holdTimer = setTimeout(() => void finishTalk.current(), TALK.holdEnd);
+      } else {
+        // A new press after a pause: the tapped question is over.
+        await finishTalk.current();
+      }
       return;
     }
     if (state.starting || state.thinking) return;
-    state.tapped = false;
     if (!canRecord()) return notice('Микрофон недоступен', 'Спросить голосом не получится на этом компьютере.');
     state.starting = true;
-    state.letGo = false;
+    state.held = false;
+    state.toldTap = false;
     try {
-      state.recording = await startRecording(() => void talkUp.current(true));
-      if (state.letGo) {
-        // The key was let go before the microphone even started: nothing was said.
-        state.recording.cancel();
-        state.recording = null;
-        return notice('Держите клавишу, пока говорите', `${formatHotkey(voiceHotkey)}: нажмите, скажите вопрос и отпустите.`);
-      }
+      state.recording = await startRecording(() => void finishTalk.current());
       state.startedAt = Date.now();
-      notice('Слушаю…', 'Отпустите клавишу — ИИ ответит карточкой поверх игры.');
+      notice('Слушаю…', `Говорите, пока держите ${formatHotkey(voiceHotkey)}. Или отпустите и нажмите ещё раз, когда договорите.`);
     } catch {
       notice('Не получилось включить микрофон', 'Windows: «Параметры» → «Конфиденциальность» → «Микрофон».');
     } finally {
       state.starting = false;
     }
   };
-  talkUp.current = async (end = false) => {
+  talkUp.current = async () => {
     const state = talk.current;
-    if (state.starting) state.letGo = true;
+    state.lastEvent = Date.now();
+    // Held and repeating: the repeats stopping ends it, not a «let go» that may come between them.
+    if (!state.recording || state.held) return;
+    if (Date.now() - state.startedAt < TALK.tap) {
+      // Let go at once: a tap — the recording goes on until the next press.
+      if (!state.toldTap) notice('Слушаю…', `Скажите вопрос и нажмите ${formatHotkey(voiceHotkey)} ещё раз.`);
+      state.toldTap = true;
+      return;
+    }
+    await finishTalk.current();
+  };
+  finishTalk.current = async () => {
+    const state = talk.current;
+    clearTimeout(state.holdTimer);
     const recording = state.recording;
     if (!recording) return;
-    // Let go at once: a tap, not a hold — the recording goes on until the next press.
-    if (!end && !state.tapped && Date.now() - state.startedAt < 400) {
-      state.tapped = true;
-      return notice('Слушаю…', `Скажите вопрос и нажмите ${formatHotkey(voiceHotkey)} ещё раз.`);
-    }
     state.recording = null;
+    state.held = false;
+    if (Date.now() - state.startedAt < TALK.shortest) {
+      recording.cancel();
+      return notice('Слишком коротко', `Держите ${formatHotkey(voiceHotkey)} всё время, пока говорите, — или нажмите, скажите и нажмите ещё раз.`);
+    }
     state.thinking = true;
     try {
       notice('Думаю…');

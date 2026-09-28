@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import type { SearchHit } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
 import { AiTabs, citedIn, shortLabel, type AiTab } from './AiView';
-import { DOCUMENT_KINDS, type DocumentAuthor, type DocumentWriter } from './documents';
+import { DOCUMENT_EXAMPLES, DOCUMENT_KINDS, type DocumentAuthor, type DocumentWriter } from './documents';
 import { BackIcon, CheckIcon, WarnIcon } from './icons';
 
 /** The written document, line by line: a line citing a found article opens it; {gaps} stand out to be filled in. */
@@ -128,11 +128,18 @@ export function DocumentView({
       <AuthorForm key={JSON.stringify(writer.author)} author={writer.author} onSave={writer.saveAuthor} />
 
       {!result && !writer.busy && !writer.error && (
-        <p className="set__hint">
-          Опишите в поле сверху, что произошло, и нажмите <b>Enter</b> — ИИ составит {kind.label.toLowerCase()} со ссылками на статьи
-          законов сервера. Например: «задержал Ивана Петрова у банка, был в маске с электродубинкой, отказался показать
-          документы».
-        </p>
+        <>
+          <p className="set__hint">
+            Опишите в поле сверху, что произошло, и нажмите <b>Enter</b> — ИИ составит {kind.label.toLowerCase()} со ссылками на статьи
+            законов сервера.
+          </p>
+          <div className="ai__examples" aria-label="Пример">
+            <span className="set__label">Попробуйте:</span>
+            <button type="button" className="ai__example" onClick={() => void writer.write(DOCUMENT_EXAMPLES[writer.kind])}>
+              {DOCUMENT_EXAMPLES[writer.kind]}
+            </button>
+          </div>
+        </>
       )}
 
       {writer.busy && (

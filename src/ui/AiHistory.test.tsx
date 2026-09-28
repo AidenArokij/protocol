@@ -40,6 +40,15 @@ describe('the history of AI analyses', () => {
     expect(screen.getByRole('button', { name: /УК ст\. 65 «Кража»/ })).toBeInTheDocument();
   });
 
+  it('offers questions to try the first time, asked with a press', async () => {
+    const { user } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    await user.click(screen.getByRole('button', { name: 'ИИ-разбор ситуации' }));
+    const examples = screen.getByLabelText('Примеры вопросов');
+    await user.click(within(examples).getByRole('button', { name: /Какое наказание за кражу телефона/ }));
+    expect(await screen.findByText(/это кража/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Примеры вопросов')).not.toBeInTheDocument();
+  });
+
   it('forgets a conversation, or all of them', async () => {
     const conversation: StoredConversation = {
       id: 'c1',

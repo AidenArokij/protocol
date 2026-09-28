@@ -41,6 +41,15 @@ export const DOCUMENT_KINDS: { id: DocumentKind; label: string; who: string; for
   },
 ];
 
+/** A situation to try each document with the first time. */
+export const DOCUMENT_EXAMPLES: Record<DocumentKind, string> = {
+  report: 'Сегодня в 21:40 у банка на Тверской задержал Ивана Петрова: был в маске, при себе электродубинка, отказался показать документы.',
+  detention: 'Задержал Ивана Петрова у банка в 21:40 по подозрению в краже телефона, изъял телефон и электродубинку, права разъяснил.',
+  statement: 'Сегодня около 21:00 у метро двое в масках отняли у меня телефон и убежали в сторону парка.',
+  complaint: 'Сотрудник ППС остановил меня у магазина, обыскал без объяснения причины и не назвал ни себя, ни номер жетона.',
+  lawsuit: 'Сотрудник полиции незаконно задержал моего доверителя на сутки без оснований и повредил его машину при задержании.',
+};
+
 /** Who writes the documents: filled in once in the settings, put in every document. */
 export interface DocumentAuthor {
   name: string;

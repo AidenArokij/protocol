@@ -3095,7 +3095,6 @@ select option {
 .ai__top { display: flex; align-items: center; }
 
 .ai__intro { display: flex; flex-direction: column; gap: 10px; }
-.ai__example { font-style: italic; }
 
 .ai__messages { display: flex; flex-direction: column; gap: 12px; padding-bottom: 8px; }
 
@@ -3431,4 +3430,24 @@ select option {
   border-radius: var(--radius-card);
   background: color-mix(in oklch, var(--accent) 14%, transparent);
   font-size: 16px;
+}
+
+/* Examples to try the AI with: whole questions, pressed to ask. */
+.ai__examples {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.ai__example {
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font-size: 13.5px;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.85);
+}
+.ai__example:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
 }
