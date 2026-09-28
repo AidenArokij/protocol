@@ -25,6 +25,7 @@
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@material-symbols/svg-400": "^0.47.5",
     "@tauri-apps/cli": "^2.11.4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

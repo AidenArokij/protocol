@@ -11,6 +11,7 @@
 - Releases: the version lives only in `package.json`, «Что нового» in a `## <version>` section of `CHANGELOG.md` (the build fails without one; write it for every release, in Russian, for players); a pushed tag `v*` runs `.github/workflows/release.yml` (tests, NSIS installer, signed update, draft release with `latest.json` that installed copies poll). The update signing key is the user's (`%USERPROFILE%\.tauri\ro-helper.key`, GitHub secrets) — never generate or replace it
 - Backlog of known defects and ideas put off for later: `.scratch/backlog/` (one ticket per file)
 - `node scripts/readme-screenshots.mjs` — retake the README's `docs/screenshots` from the running browser preview (headless Edge over the DevTools protocol)
+- `node scripts/icons.mjs` — rebuild `src/ui/symbols.ts`, the Material Symbols Rounded icons the app uses (names listed in the script), from the `@material-symbols/svg-400` dev dependency
 
 ## Architecture
 

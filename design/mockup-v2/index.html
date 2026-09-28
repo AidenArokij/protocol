@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>РО Хелпер — макеты 2.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* Tokens follow src/ui/tokens.css (style C). A theme swaps the glass; the accent hue follows the faction. */
+:root {
+  --font: 'Onest', system-ui, sans-serif;
+  --hue: 245;
+  --accent: oklch(0.78 0.1 var(--hue));
+  --accent-hover: oklch(0.83 0.09 var(--hue));
+  --accent-text: oklch(0.86 0.08 var(--hue));
+  --accent-soft: oklch(0.78 0.1 var(--hue) / 0.18);
+  --on-accent: #0d1118;
+  --text: #fff;
+  --text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --text-muted: rgba(255, 255, 255, 0.58);
+  --text-faint: rgba(255, 255, 255, 0.42);
+  --surface: rgba(255, 255, 255, 0.07);
+  --surface-hover: rgba(255, 255, 255, 0.11);
+  --surface-active: rgba(255, 255, 255, 0.14);
+  --line: rgba(255, 255, 255, 0.08);
+  --penalty-text: oklch(0.85 0.11 25);
+  --penalty-bg: oklch(0.7 0.16 25 / 0.16);
+  --favorite: oklch(0.88 0.09 80);
+  --badge-codes-text: oklch(0.87 0.07 245);
+  --badge-codes-bg: oklch(0.78 0.1 245 / 0.22);
+  --badge-charters-text: oklch(0.87 0.07 150);
+  --badge-charters-bg: oklch(0.78 0.1 150 / 0.22);
+  --badge-rules-text: rgba(255, 255, 255, 0.88);
+  --badge-rules-bg: rgba(255, 255, 255, 0.13);
+  --radius: 16px;
+  --radius-sm: 10px;
+  /* Theme: glass (default). */
+  --panel-bg: rgb(15 15 18 / 0.62);
+  --panel-filter: blur(28px) saturate(115%);
+  --panel-border: rgba(255, 255, 255, 0.1);
+  --panel-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+[data-theme='dense'] {
+  --panel-bg: #17181c;
+  --panel-filter: none;
+  --panel-border: rgba(255, 255, 255, 0.07);
+  --surface: #202227;
+  --surface-hover: #272a30;
+  --surface-active: #2d3037;
+  --text-shadow: none;
+}
+[data-theme='minimal'] {
+  --panel-bg: rgb(10 10 12 / 0.86);
+  --panel-filter: blur(12px);
+  --panel-border: transparent;
+  --panel-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --surface: transparent;
+  --surface-hover: rgba(255, 255, 255, 0.06);
+  --surface-active: rgba(255, 255, 255, 0.09);
+  --line: rgba(255, 255, 255, 0.06);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background: #0b0c10;
+  display: flex;
+  flex-direction: column;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+.sp { flex: 1; }
+
+/* The control bar is the mockup's own, not part of the app. */
+.bar {
+  display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+  padding: 12px 20px; background: #111217; border-bottom: 1px solid #22242b; font-size: 13px; color: #c9ccd4;
+}
+.bar h1 { font-size: 14px; margin: 0 8px 0 0; font-weight: 600; color: #fff; }
+.seg { display: inline-flex; background: #1b1d23; border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { padding: 6px 11px; border-radius: 7px; color: #aeb3be; }
+.seg button[aria-pressed='true'] { background: #2c3039; color: #fff; }
+.bar label { color: #8b909b; margin-right: 6px; }
+
+/* A stand-in for the game behind the overlay. */
+.stage {
+  flex: 1; position: relative; overflow: auto; padding: 36px;
+  background:
+    radial-gradient(1200px 500px at 20% 110%, #3b4a2e 0%, transparent 60%),
+    radial-gradient(900px 500px at 90% 0%, #5c3c2a 0%, transparent 55%),
+    linear-gradient(180deg, #56708a 0%, #8a9aa6 45%, #4b5446 70%, #2d2f28 100%);
+  display: flex; justify-content: center; align-items: flex-start; gap: 28px;
+}
+.stage::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, rgba(0,0,0,.05) 0 2px, transparent 2px 90px); pointer-events: none; }
+.note {
+  position: relative; z-index: 1; width: 260px; flex: none; font-size: 13px; line-height: 1.5; color: #fff;
+  background: rgba(10, 12, 16, 0.72); border-radius: 12px; padding: 14px 16px; text-shadow: none;
+}
+.note h2 { font-size: 14px; margin: 0 0 6px; }
+.note ul { padding-left: 18px; margin: 6px 0 0; }
+.note li { margin: 4px 0; }
+
+/* The overlay window. */
+.panel {
+  position: relative; z-index: 1; width: 470px; min-height: 600px; flex: none;
+  background: var(--panel-bg); backdrop-filter: var(--panel-filter); -webkit-backdrop-filter: var(--panel-filter);
+  border: 1px solid var(--panel-border); border-radius: var(--radius); box-shadow: var(--panel-shadow);
+  text-shadow: var(--text-shadow); display: flex; flex-direction: column; overflow: hidden;
+}
+.panel--wide { width: 620px; flex-direction: row; }
+.head { display: flex; align-items: center; gap: 8px; padding: 14px 16px 10px; }
+.brand { font-weight: 700; font-size: 15px; letter-spacing: 0.01em; }
+.icon-btn { width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: var(--text-muted); }
+.icon-btn:hover { background: var(--surface-hover); color: var(--text); }
+.icon-btn svg { width: 18px; height: 18px; }
+
+/* Server + faction switcher. */
+.switch {
+  display: inline-flex; align-items: center; gap: 8px; padding: 5px 10px 5px 6px; border-radius: 999px;
+  background: var(--surface); border: 1px solid var(--line); font-size: 13px; font-weight: 500;
+}
+.switch:hover { background: var(--surface-hover); }
+.switch .srv { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; background: rgba(0,0,0,.25); }
+.switch .srv svg { width: 15px; height: 15px; }
+.switch .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--text-faint); }
+.switch .fac { color: var(--accent-text); }
+.chev { width: 12px; height: 12px; color: var(--text-faint); }
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  background: linear-gradient(135deg, oklch(0.7 0.14 280), oklch(0.62 0.16 320)); color: #fff; position: relative;
+}
+.avatar .sync { position: absolute; right: -2px; bottom: -2px; width: 11px; height: 11px; border-radius: 50%; background: oklch(0.8 0.15 150); border: 2px solid #15161a; }
+
+.search {
+  margin: 4px 16px 12px; display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-radius: 12px;
+  background: var(--surface); border: 1px solid var(--line); color: var(--text-faint); font-size: 14px;
+}
+.search:focus-within { border-color: var(--accent); }
+.search svg { width: 17px; height: 17px; flex: none; }
+.search input { flex: 1; background: none; border: 0; outline: 0; color: var(--text); font: inherit; }
+.kbd { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: var(--surface-active); color: var(--text-muted); }
+
+.section { padding: 4px 16px 10px; }
+.section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin: 8px 2px 8px; font-weight: 600; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.tile { padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); text-align: left; display: flex; flex-direction: column; gap: 6px; }
+.tile:hover { background: var(--surface-hover); }
+.tile .t { font-weight: 600; font-size: 14px; }
+.tile .s { font-size: 12px; color: var(--text-muted); }
+.tile .pen { font-size: 12px; color: var(--penalty-text); }
+.badge { align-self: flex-start; font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 6px; }
+.b-codes { color: var(--badge-codes-text); background: var(--badge-codes-bg); }
+.b-charter { color: var(--badge-charters-text); background: var(--badge-charters-bg); }
+.b-rules { color: var(--badge-rules-text); background: var(--badge-rules-bg); }
+
+.row { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; font-size: 13.5px; }
+.row:hover { background: var(--surface-hover); }
+.row .lbl { color: var(--accent-text); font-weight: 600; min-width: 92px; }
+.row .ttl { color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .pen { color: var(--penalty-text); font-size: 12px; }
+.row--dense { padding: 6px 10px; font-size: 13px; }
+.row--sel { background: var(--accent-soft); }
+
+.banner {
+  margin: 0 16px 12px; padding: 10px 12px; border-radius: 12px; font-size: 13px;
+  background: var(--accent-soft); border: 1px solid oklch(0.78 0.1 var(--hue) / 0.35); display: flex; align-items: center; gap: 10px;
+}
+.banner b { color: var(--accent-text); }
+.foot { margin-top: auto; padding: 10px 16px; font-size: 11.5px; color: var(--text-faint); border-top: 1px solid var(--line); display: flex; gap: 14px; }
+
+/* Popover of the switcher. */
+.pop {
+  position: absolute; z-index: 5; top: 52px; left: 16px; right: 16px; padding: 12px; border-radius: 14px;
+  background: rgb(22 23 28 / 0.97); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 24px 60px rgba(0,0,0,.55);
+}
+.pop h4 { margin: 2px 4px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-faint); }
+.servers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.server { padding: 12px 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; }
+.server svg { width: 30px; height: 30px; }
+.server[aria-pressed='true'] { border-color: var(--accent); background: var(--accent-soft); }
+.server small { color: var(--text-faint); font-size: 11px; }
+.factions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.faction { padding: 8px 4px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.faction i { width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center; font-style: normal; font-size: 10px; font-weight: 700; color: #0d1118; }
+.faction[aria-pressed='true'] { border-color: oklch(0.78 0.1 var(--h)); background: oklch(0.78 0.1 var(--h) / 0.18); }
+
+/* Direction C: side rail. */
+.rail { width: 64px; flex: none; border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 0; }
+.rail .srvbig { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(0,0,0,.25); border: 1px solid var(--line); margin-bottom: 10px; }
+.rail .srvbig svg { width: 24px; height: 24px; }
+.rail .icon-btn { width: 42px; height: 42px; border-radius: 12px; }
+.rail .icon-btn[aria-current='true'] { background: var(--accent-soft); color: var(--accent-text); }
+.rail .icon-btn svg { width: 20px; height: 20px; }
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+/* Login. */
+.login { padding: 40px 32px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; flex: 1; justify-content: center; }
+.login .logo { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent-text); font-size: 28px; font-weight: 700; }
+.login h2 { margin: 6px 0 0; font-size: 22px; }
+.login p { margin: 0; color: var(--text-muted); font-size: 14px; max-width: 320px; line-height: 1.5; }
+.oauth { width: 100%; max-width: 320px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 14px; }
+.oauth svg { width: 20px; height: 20px; }
+.oauth--discord { background: #5865f2; }
+.oauth--tg { background: #2aabee; }
+.login small { color: var(--text-faint); font-size: 12px; max-width: 320px; line-height: 1.5; }
+
+/* Profile. */
+.profile { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+.pcard { display: flex; align-items: center; gap: 14px; padding: 14px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.pcard .avatar { width: 52px; height: 52px; font-size: 18px; }
+.pcard .n { font-size: 16px; font-weight: 700; }
+.pcard .m { font-size: 12.5px; color: var(--text-muted); margin-top: 3px; display: flex; gap: 6px; align-items: center; }
+.role { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: oklch(0.85 0.12 80 / .2); color: var(--favorite); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { padding: 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); }
+.stat b { display: block; font-size: 20px; }
+.stat span { font-size: 11.5px; color: var(--text-muted); }
+.bars { display: flex; flex-direction: column; gap: 6px; }
+.barrow { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.barrow .bn { width: 120px; color: var(--text-muted); }
+.barrow .bt { flex: 1; height: 7px; border-radius: 4px; background: var(--surface-active); overflow: hidden; }
+.barrow .bt i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+.syncline { font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+.syncline i { width: 8px; height: 8px; border-radius: 50%; background: oklch(0.8 0.15 150); }
+.memo { padding: 12px; border-radius: 12px; border: 1px solid oklch(0.85 0.12 80 / .35); background: oklch(0.85 0.12 80 / .1); font-size: 13px; line-height: 1.45; }
+.memo b { color: var(--favorite); }
+
+/* Settings (kept as is: grouped blocks). */
+.set { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+.block { border-radius: 14px; background: var(--surface); border: 1px solid var(--line); padding: 4px 12px; }
+.block h5 { margin: 10px 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-faint); }
+.setrow { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: 13.5px; border-top: 1px solid var(--line); }
+.setrow:first-of-type { border-top: 0; }
+.themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px 0 10px; }
+.theme { border-radius: 10px; padding: 8px; border: 1px solid var(--line); font-size: 12px; display: flex; flex-direction: column; gap: 6px; background: rgba(0,0,0,.2); }
+.theme[aria-pressed='true'] { border-color: var(--accent); }
+.theme .sw { height: 34px; border-radius: 7px; }
+.swatches { display: flex; gap: 8px; padding: 6px 0 10px; flex-wrap: wrap; }
+.swatch { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; }
+.swatch[aria-pressed='true'] { border-color: #fff; }
+.toggle { width: 34px; height: 20px; border-radius: 999px; background: var(--accent); position: relative; }
+.toggle::after { content: ''; position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <h1>РО Хелпер · макеты 2.0</h1>
+  <span><label>Направление</label><span class="seg" data-key="dir">
+    <button data-v="A">A · Карточки</button><button data-v="B">B · Компактная</button><button data-v="C">C · Боковое меню</button>
+  </span></span>
+  <span><label>Экран</label><span class="seg" data-key="screen">
+    <button data-v="home">Главная</button><button data-v="switch">Сервер и фракция</button><button data-v="results">Поиск</button><button data-v="profile">Профиль</button><button data-v="settings">Настройки</button><button data-v="login">Вход</button>
+  </span></span>
+  <span><label>Тема</label><span class="seg" data-key="theme">
+    <button data-v="glass">Стекло</button><button data-v="dense">Плотная</button><button data-v="minimal">Минимализм</button>
+  </span></span>
+</div>
+<div class="stage" id="stage"></div>
+
+<script>
+/* Server icons and colours from wiki.russia.online/ru/servers (also saved in servers/*.svg). */
+const SRV = {
+  tverskoi: { name: 'Тверской', color: 'rgb(72,184,94)', d: "M8.77512 2.3172C8.34442 1.20526 9.83589 0.47051 10.4112 1.47566C10.6108 1.82443 10.5215 2.79568 10.1043 2.97458C9.95317 2.97841 9.9011 2.95124 9.76165 2.89757C9.75498 3.0059 9.7581 3.00158 9.84982 3.10739C9.99647 3.27817 10.1771 3.41588 10.3788 3.51142C10.4044 3.52134 10.4256 3.52894 10.4435 3.53486L11.0618 3.68107C11.4768 3.12895 12.1359 2.71961 13.3351 2.59176C13.5368 2.3668 13.7877 2.04618 14.1163 2.12299C14.2538 2.20033 14.2757 2.27898 14.3428 2.421C14.8949 2.50485 15.2981 2.77924 15.8237 2.81832C15.9642 2.82872 15.9901 2.82292 16.0347 2.95672C15.9787 3.24008 15.69 3.55643 15.5057 3.78487C16.1418 4.61206 15.6784 4.54124 15.5324 5.36079C15.5114 5.70397 15.5666 6.05094 15.5481 6.3943C15.5304 6.71497 15.269 7.16589 14.9097 7.12645C14.7829 7.02529 14.7166 6.81551 14.6486 6.65435C14.5196 6.83819 14.3755 7.08188 14.1341 7.02154C14.0056 6.87727 13.9916 6.38351 14.008 6.1867C14.0423 5.77767 13.5646 5.46444 13.2302 5.14204C13.2869 5.57932 13.3008 6.05599 13.4221 6.53158C13.6197 7.30348 14.3704 8.4749 13.9131 9.26712C13.7946 9.47239 13.332 9.47345 13.1029 9.49146C14.0825 9.68686 15.71 9.7018 16.4944 10.2102C16.6503 10.5737 16.8886 12.0514 17 12.5429C16.7289 12.9453 16.1563 13.6397 15.7512 13.8878C15.4609 14.0656 15.2185 13.3937 15.1854 13.1679C15.018 12.0363 16.0547 12.8435 15.8081 11.6332C15.5623 10.4268 14.3336 11.0103 13.5583 11.2359C12.6923 11.5002 12.727 10.8835 12.1264 10.5517L12.084 10.5283C12.0634 10.84 11.996 11.6381 12.0205 11.9033C12.1087 12.8544 12.5851 14.2644 12.9389 15.1378C13.4825 15.5073 13.5241 15.5627 13.7379 16.197C13.2325 16.1182 12.5312 15.995 12.0416 15.8755C11.7093 15.2418 11.4806 14.3967 11.1466 13.7237L10.9189 12.121L6.82659 12.7515C6.81988 12.7531 6.81364 12.7557 6.80762 12.7571C7.02096 12.1306 7.0588 11.9734 6.97726 11.3051C6.95402 11.0729 6.93264 10.8697 6.89356 10.6399C6.87121 10.9003 6.84886 11.3114 6.79088 11.554C6.58044 12.9714 5.84913 13.7824 4.67608 14.457C4.3823 15.117 4.16856 15.7674 4.6147 16.3354C4.72874 16.4805 4.9523 16.7578 4.87249 16.9268C4.62214 17.0632 4.07808 16.9721 3.77547 16.9459L3.64936 16.4682L3.2956 16.2438C3.33711 15.9945 3.36525 15.8483 3.39046 15.5787C3.4266 15.1911 3.25847 14.4273 3.43397 14.1155C3.51325 13.9748 3.91594 13.7122 4.03215 13.5641C4.40268 13.0913 4.08674 12.1758 4.04777 11.5875C3.99302 10.7598 4.04832 9.86846 4.59126 9.20686C5.14694 8.52986 6.01655 8.49056 6.80762 8.41554C6.93748 8.1042 7.00295 7.28261 7.30983 6.97801L6.87012 5.48021C6.71942 5.45543 6.5639 5.41877 6.43376 5.39874C6.14059 5.75874 5.89846 6.10339 5.40259 6.14764C5.30504 6.15554 5.20689 6.16077 5.10908 6.16326C4.81313 6.6248 4.59293 6.84827 4.05112 6.50591C3.6119 6.70349 3.17886 6.90423 2.7443 7.11195C2.52158 7.21841 2.12015 7.51952 1.90172 7.4903C1.84761 7.35521 1.86928 7.37963 1.89279 7.21127C2.15912 6.79657 3.58177 6.07542 4.03773 5.73356C4.06242 5.71505 4.08527 5.69416 4.10915 5.67442L4.96066 4.6543L4.9629 4.65318C5.20265 4.34543 5.96734 3.8093 6.36569 3.7458L7.53748 3.14757C7.78081 3.0359 8.24742 3.11117 8.48831 3.12079L8.53741 3.09512C8.9269 2.89459 8.93643 2.73417 8.77512 2.3172ZM8.01847 13.3386C8.23273 13.5191 8.24166 14.6222 8.35551 14.8499C8.53116 15.2004 8.99605 15.7021 9.14228 16.0842C9.04543 16.196 8.23367 16.2803 8.03076 16.3085C7.58326 14.8871 5.46656 14.1841 7.98835 13.3342L8.01847 13.3386ZM3.10811 9.64772C4.30461 9.56549 3.83591 10.0885 3.51209 10.9234C3.28175 11.5175 3.58934 12.9806 3.21413 13.3665L3.13378 13.3476C3.01814 13.2056 2.99257 12.939 2.95857 12.7482C2.77168 13.4328 2.71133 13.6698 2.17291 14.1321C1.77312 14.4091 1.40731 14.272 1 14.1143C1.34741 13.7702 1.77945 13.3844 1.72428 12.8454C1.58373 11.4714 1.36513 9.98847 3.10811 9.64772Z" },
+  arbatskiy: { name: 'Арбатский', color: 'rgb(0,121,210)', d: "M14.9208 1.00112L15.9923 1.39174L16.0001 1.39509V15.74C16.4947 15.9097 16.8786 16.2973 16.9956 16.789C17.0213 16.8973 16.9309 16.9997 16.8092 17H1.19187C1.06988 17 0.978617 16.8974 1.00437 16.789C1.12134 16.2973 1.50529 15.9097 1.99992 15.74V1.39509L2.00773 1.39174L3.07918 1.00112L3.08252 1L3.08698 1.00112L3.09368 1.00223C3.09788 1.00295 3.10382 1.00423 3.11154 1.00558C3.1282 1.00859 3.15366 1.01311 3.1852 1.01897C3.24826 1.03083 3.33936 1.04843 3.45195 1.07143C3.67799 1.11759 3.99131 1.18593 4.33811 1.27344C5.03108 1.44833 5.74913 1.70114 6.29461 2.01339C6.66886 2.22773 6.84575 2.44928 6.92854 2.61831C6.96988 2.70274 6.98693 2.77462 6.9944 2.82478C6.99811 2.84963 6.99973 2.8692 6.99997 2.88281V15.6462H7.99886V4.04576C7.99917 3.94065 8.15603 3.85608 8.34931 3.85602H9.64844C9.84179 3.85609 9.99859 3.94065 9.99889 4.04576V15.6462H11.0011L11 2.9029V2.88281C11.0003 2.8692 11.0019 2.84963 11.0056 2.82478C11.0131 2.77462 11.0301 2.70274 11.0714 2.61831C11.1542 2.44928 11.3312 2.22773 11.7054 2.01339C12.2509 1.70115 12.9689 1.44833 13.6619 1.27344C14.0087 1.18593 14.322 1.11759 14.548 1.07143C14.6606 1.04843 14.7517 1.03085 14.8148 1.01897C14.8463 1.01311 14.8718 1.00859 14.8885 1.00558C14.8962 1.00423 14.9021 1.00295 14.9063 1.00223L14.913 1.00112L14.9175 1L14.9208 1.00112Z" },
+  kutuzovskiy: { name: 'Кутузовский', color: 'rgb(3,193,243)', d: "M17 1V1.9423L16.0661 3H15.6671V5.57452H17V6.51682L16.0661 7.57452H15.6671V17H11.7115V10.9315C11.7115 9.87553 10.7542 8.77854 9.29808 8.49399L9 8.44832C7.37778 8.63222 6.28847 9.80506 6.28847 10.9315V17H2.33294V7.57452H1.9339L1 6.51682V5.57452H2.33294V3H1.9339L1 1.9423V1H17Z" },
+};
+const srvIcon = (id) => `<svg viewBox="0 0 18 18" style="color:${SRV[id].color}" fill="currentColor"><path d="${SRV[id].d}"/></svg>`;
+
+/* Faction accent hues: the accent of the whole app follows the chosen faction. */
+const FACTIONS = [
+  ['mvd', 'МВД', 245], ['gibdd', 'ГИБДД', 85], ['fsb', 'ФСБ', 290], ['fso', 'ФСО', 25],
+  ['army', 'Армия', 140], ['sk', 'СК', 200], ['prosecutor', 'Прок.', 55], ['court', 'Суд', 320],
+  ['government', 'Прав-во', 15], ['hospital', 'Больница', 350], ['news', 'Вести', 60], ['opg', 'ОПГ', 5],
+];
+
+const state = { dir: 'A', screen: 'home', theme: 'glass', server: 'tverskoi', faction: 'mvd' };
+try { Object.assign(state, JSON.parse(localStorage.getItem('mock2') || '{}')); } catch {}
+
+const I = {
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+  menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>',
+  gear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  calc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg>',
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 17v5M8 3h8l-1 6 3 4H6l3-4z"/></svg>',
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>',
+  memo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 4h14v16l-4-3H5z"/><path d="M9 9h6M9 13h4"/></svg>',
+  chev: '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>',
+  discord: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.3 5.3A17 17 0 0 0 15 4l-.5 1a15 15 0 0 0-5 0L9 4a17 17 0 0 0-4.3 1.3C2 9.3 1.3 13.2 1.6 17a17 17 0 0 0 5.2 2.6l1.1-1.8a11 11 0 0 1-1.7-.8l.4-.3a12 12 0 0 0 10.8 0l.4.3-1.7.8 1.1 1.8a17 17 0 0 0 5.2-2.6c.4-4.4-.7-8.3-2.8-11.7ZM8.7 14.7c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Zm6.6 0c-1 0-1.9-1-1.9-2.1s.8-2.1 1.9-2.1 1.9 1 1.9 2.1-.8 2.1-1.9 2.1Z"/></svg>',
+  tg: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.5 4.3 18.3 19.6c-.2 1-.9 1.3-1.7.8l-4.9-3.6-2.3 2.3c-.3.3-.5.5-1 .5l.3-5 9.1-8.2c.4-.4-.1-.6-.6-.2L5.9 13.3 1 11.8c-1-.3-1-1 .2-1.5L20.2 3c.9-.3 1.6.2 1.3 1.3Z"/></svg>',
+};
+
+const fac = () => FACTIONS.find((f) => f[0] === state.faction);
+const switcher = () =>
+  `<button class="switch" data-act="switch"><span class="srv">${srvIcon(state.server)}</span>${SRV[state.server].name}<span class="dot"></span><span class="fac">${fac()[1]}</span>${I.chev}</button>`;
+const avatar = () => `<button class="avatar" data-act="profile" title="Профиль">SK<span class="sync" title="Синхронизировано"></span></button>`;
+
+const RESULTS = [
+  ['УК ст. 65 ч. 1', 'Кража', 'штраф до 50 000 ₽ · до 30 мес.', 'codes'],
+  ['УК ст. 65 ч. 2', 'Кража группой лиц, с проникновением', 'штраф до 90 000 ₽ · до 40 мес.', 'codes'],
+  ['УК ст. 66 ч. 1', 'Грабеж', 'до 30 мес.', 'codes'],
+  ['КоАП ст. 11.1', 'Мелкое хулиганство', 'штраф 5 000–20 000 ₽ · арест до 15 сут.', 'codes'],
+  ['УК ст. 104 ч. 1', 'Оскорбление представителя власти', 'штраф до 40 000 ₽ · до 30 мес.', 'codes'],
+  ['Устав ст. 4.3', 'Запреты сотрудника МВД', 'выговор', 'charter'],
+  ['Правила п. 5.3', 'NonRP: поведение, Drive, Fly', 'Demorgan 45–90 мин / WARN', 'rules'],
+];
+
+function home() {
+  if (state.dir === 'B') {
+    return `
+      <div class="banner">Законы обновлены <b>27.09</b>: 24 документа · <span class="sp"></span><b>Что изменилось →</b></div>
+      <div class="section"><h3>Закреплённые и избранное</h3>
+        ${RESULTS.slice(0, 3).map(row(true)).join('')}
+      </div>
+      <div class="section"><h3>Недавние</h3>${RESULTS.slice(3, 7).map(row(true)).join('')}</div>`;
+  }
+  return `
+    <div class="banner">Законы обновлены <b>27.09</b> — 24 документа изменились<span class="sp"></span><b>Смотреть →</b></div>
+    ${state.dir === 'A' ? `<div class="memo" style="margin:0 16px 12px"><b>Памятка лидера МВД · сегодня</b><br>С 20:00 рейд на склад в Южном порту. Сбор у ГУВД, форма — ОМОН.</div>` : ''}
+    <div class="section"><h3>Избранное</h3>
+      <div class="tiles">
+        ${RESULTS.slice(0, 4).map(([l, t, p, b]) => `<button class="tile"><span class="badge b-${b}">${l.split(' ')[0]}</span><span class="t">${l.replace(/^\S+ /, '')} · ${t}</span><span class="pen">${p}</span></button>`).join('')}
+      </div>
+    </div>
+    <div class="section"><h3>Недавние</h3>${RESULTS.slice(4, 7).map(row(false)).join('')}</div>`;
+}
+const row = (dense) => ([l, t, p], i) =>
+  `<div class="row ${dense ? 'row--dense' : ''} ${i === 0 && state.screen === 'results' ? 'row--sel' : ''}"><span class="lbl">${l}</span><span class="ttl">${t}</span>${p ? `<span class="pen">${p}</span>` : ''}</div>`;
+
+function results() {
+  return `<div class="section"><h3>7 статей по «кража»</h3>${RESULTS.map(row(state.dir === 'B')).join('')}</div>`;
+}
+
+function switchPop() {
+  return `<div class="pop">
+    <h4>Сервер</h4>
+    <div class="servers">${Object.keys(SRV).map((id) => `<button class="server" data-srv="${id}" aria-pressed="${state.server === id}">${srvIcon(id)}${SRV[id].name}<small>${id === 'kutuzovskiy' ? 'для новичков' : '&nbsp;'}</small></button>`).join('')}</div>
+    <h4>Фракция</h4>
+    <div class="factions">${FACTIONS.map(([id, n, h]) => `<button class="faction" data-fac="${id}" style="--h:${h}" aria-pressed="${state.faction === id}"><i style="background:oklch(0.78 0.1 ${h})">${n.slice(0, 2)}</i>${n}</button>`).join('')}</div>
+  </div>`;
+}
+
+function profile() {
+  return `<div class="profile">
+    <div class="pcard"><span class="avatar">SK</span><div><div class="n">skyze</div><div class="m">${srvIcon(state.server)}${SRV[state.server].name} · ${fac()[1]} <span class="role">Лидер</span></div></div><span class="sp"></span>${I.discord.replace('<svg', '<svg style="width:18px;opacity:.6"')}</div>
+    <div class="syncline"><i></i>Настройки, закреплённое и избранное синхронизированы · 2 мин назад</div>
+    <div class="stats"><div class="stat"><b>1 284</b><span>открыто статей</span></div><div class="stat"><b>312</b><span>поисков</span></div><div class="stat"><b>96</b><span>расчётов наказания</span></div></div>
+    <div class="section" style="padding:0"><h3>Чаще всего</h3>
+      <div class="bars">${[['УК ст. 65', 92], ['КоАП ст. 11.1', 71], ['УК ст. 104', 55], ['Устав МВД 4.3', 38]].map(([n, v]) => `<div class="barrow"><span class="bn">${n}</span><span class="bt"><i style="width:${v}%"></i></span></div>`).join('')}</div>
+    </div>
+    <div class="section" style="padding:0"><h3>Лидер фракции</h3>
+      <div class="tiles"><button class="tile"><span class="t">Памятки фракции</span><span class="s">3 активных · видят 48 сотрудников</span></button><button class="tile"><span class="t">Заместители</span><span class="s">2 назначено</span></button></div>
+    </div>
+  </div>`;
+}
+
+function settings() {
+  const hues = [['Как фракция', null], ...[245, 140, 290, 85, 25, 200, 320].map((h) => [h, h])];
+  return `<div class="set">
+    <div class="block"><h5>Аккаунт</h5>
+      <div class="setrow"><span class="avatar" style="width:24px;height:24px;font-size:10px">SK</span>skyze · Discord<span class="sp"></span><span style="color:var(--text-muted);font-size:12px">+ Telegram</span></div>
+      <div class="setrow">Синхронизация<span class="sp"></span><span class="toggle"></span></div>
+    </div>
+    <div class="block"><h5>Сервер и фракция</h5>
+      <div class="setrow">${switcher()}</div>
+    </div>
+    <div class="block"><h5>Внешний вид</h5>
+      <div class="themes">${[['glass', 'Стекло', 'linear-gradient(135deg,rgba(255,255,255,.25),rgba(255,255,255,.05))'], ['dense', 'Плотная', '#202227'], ['minimal', 'Минимализм', 'rgba(10,10,12,.9)']].map(([id, n, bg]) => `<button class="theme" data-theme-pick="${id}" aria-pressed="${state.theme === id}"><span class="sw" style="background:${bg}"></span>${n}</button>`).join('')}</div>
+      <div class="setrow" style="border-top:0;padding-bottom:0">Акцент</div>
+      <div class="swatches">${hues.map(([n, h]) => h === null ? `<button class="swatch" aria-pressed="true" title="${n}" style="background:conic-gradient(oklch(.78 .1 245),oklch(.78 .1 140),oklch(.78 .1 25),oklch(.78 .1 245))"></button>` : `<button class="swatch" style="background:oklch(0.78 0.1 ${h})"></button>`).join('')}</div>
+      <div class="setrow">Прозрачность<span class="sp"></span><span style="color:var(--text-muted)">38%</span></div>
+    </div>
+    <div class="block"><h5>Горячая клавиша</h5><div class="setrow">Показать и скрыть<span class="sp"></span><span class="kbd">F9</span></div></div>
+  </div>`;
+}
+
+function login() {
+  return `<div class="login">
+    <div class="logo">РО</div>
+    <h2>РО Хелпер</h2>
+    <p>Войдите, чтобы настройки, закреплённое и избранное были с вами на любом компьютере.</p>
+    <button class="oauth oauth--discord">${I.discord}Войти через Discord</button>
+    <button class="oauth oauth--tg">${I.tg}Войти через Telegram</button>
+    <small>Мы получим только ник и аватар. Законы, поиск и калькулятор работают и без интернета после первого входа.</small>
+  </div>`;
+}
+
+function body() {
+  if (state.screen === 'login') return login();
+  if (state.screen === 'profile') return profile();
+  if (state.screen === 'settings') return settings();
+  return (state.screen === 'results' ? results() : home()) + (state.screen === 'switch' ? switchPop() : '');
+}
+
+function searchBox() {
+  return `<div class="search">${I.search}<input value="${state.screen === 'results' ? 'кража' : ''}" placeholder="Номер или слова: 65, коап 8.6, кража"><span class="kbd">Esc</span></div>`;
+}
+
+function render() {
+  document.documentElement.dataset.theme = state.theme;
+  document.documentElement.style.setProperty('--hue', fac()[2]);
+  for (const seg of document.querySelectorAll('.seg')) for (const b of seg.children) b.setAttribute('aria-pressed', String(state[seg.dataset.key] === b.dataset.v));
+  try { localStorage.setItem('mock2', JSON.stringify(state)); } catch {}
+
+  let panel;
+  const foot = `<div class="foot"><span>↑↓ выбор</span><span>Enter калькулятор</span><span>→ открыть</span><span>Esc назад</span></div>`;
+  if (state.screen === 'login') {
+    panel = `<div class="panel">${login()}</div>`;
+  } else if (state.dir === 'C') {
+    const cur = state.screen === 'profile' ? 'user' : state.screen === 'settings' ? 'gear' : 'search';
+    panel = `<div class="panel panel--wide">
+      <nav class="rail">
+        <button class="srvbig" data-act="switch" title="Сервер и фракция">${srvIcon(state.server)}</button>
+        ${[['search', 'Поиск'], ['book', 'Документы'], ['calc', 'Калькулятор'], ['pin', 'Закреплённое'], ['memo', 'Памятки']].map(([k, t]) => `<button class="icon-btn" title="${t}" aria-current="${cur === k}" data-act="${k === 'search' ? 'home' : ''}">${I[k]}</button>`).join('')}
+        <span class="sp"></span>
+        <button class="icon-btn" title="Настройки" aria-current="${cur === 'gear'}" data-act="settings">${I.gear}</button>
+        <button class="avatar" data-act="profile" style="margin-top:6px">SK<span class="sync"></span></button>
+      </nav>
+      <div class="main" style="position:relative">
+        <div class="head"><span class="brand">${state.screen === 'profile' ? 'Профиль' : state.screen === 'settings' ? 'Настройки' : SRV[state.server].name}</span>${state.screen === 'profile' || state.screen === 'settings' ? '' : `<span class="switch" style="padding:3px 10px"><span class="fac">${fac()[1]}</span></span>`}<span class="sp"></span><button class="icon-btn">${I.close}</button></div>
+        ${state.screen === 'profile' || state.screen === 'settings' ? '' : searchBox()}
+        ${body()}
+        ${foot}
+      </div>
+    </div>`;
+  } else {
+    const inner = state.screen === 'profile' || state.screen === 'settings';
+    panel = `<div class="panel">
+      <div class="head">
+        ${state.dir === 'A' ? `<button class="icon-btn">${I.menu}</button>` : ''}
+        ${inner ? `<span class="brand">${state.screen === 'profile' ? 'Профиль' : 'Настройки'}</span>` : state.dir === 'A' ? `<span class="brand">РО Хелпер</span>` : switcher()}
+        <span class="sp"></span>
+        ${!inner && state.dir === 'A' ? switcher() : ''}
+        ${state.dir === 'B' ? `<button class="icon-btn" title="Калькулятор">${I.calc}</button><button class="icon-btn" title="Закреплённое">${I.pin}</button>` : ''}
+        <button class="icon-btn" data-act="settings">${I.gear}</button>
+        ${avatar()}
+        <button class="icon-btn">${I.close}</button>
+      </div>
+      ${inner ? '' : searchBox()}
+      ${body()}
+      ${foot}
+    </div>`;
+  }
+
+  const notes = {
+    A: ['<b>A · Карточки</b>', 'Шапка: бренд слева, справа переключатель «сервер · фракция» с иконкой, профиль.', 'Главная: баннер обновления законов, памятка лидера, избранное плитками, недавние списком.', 'Больше воздуха, удобнее мышью.'],
+    B: ['<b>B · Компактная</b>', 'Переключатель «сервер · фракция» сразу слева в шапке — главное действие.', 'Калькулятор и закреплённое — кнопками в шапке.', 'Плотные строки: больше статей на экране, удобнее с клавиатуры.'],
+    C: ['<b>C · Боковое меню</b>', 'Слева узкая колонка: иконка сервера сверху (клик — смена сервера и фракции), разделы, настройки, профиль.', 'Окно шире (620 px), но разделы всегда на виду.', 'Место под будущие разделы: памятки, ИИ-разбор, заработок.'],
+  }[state.dir];
+  document.getElementById('stage').innerHTML =
+    panel +
+    `<aside class="note"><h2>${notes[0]}</h2><ul>${notes.slice(1).map((n) => `<li>${n}</li>`).join('')}</ul>
+      <ul style="margin-top:10px;color:#b9bec8"><li>Акцент всего окна — в цвет фракции (смените фракцию в «Сервер и фракция»).</li><li>Иконки серверов — с вики Russia Online.</li></ul></aside>`;
+}
+
+document.addEventListener('click', (e) => {
+  const seg = e.target.closest('.seg button');
+  if (seg) { state[seg.parentElement.dataset.key] = seg.dataset.v; return render(); }
+  const srv = e.target.closest('[data-srv]');
+  if (srv) { state.server = srv.dataset.srv; return render(); }
+  const f = e.target.closest('[data-fac]');
+  if (f) { state.faction = f.dataset.fac; return render(); }
+  const t = e.target.closest('[data-theme-pick]');
+  if (t) { state.theme = t.dataset.themePick; return render(); }
+  const act = e.target.closest('[data-act]');
+  if (act && act.dataset.act) { state.screen = state.screen === act.dataset.act ? 'home' : act.dataset.act; return render(); }
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1066,8 +1066,14 @@ input {
   color: var(--favorite);
 }
 
-.fav--on svg {
-  fill: currentColor;
+/* The favourite star: its outline, or filled when on. */
+.icon-on,
+.fav--on .icon-off {
+  display: none;
+}
+
+.fav--on .icon-on {
+  display: inline;
 }
 
 /* Favourites and recent */
