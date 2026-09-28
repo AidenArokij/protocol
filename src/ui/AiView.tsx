@@ -18,7 +18,7 @@ export function citedIn(line: string, sources: SearchHit[]): SearchHit | undefin
 }
 
 /** What the AI does for the player: analyses a situation, or writes a document about it. */
-export type AiTab = 'chat' | 'document';
+export type AiTab = 'chat' | 'document' | 'trainer' | 'check';
 
 /** The two things the AI does, as the heading of its screen. */
 export function AiTabs({ tab, onTab }: { tab: AiTab; onTab: (tab: AiTab) => void }) {
@@ -28,6 +28,8 @@ export function AiTabs({ tab, onTab }: { tab: AiTab; onTab: (tab: AiTab) => void
         [
           ['chat', 'Разбор ситуации'],
           ['document', 'Составить документ'],
+          ['trainer', 'Тренажёр'],
+          ['check', 'Проверка отыгровки'],
         ] as const
       ).map(([id, label]) => (
         <button key={id} type="button" role="radio" aria-checked={tab === id} className={tab === id ? 'tabs__btn tabs__btn--on' : 'tabs__btn'} onClick={() => onTab(id)}>

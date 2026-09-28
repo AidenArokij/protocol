@@ -28,6 +28,10 @@ import { DocumentsMenu } from './DocumentsMenu';
 import { transcribe, useAiChat } from './ai';
 import { AiView, type AiTab } from './AiView';
 import { DocumentView } from './DocumentView';
+import { TrainerView } from './TrainerView';
+import { CheckView } from './CheckView';
+import { useRoleplayCheck } from './rpcheck';
+import { useTrainer } from './trainer';
 import { useDocumentWriter } from './documents';
 import { HistoryView } from './HistoryView';
 import { BackIcon, CloseIcon, HistoryIcon, MenuIcon, MicIcon, ProtocolLogo, SearchIcon, SettingsIcon, SparkIcon } from './icons';
@@ -164,6 +168,8 @@ export function Overlay({
   // The AI screen has two tabs: analysing a situation, and writing a document about it.
   const [aiTab, setAiTab] = useState<AiTab>('chat');
   const writer = useDocumentWriter(platform, pack, boostDocuments);
+  const trainer = useTrainer(platform, pack, boostDocuments);
+  const checker = useRoleplayCheck(platform, pack, boostDocuments);
   /** The field is the AI's, not the search's: an article opened from the answer gives it back to the search. */
   const aiMode = aiOpen && !open;
 
@@ -520,9 +526,11 @@ export function Overlay({
     }
     // In the AI analysis Enter sends the situation; the list keys have no list to walk.
     if (aiMode) {
-      if (e.key === 'Enter' && !e.shiftKey && aiDraft.trim() && !(aiTab === 'document' ? writer.busy : chat.busy)) {
+      if (e.key === 'Enter' && !e.shiftKey && aiDraft.trim() && !(aiTab === 'document' ? writer.busy : aiTab === 'trainer' ? trainer.phase !== 'answering' : aiTab === 'check' ? checker.busy : chat.busy)) {
         e.preventDefault();
         if (aiTab === 'document') void writer.write(aiDraft);
+        else if (aiTab === 'trainer') void trainer.reply(aiDraft);
+        else if (aiTab === 'check') void checker.check(aiDraft);
         else void chat.send(aiDraft);
         setAiDraft('');
       }
@@ -599,7 +607,12 @@ export function Overlay({
     try {
       const text = await transcribe(platform, await current.stop());
       if (text && aiOpen && aiTab === 'document') void writer.write(text);
-      else if (text) openAi(text);
+      else if (text && aiOpen && aiTab === 'trainer') void trainer.reply(text);
+      else if (text) {
+        // A spoken question is a question: from the roleplay check it goes to the analysis.
+        if (aiTab === 'check') setAiTab('chat');
+        openAi(text);
+      }
       else voiceFailed('Не расслышал вопрос. Нажмите 🎤 и говорите чуть громче или ближе к микрофону.');
     } catch (error) {
       voiceFailed(error instanceof Error ? error.message : String(error));
@@ -847,7 +860,11 @@ export function Overlay({
               aiMode
                 ? aiTab === 'document'
                   ? 'Опишите, что произошло: кто, где, что сделал…'
-                  : chat.messages.length
+                  : aiTab === 'trainer'
+                    ? 'Ваш ответ своими словами…'
+                    : aiTab === 'check'
+                      ? 'Вставьте отыгровку в поле ниже или сюда'
+                    : chat.messages.length
                   ? 'Уточните или опишите новую ситуацию…'
                   : 'Опишите ситуацию своими словами…'
                 : scope
@@ -1159,6 +1176,35 @@ export function Overlay({
             }}
             onForget={chat.forget}
           />
+        ) : aiOpen && aiTab === 'check' ? (
+          <CheckView
+            checker={checker}
+            backLabel={query ? 'Результаты' : scope ? 'Оглавление' : 'Поиск'}
+            onBack={() => {
+              setAiOpen(false);
+              searchRef.current?.focus();
+            }}
+            onOpen={openHit}
+            onTab={(tab) => {
+              setAiTab(tab);
+              searchRef.current?.focus();
+            }}
+          />
+        ) : aiOpen && aiTab === 'trainer' ? (
+          <TrainerView
+            trainer={trainer}
+            pack={pack}
+            backLabel={query ? 'Результаты' : scope ? 'Оглавление' : 'Поиск'}
+            onBack={() => {
+              setAiOpen(false);
+              searchRef.current?.focus();
+            }}
+            onOpen={openHit}
+            onTab={(tab) => {
+              setAiTab(tab);
+              searchRef.current?.focus();
+            }}
+          />
         ) : aiOpen && aiTab === 'document' ? (
           <DocumentView
             writer={writer}
@@ -1270,7 +1316,7 @@ export function Overlay({
         {aiMode ? (
           <>
             <span>
-              <b>Enter</b> {aiTab === 'document' ? 'составить документ' : 'спросить ИИ'}
+              <b>Enter</b> {aiTab === 'document' ? 'составить документ' : aiTab === 'trainer' ? 'ответить' : aiTab === 'check' ? 'проверить' : 'спросить ИИ'}
             </span>
             <span>клик по статье — открыть</span>
             <span>

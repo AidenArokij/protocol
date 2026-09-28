@@ -3336,3 +3336,132 @@ input {
   color: var(--accent-text);
   font-style: italic;
 }
+
+/* «Тренажёр»: the question as a card, the answer as the player's bubble, the verdict coloured by how right it was. */
+.quiz__docs {
+  gap: 10px;
+}
+.quiz__select {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: 14px var(--font);
+}
+.quiz__start {
+  align-self: flex-start;
+}
+.quiz__progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.quiz__bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.quiz__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+.quiz__question {
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  font-size: 15.5px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.quiz__answer {
+  align-self: flex-end;
+}
+.quiz__verdict {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 14px;
+  border-left: 3px solid;
+  border-radius: 0 var(--radius-card) var(--radius-card) 0;
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.quiz__verdict b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+.quiz__verdict--right { border-color: var(--now-text); }
+.quiz__verdict--right b { color: var(--now-text); }
+.quiz__verdict--partly { border-color: var(--was-text); }
+.quiz__verdict--partly b { color: var(--was-text); }
+.quiz__verdict--wrong { border-color: var(--penalty-text); }
+.quiz__verdict--wrong b { color: var(--penalty-text); }
+.quiz__model {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.quiz__result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  background: color-mix(in oklch, var(--accent) 14%, transparent);
+  font-size: 16px;
+}
+
+/* «Проверка отыгровки»: the pasted chat, then ticks for what was right and crosses for what was missed. */
+.check__log {
+  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  font-size: 13px;
+}
+.check__quote {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font: 12.5px/1.55 ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.check__items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.check__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.check__mark {
+  display: inline-flex;
+  flex: none;
+  margin-top: 2px;
+}
+.check__item--ok .check__mark { color: var(--now-text); }
+.check__item--miss .check__mark { color: var(--penalty-text); }
