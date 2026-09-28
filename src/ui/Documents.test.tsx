@@ -1,8 +1,11 @@
 import { screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../test/renderApp';
-import { AI_KEY_SETTING } from './ai';
+import { AI_KEY_SETTING, AI_PROVIDER_SETTING } from './ai';
 import { AUTHOR_KEY } from './documents';
+
+/** These tests talk to Gemini with a key, the way a player outside Russia may. */
+const GEMINI = { [AI_PROVIDER_SETTING]: 'gemini', [AI_KEY_SETTING]: 'test-key' };
 
 const REPORT = 'РАПОРТ\nЯ, лейтенант полиции Иван Петров, задержал гражданина {ФИО задержанного}.\nКвалификация: УК ст. 65 «Кража».';
 
@@ -24,7 +27,7 @@ describe('writing a document with the AI', () => {
 
   it('writes the chosen document from the situation, by the author, with the articles to open, and copies it', async () => {
     const bodies = fakeGemini();
-    const { platform, user } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    const { platform, user } = await renderApp({ settings: GEMINI });
     await user.click(screen.getByRole('button', { name: 'ИИ-разбор ситуации' }));
     await user.click(screen.getByRole('radio', { name: 'Составить документ' }));
     const view = screen.getByRole('region', { name: 'Составить документ' });
@@ -50,7 +53,7 @@ describe('writing a document with the AI', () => {
 
   it('lets the text be corrected before copying', async () => {
     fakeGemini();
-    const { platform, user } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    const { platform, user } = await renderApp({ settings: GEMINI });
     await user.click(screen.getByRole('button', { name: 'ИИ-разбор ситуации' }));
     await user.click(screen.getByRole('radio', { name: 'Составить документ' }));
     const view = screen.getByRole('region', { name: 'Составить документ' });
@@ -68,7 +71,7 @@ describe('writing a document with the AI', () => {
   });
 
   it('asks for the key before anything else', async () => {
-    const { user } = await renderApp();
+    const { user } = await renderApp({ settings: { [AI_PROVIDER_SETTING]: 'gemini' } });
     await user.click(screen.getByRole('button', { name: 'ИИ-разбор ситуации' }));
     await user.click(screen.getByRole('radio', { name: 'Составить документ' }));
     await user.type(screen.getByRole('searchbox', { name: 'Поиск по законам' }), 'что-то случилось{Enter}');

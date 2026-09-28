@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { findForSituation, sourcesText, type SearchHit, type ServerPack } from '../core';
 import type { PlatformAdapter } from '../platform/types';
+import { AI_SERVER } from './about';
 
 /** The player's own Gemini key, in the settings file on this computer. */
 export const AI_KEY_SETTING = 'ai.key';
@@ -101,8 +102,73 @@ async function generate(key: string, model: string, system: string, contents: Ge
   return text;
 }
 
-/** Asks the models in turn while they are overloaded. */
-export async function ask(key: string, system: string, contents: GeminiTurn[], json = false): Promise<string> {
+// ——— Where the questions go ———
+
+/**
+ * The AI a player talks to: ПРОТОКОЛ's own server, which holds the key and needs nothing from the player —
+ * or Gemini with the player's own key, for those it works for (it does not in Russia).
+ */
+export type AiProvider = 'protocol' | 'gemini';
+export const AI_PROVIDER_SETTING = 'ai.provider';
+/** A different server for ПРОТОКОЛ's AI, to try one out; normally unset. */
+export const AI_SERVER_SETTING = 'ai.server';
+/** A random id of this computer: the server's daily limits are counted by it. */
+export const DEVICE_SETTING = 'device.id';
+
+export type AiConnection = { provider: 'protocol'; server: string; device: string } | { provider: 'gemini'; key: string };
+
+/** How to reach the AI now, from the settings; a missing Gemini key is said at once. */
+export async function connect(platform: PlatformAdapter): Promise<AiConnection> {
+  const provider = (await platform.readSetting<AiProvider>(AI_PROVIDER_SETTING)) ?? 'protocol';
+  if (provider === 'gemini') {
+    const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
+    if (!key) throw new AiError(NO_KEY);
+    return { provider, key };
+  }
+  let device = await platform.readSetting<string>(DEVICE_SETTING);
+  if (!device) {
+    device = `d${crypto.randomUUID().replace(/-/g, '')}`;
+    await platform.writeSetting(DEVICE_SETTING, device);
+  }
+  const server = ((await platform.readSetting<string>(AI_SERVER_SETTING)) ?? AI_SERVER).replace(/\/$/, '');
+  return { provider: 'protocol', server, device };
+}
+
+async function viaServer(connection: Extract<AiConnection, { provider: 'protocol' }>, path: string, body: unknown): Promise<string> {
+  let response: Response;
+  try {
+    response = await fetch(`${connection.server}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Device': connection.device },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    throw new AiError('Нет связи с сервером ПРОТОКОЛА — проверьте интернет.');
+  }
+  const answer = (await response.json().catch(() => null)) as { text?: string; error?: string } | null;
+  if (!response.ok || answer?.error) throw new AiError(answer?.error ?? `Сервер ПРОТОКОЛА не ответил (код ${response.status}).`);
+  return answer?.text ?? '';
+}
+
+/** The turns as the server takes them: OpenAI's roles, text only. */
+const asMessages = (contents: GeminiTurn[]) =>
+  contents.map((turn) => ({
+    role: turn.role === 'model' ? 'assistant' : 'user',
+    content: turn.parts.map((part) => ('text' in part ? part.text : '')).join('\n'),
+  }));
+
+/**
+ * Asks the AI. Through ПРОТОКОЛ's server, `counts` says whether this is a question of the player's daily
+ * limit or only a step of one (the law terms, the trainer's questions); Gemini is asked model by model while
+ * they are overloaded.
+ */
+export async function ask(connection: AiConnection, system: string, contents: GeminiTurn[], json = false, counts = true): Promise<string> {
+  if (connection.provider === 'protocol') {
+    const text = await viaServer(connection, '/v1/chat', { system, messages: asMessages(contents), json, counts });
+    if (!text.trim()) throw new AiError('ИИ прислал пустой ответ — попробуйте ещё раз.');
+    return text;
+  }
+  const key = connection.key;
   let last: unknown;
   for (const model of MODELS) {
     try {
@@ -116,9 +182,9 @@ export async function ask(key: string, system: string, contents: GeminiTurn[], j
 }
 
 /** The situation in the words of the law, for the search; nothing when the AI could not say. */
-export async function lawTerms(key: string, situation: string): Promise<string[]> {
+export async function lawTerms(connection: AiConnection, situation: string): Promise<string[]> {
   try {
-    const text = await ask(key, TERMS_PROMPT, [{ role: 'user', parts: [{ text: situation }] }], true);
+    const text = await ask(connection, TERMS_PROMPT, [{ role: 'user', parts: [{ text: situation }] }], true, false);
     const parsed: unknown = JSON.parse(text);
     return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string').slice(0, 10) : [];
   } catch {
@@ -217,10 +283,7 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
         return done;
       };
       try {
-        const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
-        if (!key) {
-          return finish({ failed: true, text: NO_KEY });
-        }
+        const key = await connect(platform);
         // A follow-up leans on the question before it: both go into the search.
         const previous = [...earlier].reverse().find((m) => m.role === 'user')?.text ?? '';
         const context = perspective ? question : `${previous}\n${question}`.trim();
@@ -340,8 +403,8 @@ const TRANSCRIBE_PROMPT =
 
 /** What was said in a recording (WAV, base64), as text; empty when nothing was heard. */
 export async function transcribe(platform: PlatformAdapter, wavBase64: string): Promise<string> {
-  const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
-  if (!key) throw new AiError(NO_KEY);
+  const key = await connect(platform);
+  if (key.provider === 'protocol') return (await viaServer(key, '/v1/transcribe', { audio: wavBase64 })).trim().replace(/^["«]|["»]$/g, '');
   const text = await ask(key, TRANSCRIBE_PROMPT, [
     { role: 'user', parts: [{ inlineData: { mimeType: 'audio/wav', data: wavBase64 } }, { text: 'Запиши, что сказано.' }] },
   ]).catch((error: unknown) => {

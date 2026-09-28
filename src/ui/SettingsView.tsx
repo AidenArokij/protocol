@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent as Reac
 import type { Organization, ServerPack } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
 import { APP_VERSION, AUTHOR, LINKS, ORIGINAL } from './about';
-import { AI_KEY_SETTING, AI_KEY_URL } from './ai';
+import { AI_KEY_SETTING, AI_KEY_URL, AI_PROVIDER_SETTING, type AiProvider } from './ai';
 import {
   BackIcon,
   BookIcon,
@@ -347,8 +347,8 @@ const KEYS: [string[], string][] = [
 
 const FAQ: [string, string][] = [
   [
-    'Где взять ключ для ИИ и сколько это стоит?',
-    'Бесплатно: откройте aistudio.google.com/apikey, войдите в аккаунт Google, нажмите «Create API key» и вставьте ключ в «Ответы ИИ» → «Ключ Gemini». У каждого игрока свой ключ; у бесплатного есть ограничение на число вопросов в минуту.',
+    'Нужен ли ключ для ИИ и сколько это стоит?',
+    'Нет: ИИ работает через сервер ПРОТОКОЛА, бесплатно, с дневным лимитом вопросов на каждый компьютер — лимит обновляется в полночь по Москве. Если у вас работает Gemini (вне России), можно вместо этого вставить свой бесплатный ключ: «Ответы ИИ» → «Свой ключ Gemini» — тогда лимита ПРОТОКОЛА нет.',
   ],
   [
     'ИИ может ошибиться?',
@@ -372,6 +372,43 @@ const FAQ: [string, string][] = [
   ],
   ['Как обновить программу?', 'Сама: когда выйдет новая версия, ПРОТОКОЛ предложит обновиться. Проверить вручную — «Законы и обновления» → «Проверить обновления».'],
 ];
+
+/** Where the AI's answers come from: ПРОТОКОЛ's server, nothing to set up — or the player's own Gemini key. */
+function AiProviderField() {
+  const platform = usePlatform();
+  const [provider, setProvider] = useState<AiProvider | null>(null);
+  useEffect(() => {
+    void platform.readSetting<AiProvider>(AI_PROVIDER_SETTING).then((saved) => setProvider(saved ?? 'protocol'));
+  }, [platform]);
+  const choose = (next: AiProvider) => {
+    setProvider(next);
+    void platform.writeSetting(AI_PROVIDER_SETTING, next);
+  };
+  return (
+    <>
+      <div className="tabs" role="radiogroup" aria-label="Откуда ответы ИИ">
+        {(
+          [
+            ['protocol', 'Сервер ПРОТОКОЛА'],
+            ['gemini', 'Свой ключ Gemini'],
+          ] as const
+        ).map(([id, label]) => (
+          <button key={id} type="button" role="radio" aria-checked={provider === id} className={provider === id ? 'tabs__btn tabs__btn--on' : 'tabs__btn'} onClick={() => choose(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {provider === 'gemini' ? (
+        <>
+          <p className="set__hint">Gemini не работает из России. Если он у вас работает — ключ бесплатный, у каждого игрока свой, лимита ПРОТОКОЛА нет.</p>
+          <AiKeyField />
+        </>
+      ) : (
+        <p className="set__hint">Ничего настраивать не нужно: ответы идут через сервер ПРОТОКОЛА, бесплатно, с дневным лимитом вопросов на каждый компьютер. Лимит обновляется в полночь по Москве.</p>
+      )}
+    </>
+  );
+}
 
 /** «1 карточка», «3 карточки», «5 карточек». */
 function cardsLabel(n: number): string {
@@ -601,8 +638,8 @@ export function SettingsView({
       </Section>
 
       <Section id="ai" title="Ответы ИИ">
-      <Block title="Ключ Gemini">
-        <AiKeyField />
+      <Block title="Откуда ответы">
+        <AiProviderField />
       </Block>
       <Block title="Как отвечает ИИ">
         <p className="set__hint">

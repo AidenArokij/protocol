@@ -1,7 +1,10 @@
 import { screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../test/renderApp';
-import { AI_KEY_SETTING, historyKey, type StoredConversation } from './ai';
+import { AI_KEY_SETTING, AI_PROVIDER_SETTING, historyKey, type StoredConversation } from './ai';
+
+/** These tests talk to Gemini with a key, the way a player outside Russia may. */
+const GEMINI = { [AI_PROVIDER_SETTING]: 'gemini', [AI_KEY_SETTING]: 'test-key' };
 
 /** Gemini as the tests see it: the law terms first, then the answer. */
 function fakeGemini(answer: string) {
@@ -19,7 +22,7 @@ describe('the history of AI analyses', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('keeps each conversation, and opens it again with its articles', async () => {
-    const { platform, user } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    const { platform, user } = await renderApp({ settings: GEMINI });
     await user.click(screen.getByRole('button', { name: 'ИИ-разбор ситуации' }));
     await user.type(screen.getByRole('searchbox', { name: 'Поиск по законам' }), 'у меня украли телефон{Enter}');
     expect(await screen.findByText(/это кража/)).toBeInTheDocument();
@@ -41,7 +44,7 @@ describe('the history of AI analyses', () => {
   });
 
   it('offers questions to try the first time, asked with a press', async () => {
-    const { user } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    const { user } = await renderApp({ settings: GEMINI });
     await user.click(screen.getByRole('button', { name: 'ИИ-разбор ситуации' }));
     const examples = screen.getByLabelText('Примеры вопросов');
     await user.click(within(examples).getByRole('button', { name: /Какое наказание за кражу телефона/ }));

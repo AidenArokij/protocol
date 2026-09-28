@@ -3,8 +3,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { TVERSKOI_PACK } from '../data';
 import { articleText } from '../core';
 import { renderApp } from '../test/renderApp';
-import { AI_KEY_SETTING } from './ai';
+import { AI_KEY_SETTING, AI_PROVIDER_SETTING } from './ai';
 import { defaultDocuments, pickArticle } from './trainer';
+
+/** These tests talk to Gemini with a key, the way a player outside Russia may. */
+const GEMINI = { [AI_PROVIDER_SETTING]: 'gemini', [AI_KEY_SETTING]: 'test-key' };
 
 /** Gemini as the examiner: a question from the article it is given, then a verdict on the answer. */
 function fakeExaminer(verdict: 'right' | 'partly' | 'wrong') {
@@ -26,7 +29,7 @@ function fakeExaminer(verdict: 'right' | 'partly' | 'wrong') {
 const search = () => screen.getByRole('searchbox', { name: 'Поиск по законам' });
 
 async function openTrainer() {
-  const app = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+  const app = await renderApp({ settings: GEMINI });
   await app.user.click(screen.getByRole('button', { name: 'ИИ-разбор ситуации' }));
   await app.user.click(screen.getByRole('radio', { name: 'Тренажёр' }));
   return { ...app, view: screen.getByRole('region', { name: 'Тренажёр' }) };
@@ -72,7 +75,7 @@ describe('the exam trainer', () => {
   });
 
   it('asks for the key before the first question', async () => {
-    const { user } = await renderApp();
+    const { user } = await renderApp({ settings: { [AI_PROVIDER_SETTING]: 'gemini' } });
     await user.click(screen.getByRole('button', { name: 'ИИ-разбор ситуации' }));
     await user.click(screen.getByRole('radio', { name: 'Тренажёр' }));
     await user.click(within(screen.getByRole('region', { name: 'Тренажёр' })).getByRole('button', { name: 'Начать' }));

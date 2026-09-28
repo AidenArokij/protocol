@@ -9,6 +9,12 @@ export const LINKS = {
   repository: 'https://github.com/AidenArokij/protocol',
 };
 
+/**
+ * ПРОТОКОЛ's own AI server: it holds the AI key, so players need none (server/ in the repository). Not yet
+ * running — set once the server is up.
+ */
+export const AI_SERVER = 'https://protocol-ai.invalid';
+
 /** ПРОТОКОЛ grew out of РО Хелпер: its author and code are credited in the app, as the MIT licence asks. */
 export const ORIGINAL = {
   name: 'РО Хелпер',

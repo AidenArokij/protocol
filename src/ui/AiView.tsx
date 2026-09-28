@@ -1,7 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { articleLabel, type SearchHit } from '../core';
-import { usePlatform } from '../platform/PlatformContext';
-import { AI_KEY_URL, PERSPECTIVES, type AiChat, type AiMessage } from './ai';
+import { PERSPECTIVES, type AiChat, type AiMessage } from './ai';
 import { BackIcon, WarnIcon } from './icons';
 
 /** «УК ст. 65» — how an answer names an article, without its title. */
@@ -103,7 +102,6 @@ export function AiView({
   /** Switches between the analysis and writing a document. */
   onTab: (tab: AiTab) => void;
 }) {
-  const platform = usePlatform();
   const endRef = useRef<HTMLDivElement>(null);
   const last = chat.messages.at(-1);
   // Braces: newer browsers return a promise from scrolling, and an effect may return only its clean-up.
@@ -143,11 +141,7 @@ export function AiView({
             ))}
           </div>
           <p className="set__hint">
-            Нужен бесплатный ключ Gemini:{' '}
-            <button className="link" type="button" onClick={() => void platform.openExternal(AI_KEY_URL)}>
-              получить ключ
-            </button>
-            , затем вставить в{' '}
+            Бесплатно, с дневным лимитом вопросов. Откуда берутся ответы — в{' '}
             <button className="link" type="button" onClick={onSettings}>
               настройках
             </button>

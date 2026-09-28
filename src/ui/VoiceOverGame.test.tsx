@@ -1,8 +1,11 @@
 import { act, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { pinnedCards, renderApp } from '../test/renderApp';
-import { AI_KEY_SETTING, historyKey, type StoredConversation } from './ai';
+import { AI_KEY_SETTING, AI_PROVIDER_SETTING, historyKey, type StoredConversation } from './ai';
 import { DEFAULT_VOICE_HOTKEY, VOICE_HOTKEY_KEY } from './overlaySettings';
+
+/** These tests talk to Gemini with a key, the way a player outside Russia may. */
+const GEMINI = { [AI_PROVIDER_SETTING]: 'gemini', [AI_KEY_SETTING]: 'test-key' };
 
 // The microphone as the tests see it: always there, a recording of a few bytes.
 vi.mock('./voice', () => ({
@@ -37,7 +40,7 @@ describe('a question over the game', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('listens while the key is held, then pins the short answer over the game and keeps it in the history', async () => {
-    const { platform } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    const { platform } = await renderApp({ settings: GEMINI });
     await vi.waitFor(() => expect(platform.state.voiceHotkey).toBe(DEFAULT_VOICE_HOTKEY));
 
     await act(async () => platform.holdVoiceHotkey());
@@ -54,7 +57,7 @@ describe('a question over the game', () => {
   });
 
   it('also takes a tap to start and another press to end, when the key is not held', async () => {
-    const { platform } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    const { platform } = await renderApp({ settings: GEMINI });
     await vi.waitFor(() => expect(platform.state.voiceHotkey).toBe(DEFAULT_VOICE_HOTKEY));
     await act(async () => platform.holdVoiceHotkey());
     await vi.waitFor(() => expect(platform.state.toast?.title).toBe('Слушаю…'));
@@ -68,7 +71,7 @@ describe('a question over the game', () => {
   });
 
   it('keeps listening while Windows repeats the held key, «let go» between the repeats and all, and asks once they stop', async () => {
-    const { platform } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    const { platform } = await renderApp({ settings: GEMINI });
     await vi.waitFor(() => expect(platform.state.voiceHotkey).toBe(DEFAULT_VOICE_HOTKEY));
     await act(async () => platform.holdVoiceHotkey());
     await vi.waitFor(() => expect(platform.state.toast?.title).toBe('Слушаю…'));
@@ -84,7 +87,7 @@ describe('a question over the game', () => {
   });
 
   it('does not send a recording too short to hold a question', async () => {
-    const { platform } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    const { platform } = await renderApp({ settings: GEMINI });
     await vi.waitFor(() => expect(platform.state.voiceHotkey).toBe(DEFAULT_VOICE_HOTKEY));
     await act(async () => platform.holdVoiceHotkey());
     await vi.waitFor(() => expect(platform.state.toast?.title).toBe('Слушаю…'));
@@ -96,7 +99,7 @@ describe('a question over the game', () => {
   });
 
   it('asks the AI for a short answer, fit for a card', async () => {
-    const { platform } = await renderApp({ settings: { [AI_KEY_SETTING]: 'test-key' } });
+    const { platform } = await renderApp({ settings: GEMINI });
     await vi.waitFor(() => expect(platform.state.voiceHotkey).toBe(DEFAULT_VOICE_HOTKEY));
     const bodies = fakeGemini();
     await act(async () => platform.holdVoiceHotkey());
@@ -107,7 +110,7 @@ describe('a question over the game', () => {
   });
 
   it('says so over the game when the AI cannot answer', async () => {
-    const { platform } = await renderApp();
+    const { platform } = await renderApp({ settings: { [AI_PROVIDER_SETTING]: 'gemini' } });
     await vi.waitFor(() => expect(platform.state.voiceHotkey).toBe(DEFAULT_VOICE_HOTKEY));
     await act(async () => platform.holdVoiceHotkey());
     await vi.waitFor(() => expect(platform.state.toast?.title).toBe('Слушаю…'));

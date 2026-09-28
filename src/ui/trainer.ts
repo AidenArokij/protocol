@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { articleText, sourceLabel, type LawDocument, type SearchHit, type ServerPack } from '../core';
 import type { PlatformAdapter } from '../platform/types';
-import { AI_KEY_SETTING, AiError, NO_KEY, ask } from './ai';
+import { AiError, ask, connect } from './ai';
 
 /** Questions in one round of the trainer. */
 export const ROUND = 10;
@@ -87,9 +87,7 @@ export function useTrainer(platform: PlatformAdapter, pack: ServerPack, organisa
   }, [pack, organisation]);
 
   const key = useCallback(async () => {
-    const value = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
-    if (!value) throw new AiError(NO_KEY);
-    return value;
+    return connect(platform);
   }, [platform]);
 
   const ask1 = useCallback(
@@ -108,6 +106,8 @@ export function useTrainer(platform: PlatformAdapter, pack: ServerPack, organisa
             QUESTION_PROMPT,
             [{ role: 'user', parts: [{ text: `### ${sourceLabel(hit)} — ${hit.document.title}\n${articleText(hit.article)}` }] }],
             true,
+            // The trainer's calls are small: they do not take from the day's questions.
+            false,
           ),
         );
         if (!made.question) throw new AiError('ИИ не придумал вопрос — попробуйте ещё раз.');
@@ -151,6 +151,7 @@ export function useTrainer(platform: PlatformAdapter, pack: ServerPack, organisa
               },
             ],
             true,
+            false,
           ),
         );
         const verdict: Verdict = result.verdict === 'right' || result.verdict === 'partly' ? result.verdict : 'wrong';

@@ -49,7 +49,7 @@ describe('the settings, with a menu on the left', () => {
   it('answers the frequent questions', async () => {
     const { user } = await renderApp();
     await user.click(screen.getByRole('button', { name: 'Настройки' }));
-    await user.click(within(settings()).getByText('Где взять ключ для ИИ и сколько это стоит?'));
-    expect(within(settings()).getByText(/aistudio\.google\.com\/apikey/)).toBeVisible();
+    await user.click(within(settings()).getByText('Нужен ли ключ для ИИ и сколько это стоит?'));
+    expect(within(settings()).getByText(/Нет: ИИ работает через сервер ПРОТОКОЛА/)).toBeVisible();
   });
 });

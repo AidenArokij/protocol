@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { findForSituation, sourcesText, type SearchHit, type ServerPack } from '../core';
 import type { PlatformAdapter } from '../platform/types';
-import { AI_KEY_SETTING, AiError, NO_KEY, SOURCES, ask, lawTerms } from './ai';
+import { SOURCES, ask, connect, lawTerms } from './ai';
 
 export type DocumentKind = 'report' | 'detention' | 'statement' | 'complaint' | 'lawsuit';
 
@@ -123,8 +123,7 @@ export function useDocumentWriter(platform: PlatformAdapter, pack: ServerPack, b
       setBusy(true);
       setError(null);
       try {
-        const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
-        if (!key) throw new AiError(NO_KEY);
+        const key = await connect(platform);
         const form = DOCUMENT_KINDS.find((k) => k.id === kind)!;
         const terms = await lawTerms(key, text);
         const sources = findForSituation(pack, text, { boostDocuments, lawTerms: terms, limit: SOURCES });

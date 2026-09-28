@@ -4,3 +4,7 @@
 *.icns binary
 *.woff binary
 *.woff2 binary
+
+# The server scripts run on Linux: always LF, whatever the checkout.
+server/*.sh text eol=lf
+server/*.mjs text eol=lf
