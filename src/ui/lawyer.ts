@@ -39,10 +39,15 @@ const PROMPT = (pack: ServerPack) =>
     'КАК РЕШАТЬ: сначала найди в источниках статью про это требование и прочитай, что в ней сказано, — потом ставь verdict, и он должен совпадать с этой статьёй. Если статья прямо даёт адвокату или задержанному это право — verdict "lawful", даже если сотруднику это неудобно. СРОКИ СРАВНИВАЙ ЧИСЛАМИ: если адвокат ссылается на время (например «прошло 30 минут»), а статья даёт больший срок (например 1 час = 60 минут), то срок НЕ истёк и требование на этом основании незаконно. Не пиши в тексте слово verdict и не рассуждай вслух.',
     'ПИШИ КОРОТКО: «basis» — одна статья и одно предложение (до 25 слов), что в ней сказано по этому требованию; «officer» и «refusal» — по одному предложению до 20 слов; «note» — до 12 слов.',
     '«reply» — ГОТОВАЯ ПРЯМАЯ РЕЧЬ сотрудника адвокату от первого лица, 2–4 предложения, вежливо и по делу, со ссылками на статьи, — её сразу говорят в игре. Начинай прямо с сути, без вступлений вроде «Сотрудник адвокату:». Если требование законно — сотрудник в ответе соглашается его выполнить.',
-    'Ответь JSON: {"demands": [{"demand": "требование, 3–7 слов", "basis": "УПК ст. 26 — что в ней сказано", "verdict": "lawful" | "unlawful" | "partly" | "unclear", "officer": "что сотрудник должен сделать", "refusal": "на каком основании можно отказать, или пустая строка, если отказывать нельзя"}], "reply": "прямая речь сотрудника", "note": "главное для сотрудника"}.',
+    'Ответь JSON: {"demands": [{"demand": "требование, 3–7 слов", "basis": "УПК ст. 26 — что в ней сказано", "verdict": "lawful" | "unlawful" | "partly" | "unclear", "officer": "что сотрудник должен сделать", "refusal": "на каком основании можно отказать, или пустая строка, если отказывать нельзя"}], "reply": "прямая речь сотрудника", "note": "вывод для сотрудника, например: Два требования выполнить, отпускать рано"}.',
   ].join('\n\n');
 
 const VERDICTS = new Set<Verdict>(['lawful', 'unlawful', 'partly', 'unclear']);
+
+/** The gist, unless the AI echoed its instructions into it instead. */
+function aboutTheCase(note: string): string {
+  return /(basis|verdict|reply|officer|refusal|demand)/i.test(note) ? '' : note.trim();
+}
 
 /** The reply as said in the game: without the «Сотрудник адвокату:» the AI sometimes puts before it, or quotes around it. */
 export function spoken(reply: string): string {
@@ -103,7 +108,7 @@ export function useLawyerCheck(platform: PlatformAdapter, pack: ServerPack, boos
             refusal: d.refusal ?? '',
           }));
         if (!demands.length) throw new AiError('ИИ не разобрал требования — перескажите их подробнее.');
-        setResult({ said: text, demands, reply: spoken(parsed.reply ?? ''), note: parsed.note ?? '', sources });
+        setResult({ said: text, demands, reply: spoken(parsed.reply ?? ''), note: aboutTheCase(parsed.note ?? ''), sources });
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       } finally {
