@@ -53,7 +53,7 @@ describe('first launch', () => {
     await user.click(screen.getByRole('button', { name: 'Готово' }));
 
     expect(await screen.findByRole('searchbox', { name: 'Поиск по законам' })).toBeInTheDocument();
-    expect(screen.getByText('Тверской · МВД')).toBeInTheDocument();
+    expect(screen.getByTitle('Тверской · МВД')).toBeInTheDocument();
     expect(platform.settings.get(PROFILE_KEY)).toEqual({ server: 'tverskoi', organization: 'mvd', hotkey: 'F9' });
     expect(platform.state.hotkey).toBe('F9');
   });
@@ -76,7 +76,7 @@ describe('first launch', () => {
   it('is skipped once a profile is saved', async () => {
     await renderApp({ profile: { organization: 'fso' } });
     expect(screen.queryByRole('heading', { name: 'Выберите сервер' })).not.toBeInTheDocument();
-    expect(screen.getByText('Тверской · ФСО')).toBeInTheDocument();
+    expect(screen.getByTitle('Тверской · ФСО')).toBeInTheDocument();
   });
 });
 
@@ -96,7 +96,7 @@ describe('settings', () => {
     await user.keyboard('{Alt>}W{/Alt}');
     await user.click(screen.getByRole('button', { name: 'Сохранить' }));
 
-    expect(await screen.findByText('Тверской · ГИБДД')).toBeInTheDocument();
+    expect(await screen.findByTitle('Тверской · ГИБДД')).toBeInTheDocument();
     expect(platform.settings.get(PROFILE_KEY)).toEqual({ server: 'tverskoi', organization: 'gibdd', hotkey: 'Alt+W' });
     expect(platform.state.hotkey).toBe('Alt+W');
   });
@@ -119,7 +119,7 @@ describe('settings', () => {
     await user.click(screen.getByRole('button', { name: 'Сменить сервер' }));
     await user.click(within(screen.getByRole('region', { name: 'Ваш сервер' })).getByRole('radio', { name: /Арбатский/ }));
 
-    expect(await screen.findByText('Арбатский · МВД')).toBeInTheDocument();
+    expect(await screen.findByTitle('Арбатский · МВД')).toBeInTheDocument();
     expect(platform.settings.get(PROFILE_KEY)).toMatchObject({ server: 'arbatskiy', organization: 'mvd' });
   });
 
@@ -131,7 +131,7 @@ describe('settings', () => {
     await user.click(radio('Организация', 'ОПГ'));
     await user.keyboard('{Escape}');
 
-    expect(await screen.findByText('Тверской · МВД')).toBeInTheDocument();
+    expect(await screen.findByTitle('Тверской · МВД')).toBeInTheDocument();
     expect(platform.settings.get(PROFILE_KEY)).toMatchObject({ organization: 'mvd' });
   });
 });
@@ -149,7 +149,7 @@ describe('another server', () => {
     await user.click(understood());
     await user.click(next());
 
-    expect(await screen.findByText('Арбатский · ГИБДД')).toBeInTheDocument();
+    expect(await screen.findByTitle('Арбатский · ГИБДД')).toBeInTheDocument();
     expect(platform.settings.get(PROFILE_KEY)).toMatchObject({ server: 'arbatskiy', organization: 'gibdd' });
 
     // Its own criminal code: ст. 6.1 «Убийство» with the term written as «на срок до 50 месяцев».
@@ -182,7 +182,7 @@ describe('changing only the organisation', () => {
     expect(screen.queryByRole('heading', { name: 'Выберите сервер' })).not.toBeInTheDocument();
     await user.click(within(choice).getByRole('radio', { name: 'ФСБ' }));
 
-    expect(await screen.findByText('Тверской · ФСБ')).toBeInTheDocument();
+    expect(await screen.findByTitle('Тверской · ФСБ')).toBeInTheDocument();
     expect(platform.settings.get(PROFILE_KEY)).toEqual({ server: 'tverskoi', organization: 'fsb', hotkey: 'F9' });
     expect(screen.getByRole('searchbox', { name: 'Поиск по законам' })).toHaveFocus();
   });
@@ -194,7 +194,7 @@ describe('changing only the organisation', () => {
     await user.keyboard('{Escape}');
 
     expect(screen.queryByRole('region', { name: 'Ваша организация' })).not.toBeInTheDocument();
-    expect(screen.getByText('Тверской · МВД')).toBeInTheDocument();
+    expect(screen.getByTitle('Тверской · МВД')).toBeInTheDocument();
     expect(platform.settings.get(PROFILE_KEY)).toMatchObject({ organization: 'mvd' });
   });
 });

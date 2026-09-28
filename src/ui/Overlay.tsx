@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import {
   calculateDetention,
   changedArticles,
@@ -25,9 +25,9 @@ import { ArticleView } from './ArticleView';
 import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } from './CalculatorPanel';
 import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
-import { BackIcon, CalculatorIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, DocumentsIcon, MemoIcon, MenuIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon } from './icons';
+import { BackIcon, CalculatorIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, DocumentsIcon, MemoIcon, OrganizationIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon } from './icons';
 import { SideRail } from './SideRail';
-import { DEFAULT_OPACITY, OPACITY_KEY, RAIL_TIP_KEY, applyOpacity, clampOpacity } from './overlaySettings';
+import { DEFAULT_OPACITY, OPACITY_KEY, applyOpacity, clampOpacity } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
 import { OrganizationChoice } from './OrganizationChoice';
 import { PinSurface } from './PinSurface';
@@ -524,16 +524,6 @@ export function Overlay({
     searchRef.current?.focus();
   };
 
-  // A word on the side menu, until the player has opened it once.
-  const [railTip, setRailTip] = useState(false);
-  useEffect(() => {
-    void platform.readSetting<boolean>(RAIL_TIP_KEY).then((seen) => setRailTip(!seen));
-  }, [platform]);
-  const seeRailTip = useCallback(() => {
-    setRailTip(false);
-    void platform.writeSetting(RAIL_TIP_KEY, true);
-  }, [platform]);
-
   const onList = !whatsNew && !settingsOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
   const wasOnList = useRef(onList);
   useLayoutEffect(() => {
@@ -630,77 +620,63 @@ export function Overlay({
     <div className={entering ? 'overlay glass overlay--enter' : 'overlay glass'}>
       <SideRail
         top={
-          <button className="rail__server" type="button" title="Сервер и организация" aria-label="Сменить сервер или организацию" onClick={() => openSection('switch')}>
+          <button className="rail__server" type="button" title="Сервер и организация" aria-label="Сменить сервер или организацию" onClick={() => openSection(switchOpen ? 'search' : 'switch')}>
             <ServerIcon id={pack.server.id} size={24} />
           </button>
         }
-        current={settingsOpen ? 'settings' : menuOpen ? 'documents' : 'search'}
+        current={settingsOpen ? 'settings' : menuOpen ? 'documents' : switchOpen ? undefined : 'search'}
         items={[
-          { id: 'search', label: 'Поиск', icon: <SearchIcon />, onSelect: () => openSection('search') },
-          { id: 'documents', label: 'Документы', icon: <DocumentsIcon />, onSelect: () => openSection('documents') },
+          { id: 'search', label: 'Поиск', icon: <SearchIcon />, shortcut: 1, onSelect: () => openSection('search') },
+          {
+            id: 'documents',
+            label: 'Документы',
+            ariaLabel: 'Все документы',
+            expanded: menuOpen,
+            icon: <DocumentsIcon />,
+            shortcut: 2,
+            onSelect: () => openSection(menuOpen ? 'search' : 'documents'),
+          },
           {
             id: 'calculator',
             label: 'Калькулятор',
             icon: <CalculatorIcon />,
+            shortcut: 3,
             disabled: !calculatorOpen,
             hint: calculatorOpen ? undefined : 'Калькулятор появится, когда вы добавите статью кнопкой «+»',
             onSelect: () => document.querySelector<HTMLElement>('.calc button, .calc input')?.focus(),
           },
-          { id: 'pinned', label: 'Закреплённое', icon: <PinIcon />, onSelect: () => openSection('pinned') },
-          { id: 'settings', label: 'Настройки', icon: <SettingsIcon />, onSelect: () => openSection('settings') },
+          { id: 'pinned', label: 'Закреплённое', icon: <PinIcon />, shortcut: 4, onSelect: () => openSection('pinned') },
           { id: 'memos', label: 'Памятки', icon: <MemoIcon />, disabled: true, hint: 'Памятки фракции — скоро', onSelect: () => {} },
-          { id: 'profile', label: 'Профиль', icon: <ProfileIcon />, disabled: true, hint: 'Профиль — скоро', onSelect: () => {} },
+          {
+            id: 'settings',
+            label: 'Настройки',
+            expanded: settingsOpen,
+            icon: <SettingsIcon />,
+            shortcut: 5,
+            bottom: true,
+            onSelect: () => openSection(settingsOpen ? 'search' : 'settings'),
+          },
+          { id: 'profile', label: 'Профиль', icon: <ProfileIcon />, bottom: true, disabled: true, hint: 'Профиль — скоро', onSelect: () => {} },
         ]}
-        tip={railTip}
-        onTipSeen={seeRailTip}
       />
+      <div className="overlay__main">
       <div className="overlay__head" data-tauri-drag-region>
-        <button
-          className={menuOpen ? 'icon-btn icon-btn--on' : 'icon-btn'}
-          type="button"
-          aria-label="Все документы"
-          aria-expanded={menuOpen}
-          title="Все документы"
-          onClick={() => {
-            setMenuOpen((v) => !v);
-            setSwitchOpen(false);
-          }}
-        >
-          <MenuIcon />
-        </button>
         <span className="brand" data-tauri-drag-region>
-          РО Хелпер
+          {pack.server.name}
         </span>
-        <span className="sp" data-tauri-drag-region />
         <button
           className={switchOpen ? 'chip chip--switch chip--on' : 'chip chip--switch'}
           type="button"
           aria-label="Сервер и организация"
           aria-expanded={switchOpen}
-          title="Сменить сервер или организацию"
-          onClick={() => {
-            setSwitchOpen((v) => !v);
-            setSettingsOpen(false);
-            setMenuOpen(false);
-          }}
+          title={summary}
+          onClick={() => openSection(switchOpen ? 'search' : 'switch')}
         >
-          <ServerIcon id={pack.server.id} size={16} />
-          <span>{summary}</span>
+          <OrganizationIcon id={organization?.id ?? 'none'} size={16} />
+          <span>{organization && organization.id !== 'none' ? organization.name : 'Без организации'}</span>
           <ChevronDownIcon size={16} />
         </button>
-        <button
-          className={settingsOpen ? 'icon-btn icon-btn--on' : 'icon-btn'}
-          type="button"
-          aria-label="Настройки"
-          aria-expanded={settingsOpen}
-          title="Настройки"
-          onClick={() => {
-            setSettingsOpen((v) => !v);
-            setSwitchOpen(false);
-          }}
-        >
-          <SettingsIcon />
-        </button>
+        <span className="sp" data-tauri-drag-region />
         <button
           className="icon-btn"
           type="button"
@@ -1064,6 +1040,7 @@ export function Overlay({
           }}
         />
       )}
+      </div>
     </div>
     </div>
     </>

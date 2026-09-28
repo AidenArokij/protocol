@@ -10,7 +10,7 @@ const OUT = fileURLToPath(new URL('../docs/screenshots', import.meta.url));
 const edge = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const profile = mkdtempSync(join(tmpdir(), 'ro-shots-'));
 const proc = spawn(edge, ['--headless=new', '--remote-debugging-port=9333', `--user-data-dir=${profile}`, '--hide-scrollbars', 'about:blank'], { stdio: 'ignore' });
-// The first-launch word on the side menu and the banner of the latest update would cover the shots.
+// The banner of the latest update would cover the shots.
 const LATEST_CHANGE = JSON.parse(readFileSync(new URL('../src/data/tverskoi.json', import.meta.url), 'utf8')).changes[0]?.version ?? '';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -61,7 +61,7 @@ await send('Emulation.setDeviceMetricsOverride', { width: 1500, height: 900, dev
 await send('Page.enable');
 await send('Page.navigate', { url: 'http://127.0.0.1:1420/' });
 await sleep(1500);
-await js(`localStorage.clear(); localStorage.setItem('profile', JSON.stringify({ server: 'tverskoi', organization: 'mvd', hotkey: 'Alt+Q' })); localStorage.setItem('laws.seen:tverskoi', JSON.stringify('9999')); localStorage.setItem('tips.rail', 'true'); localStorage.setItem('changes.banner:tverskoi', JSON.stringify(${JSON.stringify(LATEST_CHANGE)})); location.reload()`);
+await js(`localStorage.clear(); localStorage.setItem('profile', JSON.stringify({ server: 'tverskoi', organization: 'mvd', hotkey: 'Alt+Q' })); localStorage.setItem('laws.seen:tverskoi', JSON.stringify('9999')); localStorage.setItem('changes.banner:tverskoi', JSON.stringify(${JSON.stringify(LATEST_CHANGE)})); location.reload()`);
 await sleep(2500);
 
 // Search.

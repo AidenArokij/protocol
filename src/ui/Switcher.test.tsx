@@ -9,7 +9,8 @@ const screenOf = () => screen.getByRole('region', { name: 'Сервер и ор�
 describe('the server and the organisation, from the header', () => {
   it('shows the server with its mark and the organisation, and opens both choices on one screen', async () => {
     const { user } = await renderApp({ profile: { organization: 'mvd' } });
-    expect(switcher()).toHaveTextContent('Тверской · МВД');
+    expect(switcher()).toHaveAttribute('title', 'Тверской · МВД');
+    expect(switcher()).toHaveTextContent('МВД');
     expect(switcher().querySelector('svg')).toBeInTheDocument();
     await user.click(switcher());
     const view = screenOf();
@@ -30,7 +31,7 @@ describe('the server and the organisation, from the header', () => {
     await user.click(within(screenOf()).getByRole('radio', { name: /ФСБ/ }));
     expect(platform.settings.get(PROFILE_KEY)).toMatchObject({ server: 'arbatskiy', organization: 'fsb' });
     expect(screen.queryByRole('region', { name: 'Сервер и организация' })).not.toBeInTheDocument();
-    expect(switcher()).toHaveTextContent('Арбатский · ФСБ');
+    expect(switcher()).toHaveAttribute('title', 'Арбатский · ФСБ');
   });
 
   it('closes with Esc, back to the search', async () => {

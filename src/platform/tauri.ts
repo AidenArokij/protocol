@@ -92,7 +92,8 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
     const { position, size } = monitor.workArea;
     const scale = monitor.scaleFactor;
     const margin = Math.round(24 * scale);
-    const width = Math.round(Math.min(Math.max(size.width / 3, 480 * scale), 760 * scale));
+    // The side column (direction C) takes 72 px of it.
+    const width = Math.round(Math.min(Math.max(size.width / 3, 560 * scale), 800 * scale));
     return { x: position.x + size.width - width - margin, y: position.y + margin, width, height: size.height - 2 * margin };
   };
 
