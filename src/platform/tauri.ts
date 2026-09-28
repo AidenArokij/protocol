@@ -77,6 +77,7 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
   const shownListeners = new Set<() => void>();
   let visible = false;
   let hotkey: string | null = null;
+  let voiceHotkey: string | null = null;
 
   /** A wide window in the middle of the work area (screen minus taskbar), a little above centre, in physical pixels. */
   const defaultBounds = async (): Promise<WindowBounds> => {
@@ -197,6 +198,20 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
       queueHotkey(async () => {
         if (hotkey) await unregister(hotkey);
         hotkey = null;
+      }),
+    // Push-to-talk: the key reports being pressed and being let go; a key held down repeats «pressed», which
+    // the overlay ignores while it already records.
+    registerVoiceHotkey: (accelerator, onDown, onUp) =>
+      queueHotkey(async () => {
+        if (voiceHotkey) await unregister(voiceHotkey);
+        if (await isRegistered(accelerator)) await unregister(accelerator);
+        await register(accelerator, (event) => (event.state === 'Pressed' ? onDown() : onUp()));
+        voiceHotkey = accelerator;
+      }),
+    unregisterVoiceHotkey: () =>
+      queueHotkey(async () => {
+        if (voiceHotkey) await unregister(voiceHotkey);
+        voiceHotkey = null;
       }),
 
     showOverlay,

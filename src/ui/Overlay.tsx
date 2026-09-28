@@ -33,13 +33,13 @@ import { HistoryView } from './HistoryView';
 import { BackIcon, CloseIcon, HistoryIcon, MenuIcon, MicIcon, ProtocolLogo, SearchIcon, SettingsIcon, SparkIcon } from './icons';
 import { canRecord, startRecording, type Recording } from './voice';
 import { ServerMenu } from './ServerMenu';
-import { DEFAULT_OPACITY, DEFAULT_THEME, OPACITY_KEY, STREAMER_KEY, THEME_KEY, applyOpacity, applyTheme, clampOpacity, type Theme } from './overlaySettings';
+import { DEFAULT_OPACITY, DEFAULT_THEME, DEFAULT_VOICE_HOTKEY, OPACITY_KEY, STREAMER_KEY, THEME_KEY, VOICE_HOTKEY_KEY, applyOpacity, applyTheme, clampOpacity, type Theme } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
 import { OrganizationChoice } from './OrganizationChoice';
 import { PinSurface } from './PinSurface';
 import { PrivacyView } from './PrivacyView';
 import { ReleaseNotesView } from './ReleaseNotesView';
-import { articlePinCard, calculatorPinCard } from './pinCards';
+import { aiPinCard, articlePinCard, calculatorPinCard } from './pinCards';
 import { CALCULATOR_ID, hasCard, keepableGroups, pinCard, restoreGroups, surfaceNow, unpinCard, updateCard } from './pinLayout';
 import { applyPreset, cardCount, deletePreset, nextPresetName, presetsKey, readPresets, savePreset, type PinPreset } from './pinPresets';
 import { ResizeEdges } from './ResizeEdges';
@@ -114,6 +114,7 @@ export function Overlay({
   onEditProfile,
   onProfile,
   onCapturing,
+  capturing = false,
   laws,
   newUser = false,
 }: {
@@ -125,6 +126,8 @@ export function Overlay({
   onProfile: (next: Profile) => void;
   /** While a hotkey is being recorded no global hotkey may be registered. */
   onCapturing: (capturing: boolean) => void;
+  /** A hotkey is being recorded in the settings: no global hotkey may be registered meanwhile. */
+  capturing?: boolean;
   /** Checking for newer laws from the settings, and what the last check found. */
   laws?: Pick<Laws, 'status' | 'check'>;
   /** This session began at the first launch: there is nothing new to tell. */
@@ -373,6 +376,101 @@ export function Overlay({
   const pinnedCalculator = hasCard(groups, CALCULATOR_ID);
   const togglePin = (card: PinCard) =>
     setGroups((list) => (hasCard(list, card.id) ? unpinCard(list, card.id) : pinCard(list, card, surface())));
+
+  // A question over the game: hold the push-to-talk key and speak, let go — the AI's short answer is pinned over
+  // the game as a card, and the overlay stays hidden. Notices over the game say what is going on meanwhile.
+  const [voiceHotkey, setVoiceHotkey] = useState(DEFAULT_VOICE_HOTKEY);
+  useEffect(() => {
+    void platform.readSetting<string>(VOICE_HOTKEY_KEY).then((saved) => setVoiceHotkey(saved ?? DEFAULT_VOICE_HOTKEY));
+  }, [platform]);
+  const changeVoiceHotkey = (accelerator: string) => {
+    setVoiceHotkey(accelerator);
+    void platform.writeSetting(VOICE_HOTKEY_KEY, accelerator);
+  };
+  /**
+   * Held and let go asks the question. So does a second press: a quick tap starts the recording and the next
+   * press ends it — for when Windows does not report the key being let go, or the player prefers to tap.
+   */
+  const talk = useRef({
+    recording: null as Recording | null,
+    startedAt: 0,
+    lastPress: 0,
+    tapped: false,
+    starting: false,
+    letGo: false,
+    thinking: false,
+  });
+  const notice = (title: string, text?: string) => void platform.showToast({ id: `talk-${Date.now()}`, title, ...(text ? { text } : {}) });
+  const talkDown = useRef(async () => {});
+  const talkUp = useRef(async (_end?: boolean) => {});
+  talkDown.current = async () => {
+    const state = talk.current;
+    const now = Date.now();
+    const gap = now - state.lastPress;
+    state.lastPress = now;
+    if (state.recording) {
+      // A key held down repeats «pressed» every few dozen milliseconds; a new press after a pause ends the question.
+      if (state.tapped || gap > 600) await talkUp.current(true);
+      return;
+    }
+    if (state.starting || state.thinking) return;
+    state.tapped = false;
+    if (!canRecord()) return notice('Микрофон недоступен', 'Спросить голосом не получится на этом компьютере.');
+    state.starting = true;
+    state.letGo = false;
+    try {
+      state.recording = await startRecording(() => void talkUp.current(true));
+      if (state.letGo) {
+        // The key was let go before the microphone even started: nothing was said.
+        state.recording.cancel();
+        state.recording = null;
+        return notice('Держите клавишу, пока говорите', `${formatHotkey(voiceHotkey)}: нажмите, скажите вопрос и отпустите.`);
+      }
+      state.startedAt = Date.now();
+      notice('Слушаю…', 'Отпустите клавишу — ИИ ответит карточкой поверх игры.');
+    } catch {
+      notice('Не получилось включить микрофон', 'Windows: «Параметры» → «Конфиденциальность» → «Микрофон».');
+    } finally {
+      state.starting = false;
+    }
+  };
+  talkUp.current = async (end = false) => {
+    const state = talk.current;
+    if (state.starting) state.letGo = true;
+    const recording = state.recording;
+    if (!recording) return;
+    // Let go at once: a tap, not a hold — the recording goes on until the next press.
+    if (!end && !state.tapped && Date.now() - state.startedAt < 400) {
+      state.tapped = true;
+      return notice('Слушаю…', `Скажите вопрос и нажмите ${formatHotkey(voiceHotkey)} ещё раз.`);
+    }
+    state.recording = null;
+    state.thinking = true;
+    try {
+      notice('Думаю…');
+      const question = await transcribe(platform, await recording.stop());
+      if (!question) return notice('Не расслышал вопрос', 'Говорите чуть громче или ближе к микрофону.');
+      const answer = await chat.send(question, undefined, { brief: true });
+      if (!answer) return notice('ИИ ещё отвечает на прошлый вопрос');
+      if (answer.failed) return notice('ИИ не ответил', answer.text);
+      setGroups((list) => pinCard(list, aiPinCard(answer.id, question, answer.text), surface()));
+    } catch (error) {
+      notice('ИИ не ответил', error instanceof Error ? error.message : String(error));
+    } finally {
+      state.thinking = false;
+    }
+  };
+  // Registered while no hotkey is being recorded in the settings, and never on the overlay's own key.
+  useEffect(() => {
+    if (capturing || !voiceHotkey || voiceHotkey === profile.hotkey) return;
+    void platform.registerVoiceHotkey(
+      voiceHotkey,
+      () => void talkDown.current(),
+      () => void talkUp.current(),
+    );
+    return () => void platform.unregisterVoiceHotkey();
+  }, [platform, voiceHotkey, capturing, profile.hotkey]);
+  useEffect(() => () => talk.current.recording?.cancel(), []);
 
   // The pinned total follows the calculator, and goes when the charges do.
   const calculatorCard = useMemo(
@@ -997,6 +1095,8 @@ export function Overlay({
             onOpacity={changeOpacity}
             theme={theme}
             onTheme={changeTheme}
+            voiceHotkey={voiceHotkey}
+            onVoiceHotkey={changeVoiceHotkey}
             streamer={streamer}
             onStreamer={changeStreamer}
             pinned={cardCount(groups)}

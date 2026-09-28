@@ -24,6 +24,13 @@ export function applyTheme(theme: Theme): void {
   else delete document.documentElement.dataset.theme;
 }
 
+/**
+ * The push-to-talk key for a question over the game; an empty setting turns it off. Alt+W sits beside the
+ * overlay's Alt+Q; unlike Alt+Q it has not been checked in game, so the settings let the player change it.
+ */
+export const VOICE_HOTKEY_KEY = 'voice.hotkey';
+export const DEFAULT_VOICE_HOTKEY = 'Alt+W';
+
 /** Streamer mode: the app is left out of screen capture (OBS, Discord, screenshots). */
 export const STREAMER_KEY = 'overlay.streamer';
 

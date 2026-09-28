@@ -3330,3 +3330,9 @@ input {
 .doc__situation {
   font-style: italic;
 }
+
+/* An AI answer pinned over the game: the question on top in the accent colour, the answer's lines below. */
+.pin__title--ai {
+  color: var(--accent-text);
+  font-style: italic;
+}

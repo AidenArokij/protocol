@@ -18,7 +18,7 @@ import {
   WarnIcon,
 } from './icons';
 import { formatDate } from './lawBits';
-import { MAX_OPACITY, MIN_OPACITY, type Theme } from './overlaySettings';
+import { DEFAULT_VOICE_HOTKEY, MAX_OPACITY, MIN_OPACITY, type Theme } from './overlaySettings';
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
 import { ServerEmblem } from './ServerMenu';
 import type { Laws, LawsStatus } from './laws';
@@ -87,7 +87,17 @@ function Row({ label, value, children }: { label: string; value?: ReactNode; chi
 }
 
 /** The hotkey, changed right here: press the field, then the combination. */
-function HotkeyField({ hotkey, onHotkey, onCapturing }: { hotkey: string; onHotkey: (accelerator: string) => void; onCapturing: (capturing: boolean) => void }) {
+function HotkeyField({
+  hotkey,
+  onHotkey,
+  onCapturing,
+  label = 'Открыть и скрыть оверлей',
+}: {
+  hotkey: string;
+  onHotkey: (accelerator: string) => void;
+  onCapturing: (capturing: boolean) => void;
+  label?: string;
+}) {
   const [listening, setListening] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
 
@@ -118,7 +128,7 @@ function HotkeyField({ hotkey, onHotkey, onCapturing }: { hotkey: string; onHotk
   return (
     <>
       <div className="set__row">
-        <span className="set__label">Открыть и скрыть оверлей</span>
+        <span className="set__label">{label}</span>
         <span className="sp" />
         <button
           type="button"
@@ -356,6 +366,10 @@ const FAQ: [string, string][] = [
     'Откуда законы и насколько они свежие?',
     'Законы, уставы и правила взяты с форума Russia Online и обновляются сами, без новой версии программы. Дата — в «Законы и обновления» → «Актуально на»; что поменялось — «Что изменилось в законах».',
   ],
+  [
+    'Как спросить ИИ, не открывая окно?',
+    'Держите Alt + W (меняется в «Основном» → «Вопрос голосом поверх игры»), скажите вопрос и отпустите — через несколько секунд ответ появится карточкой поверх игры. Можно и нажать один раз, сказать и нажать ещё раз. Карточку убирают крестиком, вопрос остаётся в 🕘 истории.',
+  ],
   ['Как обновить программу?', 'Сама: когда выйдет новая версия, ПРОТОКОЛ предложит обновиться. Проверить вручную — «Законы и обновления» → «Проверить обновления».'],
 ];
 
@@ -421,6 +435,9 @@ export interface SettingsViewProps {
   onOpacity: (value: number) => void;
   theme: Theme;
   onTheme: (theme: Theme) => void;
+  /** The push-to-talk key for a question over the game; empty when it is off. */
+  voiceHotkey: string;
+  onVoiceHotkey: (accelerator: string) => void;
   /** Streamer mode: the app left out of screen capture. */
   streamer: boolean;
   onStreamer: (on: boolean) => void;
@@ -459,6 +476,8 @@ export function SettingsView({
   onOpacity,
   theme,
   onTheme,
+  voiceHotkey,
+  onVoiceHotkey,
   streamer,
   onStreamer,
   pinned,
@@ -552,6 +571,22 @@ export function SettingsView({
 
       <Block title="Горячая клавиша">
         <HotkeyField hotkey={hotkey} onHotkey={onHotkey} onCapturing={onCapturing} />
+      </Block>
+
+      <Block title="Вопрос голосом поверх игры">
+        <Switch
+          label="Спрашивать, не открывая окно"
+          hint="Держите клавишу и говорите, отпустите — ответ ИИ появится карточкой поверх игры. Окно ПРОТОКОЛА не открывается, вопрос попадает в историю."
+          on={!!voiceHotkey}
+          onChange={(on) => onVoiceHotkey(on ? DEFAULT_VOICE_HOTKEY : '')}
+        />
+        {voiceHotkey && <HotkeyField label="Держать, чтобы спросить" hotkey={voiceHotkey} onHotkey={onVoiceHotkey} onCapturing={onCapturing} />}
+        {voiceHotkey && voiceHotkey === hotkey && (
+          <div className="warn" role="alert">
+            <WarnIcon />
+            <span>Это та же клавиша, что открывает ПРОТОКОЛ, — выберите другую, иначе вопрос голосом не сработает.</span>
+          </div>
+        )}
       </Block>
 
       <Block title="Запуск и стрим">
@@ -708,6 +743,14 @@ export function SettingsView({
               </td>
               <td>открыть и скрыть ПРОТОКОЛ поверх игры</td>
             </tr>
+            {voiceHotkey && (
+              <tr>
+                <td>
+                  <KeyCaps keys={hotkeyKeys(voiceHotkey)} />
+                </td>
+                <td>держать и говорить — ответ ИИ карточкой поверх игры</td>
+              </tr>
+            )}
             {KEYS.map(([keys, what]) => (
               <tr key={what}>
                 <td>

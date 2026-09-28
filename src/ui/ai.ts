@@ -49,6 +49,10 @@ function systemPrompt(pack: ServerPack, perspective?: Perspective): string {
     .join('\n\n');
 }
 
+/** The answer goes on a small card over the game, read in the middle of an RP scene. */
+const BRIEF =
+  '\n\nОТВЕТ ДЛЯ КАРТОЧКИ ПОВЕРХ ИГРЫ: не больше 4 коротких строк — «Суть: …», «Статья: …» (с наказанием, если оно есть в источнике), «Что делать: …». Без вступлений и пояснений.';
+
 const TERMS_PROMPT =
   'Игрок описал ситуацию на RP-сервере своими словами. Перескажи её 4–8 короткими поисковыми фразами (2–4 слова) на языке законов: юридические термины, названия правонарушений, участники, предметы («незаконное ношение оружия», «сокрытие лица», «неповиновение сотруднику полиции»). Не называй номеров статей и названий законов. Ответь только JSON-массивом строк.';
 
@@ -135,11 +139,17 @@ export interface AiMessage {
   pending?: boolean;
 }
 
+export interface SendOptions {
+  /** A few short lines for a card over the game, not a full analysis. */
+  brief?: boolean;
+}
+
 export interface AiChat {
   messages: AiMessage[];
   busy: boolean;
   /** Asks about a situation, or the last one again from a side. */
-  send: (text: string, perspective?: Perspective) => Promise<void>;
+  /** Asks; resolves with the answer, or a failed one saying why — or nothing while another question is on its way. */
+  send: (text: string, perspective?: Perspective, options?: SendOptions) => Promise<AiMessage | undefined>;
   /** A new conversation; the one on show stays in the history. */
   clear: () => void;
   /** A notice from the app itself, shown as a failed answer. */
@@ -192,22 +202,24 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
   }, [messages, platform, storeKey]);
 
   const send = useCallback(
-    async (text: string, perspective?: Perspective) => {
+    async (text: string, perspective?: Perspective, options: SendOptions = {}): Promise<AiMessage | undefined> => {
       const question = text.trim();
-      if (!question || busy) return;
+      if (!question || busy) return undefined;
       const asked: AiMessage = { id: nextId.current++, role: 'user', text: question, perspective };
       const answerId = nextId.current++;
       const earlier = current.current.filter((m) => !m.pending && !m.failed);
       changed.current = true;
       setMessages((list) => [...list, asked, { id: answerId, role: 'ai', text: '', pending: true }]);
       setBusy(true);
-      const finish = (patch: Partial<AiMessage>) =>
-        setMessages((list) => list.map((m) => (m.id === answerId ? { ...m, pending: false, ...patch } : m)));
+      const finish = (patch: Partial<AiMessage>): AiMessage => {
+        const done: AiMessage = { id: answerId, role: 'ai', text: '', ...patch, pending: false };
+        setMessages((list) => list.map((m) => (m.id === answerId ? done : m)));
+        return done;
+      };
       try {
         const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
         if (!key) {
-          finish({ failed: true, text: NO_KEY });
-          return;
+          return finish({ failed: true, text: NO_KEY });
         }
         // A follow-up leans on the question before it: both go into the search.
         const previous = [...earlier].reverse().find((m) => m.role === 'user')?.text ?? '';
@@ -221,10 +233,11 @@ export function useAiChat(platform: PlatformAdapter, pack: ServerPack, boostDocu
         const prompt = sources.length
           ? `Вопрос игрока: ${question}\n\nНайденные в законах сервера источники (используй только их):\n\n${sourcesText(sources)}`
           : `Вопрос игрока: ${question}\n\nПоиск по законам сервера ничего не нашёл. Источников нет — скажи об этом честно, ничего не придумывай.`;
-        const answer = await ask(key, systemPrompt(pack, perspective), [...history, { role: 'user', parts: [{ text: prompt }] }]);
-        finish({ text: answer.trim(), sources, perspective });
+        const system = systemPrompt(pack, perspective) + (options.brief ? BRIEF : '');
+        const answer = await ask(key, system, [...history, { role: 'user', parts: [{ text: prompt }] }]);
+        return finish({ text: answer.trim(), sources, perspective });
       } catch (error) {
-        finish({ failed: true, text: error instanceof Error ? error.message : String(error) });
+        return finish({ failed: true, text: error instanceof Error ? error.message : String(error) });
       } finally {
         setBusy(false);
       }
