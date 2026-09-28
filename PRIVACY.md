@@ -4,7 +4,7 @@
 
 ## Коротко
 
-ПРОТОКОЛ не собирает данные о вас. В нём нет аккаунтов, аналитики, рекламы и телеметрии. Всё, что вы настраиваете, остаётся на вашем компьютере. В интернет программа обращается за обновлениями — к GitHub (это можно отключить) — и, только когда вы сами просите ИИ-разбор, к Google Gemini.
+ПРОТОКОЛ не собирает данные о вас. В нём нет аккаунтов, аналитики, рекламы и телеметрии. Всё, что вы настраиваете, остаётся на вашем компьютере. В интернет программа обращается за обновлениями — к GitHub (это можно отключить) — и, только когда вы сами спрашиваете ИИ, к серверу ПРОТОКОЛА (или к Google Gemini, если вы выбрали свой ключ).
 
 ## Что хранится на компьютере
 
@@ -18,17 +18,19 @@
 
 - История ИИ-разборов: ваши вопросы и ответы ИИ, последние 30 на каждом сервере. Удаляется по одному или вся сразу: 🕘 → «Очистить историю».
 
-Всё это лежит в файле `%APPDATA%\com.aidenarokij.protocol\settings.json`. Служебные файлы окна (WebView2) — в `%LOCALAPPDATA%\com.aidenarokij.protocol`. Никуда не передаются, кроме ключа Gemini, который уходит в Google вместе с вопросом (см. ниже). Записи голоса программа не сохраняет. При удалении программы отметьте «Удалить данные приложения» — установщик сотрёт обе папки.
+Всё это лежит в файле `%APPDATA%\com.aidenarokij.protocol\settings.json`. Служебные файлы окна (WebView2) — в `%LOCALAPPDATA%\com.aidenarokij.protocol`. Никуда не передаются, кроме ключа Gemini (если вы его ввели), который уходит в Google вместе с вопросом, и номера компьютера для лимитов сервера ПРОТОКОЛА (см. ниже). Записи голоса программа не сохраняет. При удалении программы отметьте «Удалить данные приложения» — установщик сотрёт обе папки.
 
 ## Что уходит в интернет
 
-**ИИ-разбор.** Когда вы задаёте вопрос ИИ, программа отправляет в Google Gemini (`generativelanguage.googleapis.com`) с вашим ключом: текст вопроса, предыдущие вопросы и ответы этого разговора и тексты статей законов, найденных по вопросу. Не пишите в вопросе ничего личного. Как Google обращается с этими данными, описано в [условиях Gemini API](https://ai.google.dev/gemini-api/terms) и [политике конфиденциальности Google](https://policies.google.com/privacy). Без вашего вопроса программа в Google не обращается; без ключа ИИ-разбор не работает.
+**ИИ-разбор.** Когда вы спрашиваете ИИ, программа отправляет на сервер ПРОТОКОЛА (`185-84-163-232.sslip.io`, облако Timeweb, Россия): текст вопроса, предыдущие вопросы и ответы этого разговора, тексты статей законов, найденных по вопросу, и случайный номер вашего компьютера, который программа создала сама (по нему считается дневной лимит). Сервер передаёт вопрос в ИИ через сервис ProxyAPI (proxyapi.ru) и возвращает ответ. Сервер не хранит ни вопросы, ни ответы: только до полуночи по Москве — сколько вопросов задано с номера компьютера и с интернет-адреса, чтобы соблюдать лимиты. Не пишите в вопросе ничего личного. Без вашего вопроса программа на сервер не обращается.
+
+Если в «Ответах ИИ» выбран «Свой ключ Gemini», вопросы вместо этого уходят напрямую в Google Gemini (`generativelanguage.googleapis.com`) с вашим ключом — см. [условия Gemini API](https://ai.google.dev/gemini-api/terms) и [политику конфиденциальности Google](https://policies.google.com/privacy).
 
 **Документы.** Когда вы составляете документ, в Google Gemini уходят ваше описание ситуации, ваши данные для документов (ФИО, звание, должность) и тексты найденных статей.
 
 **Тренажёр.** В Google Gemini уходят вопрос тренажёра и ваш ответ вместе с текстом статьи, по которой он составлен.
 
-**Голосовой вопрос.** Микрофон включается только когда вы нажмёте 🎤 или клавишу вопроса поверх игры (по умолчанию Alt + W), и выключается, когда вы нажмёте ещё раз или отпустите клавишу (и в любом случае через минуту). Запись отправляется в Google Gemini с вашим ключом, чтобы превратить речь в текст, и сразу забывается программой; дальше текст идёт в ИИ-разбор как обычный вопрос.
+**Голосовой вопрос.** Микрофон включается только когда вы нажмёте 🎤 или клавишу вопроса поверх игры (по умолчанию Alt + W), и выключается, когда вы нажмёте ещё раз или отпустите клавишу (и в любом случае через минуту). Запись отправляется туда же, куда вопросы (на сервер ПРОТОКОЛА или в Gemini), чтобы превратить речь в текст; ни программа, ни сервер её не хранят; дальше текст идёт в ИИ-разбор как обычный вопрос.
 
 **Проверка обновлений.** При запуске и раз в 6 часов программа запрашивает файл с номером последней версии: `https://github.com/AidenArokij/protocol/releases/latest/download/latest.json`. Если вы нажмёте «Обновить», она скачает установщик новой версии оттуда же. В запросах нет ничего о вас, кроме того, без чего не работает интернет: GitHub видит IP-адрес и технические заголовки запроса, как при открытии любой страницы. Как GitHub обращается с этими данными, описано в [его политике конфиденциальности](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 
@@ -64,7 +66,8 @@ PROTOCOL does not collect data about you: no accounts, analytics, ads or telemet
 
 - **Stored locally only:** settings (server, organisation, hotkey, transparency, window positions), your Gemini key if you entered one, favourite and recent articles, the last seen version of the laws and a postponed update version — in `%APPDATA%\com.aidenarokij.protocol\settings.json`; WebView2 files in `%LOCALAPPDATA%\com.aidenarokij.protocol`. The last 30 AI conversations per server are kept locally and can be cleared in the app; voice recordings are not kept. The uninstaller removes both folders when "Delete the application data" is checked.
 - **Voice question:** the microphone records only between two presses of 🎤 (a minute at most); the recording goes to Google Gemini with your key to be written down as text.
-- **AI analysis:** only when you ask, the app sends your question, the earlier turns of the conversation and the texts of the law articles found for it to Google Gemini (`generativelanguage.googleapis.com`) with your key ([Gemini API terms](https://ai.google.dev/gemini-api/terms), [Google Privacy Policy](https://policies.google.com/privacy)).
+- **AI (default):** only when you ask, the question, the conversation, the law articles found and a random id of your computer go to ПРОТОКОЛ's server (Timeweb, Russia), which passes them to the AI via ProxyAPI; the server keeps only per-day counters (by computer id and IP address) for its limits, until midnight Moscow time.
+- **AI with your own Gemini key:** only when you ask, the app sends your question, the earlier turns of the conversation and the texts of the law articles found for it to Google Gemini (`generativelanguage.googleapis.com`) with your key ([Gemini API terms](https://ai.google.dev/gemini-api/terms), [Google Privacy Policy](https://policies.google.com/privacy)).
 - **Updates:** at start and every 6 hours the app fetches `https://github.com/AidenArokij/protocol/releases/latest/download/latest.json` and the laws manifest from the same repository, and downloads the new installer when you click "Update". No personal data is sent; GitHub sees your IP address and standard request headers ([GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)). Automatic checks can be turned off in the settings.
 - **Keyboard, clipboard, game:** only the hotkey you choose is registered with Windows; other keystrokes are not recorded. The clipboard is written only when you copy a charge and is never read. The app does not read or modify game memory or inject into the game; it only remembers the active window to give it the focus back.
 

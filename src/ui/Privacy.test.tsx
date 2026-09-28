@@ -18,7 +18,7 @@ describe('the privacy policy', () => {
     // Only the Russian part: the English one is for GitHub.
     expect(policy).not.toHaveTextContent('English');
 
-    await user.click(within(policy).getByRole('button', { name: 'условиях Gemini API' }));
+    await user.click(within(policy).getByRole('button', { name: 'условия Gemini API' }));
     expect(platform.calls.at(-1)).toEqual({ method: 'openExternal', args: ['https://ai.google.dev/gemini-api/terms'] });
 
     await user.keyboard('{Escape}');

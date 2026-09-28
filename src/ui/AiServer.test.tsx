@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../test/renderApp';
 import { AI_SERVER } from './about';
-import { DEVICE_SETTING } from './ai';
+import { DEVICE_SETTING, heard } from './ai';
 
 interface Call {
   url: string;
@@ -55,6 +55,12 @@ describe('the AI through ПРОТОКОЛ\'s server', () => {
     fakeServer('На сегодня вопросы ИИ закончились (20 в день).');
     await ask('у меня украли телефон');
     expect(await screen.findByRole('alert')).toHaveTextContent('На сегодня вопросы ИИ закончились (20 в день).');
+  });
+
+  it("takes the speech model's phantom credits on silence for nothing heard", () => {
+    expect(heard('Редактор субтитров А.Синецкая Корректор А.Егорова')).toBe('');
+    expect(heard('Продолжение следует...')).toBe('');
+    expect(heard('Какое наказание за кражу телефона?')).toBe('Какое наказание за кражу телефона?');
   });
 
   it('says so when the server cannot be reached', async () => {

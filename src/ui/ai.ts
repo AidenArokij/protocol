@@ -401,10 +401,17 @@ export const NO_KEY = 'Сначала вставьте ключ Gemini в нас
 const TRANSCRIBE_PROMPT =
   'На аудио игрок RP-сервера описывает ситуацию или задаёт вопрос. Запиши дословно, что сказано, по-русски, с нормальной пунктуацией. Ответь только этим текстом, без пояснений. Если речи не слышно — ответь пустой строкой.';
 
+/**
+ * Whisper, the speech model behind the server, learned from subtitled videos: on silence or noise it «hears» their
+ * credits. Such a line is nothing heard, not a question.
+ */
+const PHANTOMS = /редактор субтитров|корректор [а-я]\.|субтитры (сделал|создавал|подогнал)|продолжение следует|спасибо за просмотр|подписывайтесь на канал/i;
+export const heard = (text: string) => (PHANTOMS.test(text) ? '' : text);
+
 /** What was said in a recording (WAV, base64), as text; empty when nothing was heard. */
 export async function transcribe(platform: PlatformAdapter, wavBase64: string): Promise<string> {
   const key = await connect(platform);
-  if (key.provider === 'protocol') return (await viaServer(key, '/v1/transcribe', { audio: wavBase64 })).trim().replace(/^["«]|["»]$/g, '');
+  if (key.provider === 'protocol') return heard((await viaServer(key, '/v1/transcribe', { audio: wavBase64 })).trim().replace(/^["«]|["»]$/g, ''));
   const text = await ask(key, TRANSCRIBE_PROMPT, [
     { role: 'user', parts: [{ inlineData: { mimeType: 'audio/wav', data: wavBase64 } }, { text: 'Запиши, что сказано.' }] },
   ]).catch((error: unknown) => {
