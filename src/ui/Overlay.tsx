@@ -415,6 +415,8 @@ export function Overlay({
     thinking: false,
   });
   const notice = (title: string, text?: string) => void platform.showToast({ id: `talk-${Date.now()}`, title, ...(text ? { text } : {}) });
+  /** The first spoken question fetches the speech model: the wait is said, once. */
+  const downloadingSpeech = () => notice('Скачиваю распознавание речи', 'Один раз, около 45 МБ. Дальше голос распознаётся прямо на компьютере.');
   const talkDown = useRef(async () => {});
   const talkUp = useRef(async () => {});
   const finishTalk = useRef(async () => {});
@@ -477,7 +479,7 @@ export function Overlay({
     state.thinking = true;
     try {
       notice('Думаю…');
-      const question = await transcribe(platform, await recording.stop());
+      const question = await transcribe(platform, await recording.stop(), downloadingSpeech);
       if (!question) return notice('Не расслышал вопрос', 'Говорите чуть громче или ближе к микрофону.');
       const answer = await chat.send(question, undefined, { brief: true });
       if (!answer) return notice('ИИ ещё отвечает на прошлый вопрос');
@@ -627,7 +629,7 @@ export function Overlay({
     recording.current = null;
     setVoice('transcribing');
     try {
-      const text = await transcribe(platform, await current.stop());
+      const text = await transcribe(platform, await current.stop(), downloadingSpeech);
       if (text && aiOpen && aiTab === 'document') void writer.write(text);
       else if (text && aiOpen && aiTab === 'trainer') void trainer.reply(text);
       else if (text) openAi(text);

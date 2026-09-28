@@ -16,7 +16,7 @@ fi
 
 echo "== Программы: Node.js и Caddy (HTTPS)"
 apt-get update -qq
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nodejs caddy curl ufw >/dev/null
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nodejs caddy curl ufw unzip >/dev/null
 node --version
 
 echo "== Сервер ПРОТОКОЛА в $DIR"
@@ -30,6 +30,21 @@ fetch server.mjs
 fetch set-key.sh
 fetch env.example
 [ -f "$DIR/.env" ] || cp "$DIR/env.example" "$DIR/.env"
+# Speech is recognised on the players' computers now: the paid recognition here stays off, old app versions too.
+sed -i 's/^VOICE_PER_DEVICE=.*/VOICE_PER_DEVICE=0/' "$DIR/.env"
+
+echo "== Модель распознавания речи (Vosk, русская, ~45 МБ) для программ"
+mkdir -p "$DIR/models"
+if [ ! -s "$DIR/models/vosk-model-small-ru.tar.gz" ]; then
+  TMP=$(mktemp -d)
+  curl -fsSL https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip -o "$TMP/model.zip"
+  unzip -q "$TMP/model.zip" -d "$TMP"
+  # With its folders: the browser's unpacker needs them.
+  tar -czf "$DIR/models/vosk-model-small-ru.tar.gz" -C "$TMP" vosk-model-small-ru-0.22
+  rm -rf "$TMP"
+fi
+chmod 755 "$DIR" "$DIR/models"
+chmod 644 "$DIR/models/vosk-model-small-ru.tar.gz"
 chown -R protocol:protocol "$DIR"
 chmod 600 "$DIR/.env"
 
@@ -55,9 +70,18 @@ IP=$(curl -fsS4 https://api.ipify.org || hostname -I | awk '{print $1}')
 DOMAIN="${IP//./-}.sslip.io"
 cat > /etc/caddy/Caddyfile <<EOF
 $DOMAIN {
-  encode gzip
-  reverse_proxy 127.0.0.1:8787 {
-    header_up X-Forwarded-For {remote_host}
+  # The speech model, for the app to download once.
+  handle /models/* {
+    header Access-Control-Allow-Origin *
+    header Cache-Control "public, max-age=604800"
+    root * $DIR
+    file_server
+  }
+  handle {
+    encode gzip
+    reverse_proxy 127.0.0.1:8787 {
+      header_up X-Forwarded-For {remote_host}
+    }
   }
 }
 EOF

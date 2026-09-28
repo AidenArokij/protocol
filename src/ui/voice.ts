@@ -1,5 +1,5 @@
-// Recording a spoken question for the AI: the microphone as 16 kHz mono WAV, a format Gemini takes for sure
-// (the browser's own recorder gives WebM, which it does not list).
+// Recording a spoken question for the AI: the microphone as 16 kHz mono samples — recognised on the computer itself
+// (localSpeech.ts), or sent as WAV, a format Gemini takes for sure (the browser's own recorder gives WebM).
 
 /** Speech needs no more; it keeps the recording small. */
 const SAMPLE_RATE = 16000;
@@ -11,9 +11,18 @@ export function canRecord(): boolean {
   return typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia && typeof AudioContext !== 'undefined';
 }
 
+/** What the microphone heard: mono samples, chunk by chunk, and how many a second. */
+export interface RecordedAudio {
+  chunks: Float32Array[];
+  sampleRate: number;
+}
+
+/** A recording as a WAV file in base64, for a speech service on the internet. */
+export const wavBase64 = (audio: RecordedAudio) => toBase64(encodeWav(audio.chunks, audio.sampleRate));
+
 export interface Recording {
-  /** Stops and gives the recording as base64 WAV. */
-  stop(): Promise<string>;
+  /** Stops and gives what was recorded. */
+  stop(): Promise<RecordedAudio>;
   /** Stops and throws the recording away. */
   cancel(): void;
 }
@@ -41,7 +50,7 @@ export async function startRecording(onLimit: () => void): Promise<Recording> {
   return {
     async stop() {
       close();
-      return toBase64(encodeWav(chunks, context.sampleRate));
+      return { chunks, sampleRate: context.sampleRate };
     },
     cancel: close,
   };

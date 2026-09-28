@@ -7,11 +7,14 @@ import { DEFAULT_VOICE_HOTKEY, VOICE_HOTKEY_KEY } from './overlaySettings';
 /** These tests talk to Gemini with a key, the way a player outside Russia may. */
 const GEMINI = { [AI_PROVIDER_SETTING]: 'gemini', [AI_KEY_SETTING]: 'test-key' };
 
-// The microphone as the tests see it: always there, a recording of a few bytes.
-vi.mock('./voice', () => ({
+// The microphone as the tests see it: always there, a second of silence recorded.
+vi.mock('./voice', async (original) => ({
+  ...(await original<typeof import('./voice')>()),
   canRecord: () => true,
-  startRecording: vi.fn(async () => ({ stop: async () => 'UklGRg==', cancel: () => {} })),
+  startRecording: vi.fn(async () => ({ stop: async () => ({ chunks: [new Float32Array(16000)], sampleRate: 16000 }), cancel: () => {} })),
 }));
+// Speech on the computer itself (Vosk), for the players on ПРОТОКОЛ's server: it hears the question at once.
+vi.mock('./localSpeech', () => ({ recognize: vi.fn(async () => 'Какое наказание за кражу') }));
 
 const ANSWER = 'Суть: это кража.\nСтатья: УК ст. 65 — штраф до 50 000 ₽ либо 30 мес.\nЧто делать: заявить в полицию.';
 
@@ -118,6 +121,29 @@ describe('a question over the game', () => {
     await act(async () => platform.releaseVoiceHotkey());
     await vi.waitFor(() => expect(platform.state.toast?.text).toMatch(/ключ Gemini/));
     expect(pinnedCards(platform)).toEqual([]);
+  });
+
+  it('recognises the speech on the computer itself with the server of ПРОТОКОЛ: only the question goes online', async () => {
+    const calls: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init: RequestInit) => {
+        calls.push(url);
+        const body = JSON.parse(String(init.body)) as { json?: boolean };
+        const text = body.json ? '["кража"]' : 'Суть: это кража.';
+        return new Response(JSON.stringify({ text }), { status: 200 });
+      }),
+    );
+    const { platform } = await renderApp();
+    await vi.waitFor(() => expect(platform.state.voiceHotkey).toBe(DEFAULT_VOICE_HOTKEY));
+    await act(async () => platform.holdVoiceHotkey());
+    await vi.waitFor(() => expect(platform.state.toast?.title).toBe('Слушаю…'));
+    await speak();
+    await act(async () => platform.releaseVoiceHotkey());
+    await vi.waitFor(() => expect(pinnedCards(platform).find((card) => card.kind === 'ai')?.heading).toBe('Какое наказание за кражу'));
+    // No paid speech service: the recording never left the computer.
+    expect(calls.some((url) => url.includes('/v1/transcribe'))).toBe(false);
+    expect(calls.every((url) => url.endsWith('/v1/chat'))).toBe(true);
   });
 
   it('is turned off, or given another key, in the settings', async () => {

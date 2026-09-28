@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { findForSituation, sourcesText, type SearchHit, type ServerPack } from '../core';
 import type { PlatformAdapter } from '../platform/types';
 import { AI_SERVER } from './about';
+import { recognize } from './localSpeech';
+import { wavBase64, type RecordedAudio } from './voice';
 
 /** The player's own Gemini key, in the settings file on this computer. */
 export const AI_KEY_SETTING = 'ai.key';
@@ -408,12 +410,23 @@ const TRANSCRIBE_PROMPT =
 const PHANTOMS = /редактор субтитров|корректор [а-я]\.|субтитры (сделал|создавал|подогнал)|продолжение следует|спасибо за просмотр|подписывайтесь на канал/i;
 export const heard = (text: string) => (PHANTOMS.test(text) ? '' : text);
 
-/** What was said in a recording (WAV, base64), as text; empty when nothing was heard. */
-export async function transcribe(platform: PlatformAdapter, wavBase64: string): Promise<string> {
+/**
+ * What was said in a recording, as text; empty when nothing was heard. Through ПРОТОКОЛ's server the speech is
+ * recognised on this computer (free, however many questions — `onDownload` says the model is being fetched the
+ * first time); with the player's own Gemini key, Gemini writes it down.
+ */
+export async function transcribe(platform: PlatformAdapter, audio: RecordedAudio, onDownload?: () => void): Promise<string> {
   const key = await connect(platform);
-  if (key.provider === 'protocol') return heard((await viaServer(key, '/v1/transcribe', { audio: wavBase64 })).trim().replace(/^["«]|["»]$/g, ''));
+  if (key.provider === 'protocol') {
+    try {
+      return heard(await recognize(audio.chunks, audio.sampleRate, onDownload));
+    } catch (error) {
+      throw new AiError(`Не получилось распознать речь: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  const wav = wavBase64(audio);
   const text = await ask(key, TRANSCRIBE_PROMPT, [
-    { role: 'user', parts: [{ inlineData: { mimeType: 'audio/wav', data: wavBase64 } }, { text: 'Запиши, что сказано.' }] },
+    { role: 'user', parts: [{ inlineData: { mimeType: 'audio/wav', data: wav } }, { text: 'Запиши, что сказано.' }] },
   ]).catch((error: unknown) => {
     // Silence can come back as an empty answer: that is nothing heard, not a failure.
     if (error instanceof AiError && /пустой ответ/.test(error.message)) return '';
