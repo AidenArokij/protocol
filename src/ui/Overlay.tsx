@@ -57,6 +57,8 @@ import type { Laws } from './laws';
 import { APP_VERSION } from './about';
 import { WhatsNewView } from './WhatsNewView';
 import { CHANGELOG, SEEN_VERSION_KEY, compareVersions, notesSince, type VersionNotes } from './whatsNew';
+import { NoticeBanner } from './NoticeBanner';
+import { useNotice } from './notice';
 import { UpdateBanner } from './UpdateBanner';
 import { DISMISSED_KEY, TOASTED_KEY, useUpdates } from './updates';
 
@@ -208,6 +210,7 @@ export function Overlay({
 
   // New versions of the app, offered under the header; the privacy policy, opened from the settings.
   const updates = useUpdates();
+  const notices = useNotice();
   // A new version is told once over the game, top right, even with the overlay hidden: the offer under
   // the header is seen only by whoever opens the helper. One put off with «Позже» is not told again.
   const [previewToast, setPreviewToast] = useState<Toast | null>(null);
@@ -1016,6 +1019,7 @@ export function Overlay({
         </button>
       </div>
 
+      <NoticeBanner notices={notices} />
       <UpdateBanner
         updates={updates}
         onNotes={() => {

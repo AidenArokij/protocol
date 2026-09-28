@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PACK_FORMAT, type ServerPack } from '../core';
 import { TVERSKOI_PACK } from '../data';
 import { renderApp } from '../test/renderApp';
-import { MANIFEST_URL, isNewer, packUrl, readPack } from './laws';
+import { LAWS_BASE, MANIFEST_URL, isNewer, packUrl, readPack } from './laws';
 
 const search = () => screen.getByRole('searchbox', { name: 'Поиск по законам' });
 
@@ -77,7 +77,7 @@ describe('laws from GitHub, without a new version of the app', () => {
   it('leaves laws written in a shape this app does not read for a newer app', async () => {
     const { platform } = await renderApp({ platform: { remote: remote(newerPack(), PACK_FORMAT + 1) } });
     await checked(platform);
-    expect(platform.calls.filter((c) => c.method === 'download').map((c) => c.args[0])).toEqual([MANIFEST_URL]);
+    expect(platform.calls.filter((c) => c.method === 'download' && String(c.args[0]).startsWith(LAWS_BASE)).map((c) => c.args[0])).toEqual([MANIFEST_URL]);
     expect(platform.state.laws.size).toBe(0);
   });
 

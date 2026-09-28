@@ -1,6 +1,6 @@
 # Политика конфиденциальности
 
-Редакция от 28 сентября 2026 года. Относится к программе ПРОТОКОЛ для Windows.
+Редакция от 29 сентября 2026 года. Относится к программе ПРОТОКОЛ для Windows.
 
 ## Коротко
 
@@ -39,6 +39,8 @@
 
 **Обновление законов.** С той же периодичностью и при нажатии «Проверить законы» программа запрашивает с GitHub файл со сведениями о свежих законах: `https://raw.githubusercontent.com/AidenArokij/protocol/main/src/data/manifest.json`, — а если законы вашего сервера новее встроенных, скачивает их оттуда же (`…/src/data/<сервер>.json`) и сохраняет в `%APPDATA%\com.aidenarokij.protocol\laws`. В запросах нет ничего о вас. Выключается тем же переключателем «Проверять обновления автоматически».
 
+**Объявления.** С той же периодичностью программа читает с GitHub файл объявлений для игроков: `https://raw.githubusercontent.com/AidenArokij/protocol/main/notice.json` — например, о переезде ПРОТОКОЛА в РО Хелпер. Пока он пустой, ничего не показывается. В запросе нет ничего о вас. Выключается тем же переключателем.
+
 **Ссылки.** «Тема на форуме», «Что нового», GitHub и страница получения ключа открываются в вашем браузере и только когда вы на них нажмёте. Дальше действуют правила этих сайтов.
 
 Больше программа ничего не отправляет. Законы встроены в неё и работают без интернета; скачанные с GitHub лишь заменяют встроенные, когда те устарели.
@@ -69,7 +71,7 @@ PROTOCOL does not collect data about you: no accounts, analytics, ads or telemet
 - **Voice question:** the microphone records only between two presses of 🎤 or of the over-the-game key (a minute at most). Speech is recognised on your computer (Vosk) and the recording goes nowhere; the Russian speech model (~45 MB) is downloaded once from ПРОТОКОЛ's server. With your own Gemini key, the recording goes to Gemini instead to be written down.
 - **AI (default):** only when you ask, the question, the conversation, the law articles found and a random id of your computer go to ПРОТОКОЛ's server (Timeweb, Russia), which passes them to the AI via ProxyAPI; the server keeps only per-day counters (by computer id and IP address) for its limits, until midnight Moscow time.
 - **AI with your own Gemini key:** only when you ask, the app sends your question, the earlier turns of the conversation and the texts of the law articles found for it to Google Gemini (`generativelanguage.googleapis.com`) with your key ([Gemini API terms](https://ai.google.dev/gemini-api/terms), [Google Privacy Policy](https://policies.google.com/privacy)).
-- **Updates:** at start and every 6 hours the app fetches `https://github.com/AidenArokij/protocol/releases/latest/download/latest.json` and the laws manifest from the same repository, and downloads the new installer when you click "Update". No personal data is sent; GitHub sees your IP address and standard request headers ([GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)). Automatic checks can be turned off in the settings.
+- **Updates:** at start and every 6 hours the app fetches `https://github.com/AidenArokij/protocol/releases/latest/download/latest.json` the laws manifest and a notices file (`notice.json`, empty unless there is news for players) from the same repository, and downloads the new installer when you click "Update". No personal data is sent; GitHub sees your IP address and standard request headers ([GitHub Privacy Statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)). Automatic checks can be turned off in the settings.
 - **Keyboard, clipboard, game:** only the hotkey you choose is registered with Windows; other keystrokes are not recorded. The clipboard is written only when you copy a charge and is never read. The app does not read or modify game memory or inject into the game; it only remembers the active window to give it the focus back.
 
 Contact: [GitHub issues](https://github.com/AidenArokij/protocol/issues).
