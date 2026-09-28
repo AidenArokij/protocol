@@ -18,3 +18,6 @@ export function clampOpacity(value: number): number {
 export function applyOpacity(value: number): void {
   document.documentElement.style.setProperty('--glass-alpha', String(clampOpacity(value)));
 }
+
+/** The first-launch word on the side menu has been read (or the menu opened). */
+export const RAIL_TIP_KEY = 'tips.rail';

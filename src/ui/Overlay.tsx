@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import {
   calculateDetention,
   changedArticles,
@@ -25,8 +25,9 @@ import { ArticleView } from './ArticleView';
 import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } from './CalculatorPanel';
 import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
-import { BackIcon, ChevronDownIcon, CloseIcon, MenuIcon, SearchIcon, ServerIcon, SettingsIcon } from './icons';
-import { DEFAULT_OPACITY, OPACITY_KEY, applyOpacity, clampOpacity } from './overlaySettings';
+import { BackIcon, CalculatorIcon, ChevronDownIcon, CloseIcon, DocumentsIcon, MemoIcon, MenuIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon } from './icons';
+import { SideRail } from './SideRail';
+import { DEFAULT_OPACITY, OPACITY_KEY, RAIL_TIP_KEY, applyOpacity, clampOpacity } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
 import { OrganizationChoice } from './OrganizationChoice';
 import { PinSurface } from './PinSurface';
@@ -490,6 +491,33 @@ export function Overlay({
   // what is opened starts at its own top.
   const contentRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
+  /** The side menu's sections: each closes what is on screen and opens its own. */
+  const openSection = (section: 'search' | 'documents' | 'switch' | 'pinned' | 'settings') => {
+    setWhatsNew(null);
+    setOrganizationOpen(false);
+    setServerOpen(false);
+    setPrivacyOpen(false);
+    setDiff(null);
+    setMenuOpen(section === 'documents');
+    setSwitchOpen(section === 'switch');
+    setSettingsOpen(section === 'pinned' || section === 'settings');
+    if (section === 'pinned') {
+      // Once the settings are on screen: straight to what is pinned.
+      window.setTimeout(() => document.querySelector('[aria-label="Закреплено поверх игры"]')?.scrollIntoView({ block: 'start' }));
+    }
+    searchRef.current?.focus();
+  };
+
+  // A word on the side menu, until the player has opened it once.
+  const [railTip, setRailTip] = useState(false);
+  useEffect(() => {
+    void platform.readSetting<boolean>(RAIL_TIP_KEY).then((seen) => setRailTip(!seen));
+  }, [platform]);
+  const seeRailTip = useCallback(() => {
+    setRailTip(false);
+    void platform.writeSetting(RAIL_TIP_KEY, true);
+  }, [platform]);
+
   const onList = !whatsNew && !settingsOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
   const wasOnList = useRef(onList);
   useLayoutEffect(() => {
@@ -583,6 +611,32 @@ export function Overlay({
         />
       )}
     <div className={entering ? 'overlay glass overlay--enter' : 'overlay glass'}>
+      <SideRail
+        top={
+          <button className="rail__server" type="button" title="Сервер и организация" aria-label="Сменить сервер или организацию" onClick={() => openSection('switch')}>
+            <ServerIcon id={pack.server.id} size={24} />
+          </button>
+        }
+        current={settingsOpen ? 'settings' : menuOpen ? 'documents' : 'search'}
+        items={[
+          { id: 'search', label: 'Поиск', icon: <SearchIcon />, onSelect: () => openSection('search') },
+          { id: 'documents', label: 'Документы', icon: <DocumentsIcon />, onSelect: () => openSection('documents') },
+          {
+            id: 'calculator',
+            label: 'Калькулятор',
+            icon: <CalculatorIcon />,
+            disabled: !calculatorOpen,
+            hint: calculatorOpen ? undefined : 'Калькулятор появится, когда вы добавите статью кнопкой «+»',
+            onSelect: () => document.querySelector<HTMLElement>('.calc button, .calc input')?.focus(),
+          },
+          { id: 'pinned', label: 'Закреплённое', icon: <PinIcon />, onSelect: () => openSection('pinned') },
+          { id: 'settings', label: 'Настройки', icon: <SettingsIcon />, onSelect: () => openSection('settings') },
+          { id: 'memos', label: 'Памятки', icon: <MemoIcon />, disabled: true, hint: 'Памятки фракции — скоро', onSelect: () => {} },
+          { id: 'profile', label: 'Профиль', icon: <ProfileIcon />, disabled: true, hint: 'Профиль — скоро', onSelect: () => {} },
+        ]}
+        tip={railTip}
+        onTipSeen={seeRailTip}
+      />
       <div className="overlay__head" data-tauri-drag-region>
         <button
           className={menuOpen ? 'icon-btn icon-btn--on' : 'icon-btn'}
