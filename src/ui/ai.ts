@@ -13,7 +13,7 @@ export const AI_KEY_URL = 'https://aistudio.google.com/apikey';
 const MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];
 const API = 'https://generativelanguage.googleapis.com/v1beta/models';
 /** Articles given to the AI for one question. */
-const SOURCES = 14;
+export const SOURCES = 14;
 /** Earlier questions and answers sent along, so a follow-up («а если он в маске?») is understood. */
 const HISTORY_TURNS = 6;
 
@@ -52,13 +52,13 @@ function systemPrompt(pack: ServerPack, perspective?: Perspective): string {
 const TERMS_PROMPT =
   'Игрок описал ситуацию на RP-сервере своими словами. Перескажи её 4–8 короткими поисковыми фразами (2–4 слова) на языке законов: юридические термины, названия правонарушений, участники, предметы («незаконное ношение оружия», «сокрытие лица», «неповиновение сотруднику полиции»). Не называй номеров статей и названий законов. Ответь только JSON-массивом строк.';
 
-interface GeminiTurn {
+export interface GeminiTurn {
   role: 'user' | 'model';
   /** Text, or a file sent along with it — a voice recording. */
   parts: ({ text: string } | { inlineData: { mimeType: string; data: string } })[];
 }
 
-class AiError extends Error {
+export class AiError extends Error {
   constructor(
     message: string,
     readonly overloaded = false,
@@ -98,7 +98,7 @@ async function generate(key: string, model: string, system: string, contents: Ge
 }
 
 /** Asks the models in turn while they are overloaded. */
-async function ask(key: string, system: string, contents: GeminiTurn[], json = false): Promise<string> {
+export async function ask(key: string, system: string, contents: GeminiTurn[], json = false): Promise<string> {
   let last: unknown;
   for (const model of MODELS) {
     try {
@@ -112,7 +112,7 @@ async function ask(key: string, system: string, contents: GeminiTurn[], json = f
 }
 
 /** The situation in the words of the law, for the search; nothing when the AI could not say. */
-async function lawTerms(key: string, situation: string): Promise<string[]> {
+export async function lawTerms(key: string, situation: string): Promise<string[]> {
   try {
     const text = await ask(key, TERMS_PROMPT, [{ role: 'user', parts: [{ text: situation }] }], true);
     const parsed: unknown = JSON.parse(text);
@@ -320,7 +320,7 @@ function restoreMessage(pack: ServerPack, message: StoredMessage): Omit<AiMessag
 
 // ——— Voice ———
 
-const NO_KEY = 'Сначала вставьте ключ Gemini в настройках (⚙ → «Ответы ИИ»). Он бесплатный.';
+export const NO_KEY = 'Сначала вставьте ключ Gemini в настройках (⚙ → «Ответы ИИ»). Он бесплатный.';
 
 const TRANSCRIBE_PROMPT =
   'На аудио игрок RP-сервера описывает ситуацию или задаёт вопрос. Запиши дословно, что сказано, по-русски, с нормальной пунктуацией. Ответь только этим текстом, без пояснений. Если речи не слышно — ответь пустой строкой.';

@@ -26,7 +26,9 @@ import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } 
 import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
 import { transcribe, useAiChat } from './ai';
-import { AiView } from './AiView';
+import { AiView, type AiTab } from './AiView';
+import { DocumentView } from './DocumentView';
+import { useDocumentWriter } from './documents';
 import { HistoryView } from './HistoryView';
 import { BackIcon, CloseIcon, HistoryIcon, MenuIcon, MicIcon, ProtocolLogo, SearchIcon, SettingsIcon, SparkIcon } from './icons';
 import { canRecord, startRecording, type Recording } from './voice';
@@ -156,6 +158,9 @@ export function Overlay({
   const [aiOpen, setAiOpen] = useState(false);
   const [aiDraft, setAiDraft] = useState('');
   const chat = useAiChat(platform, pack, boostDocuments);
+  // The AI screen has two tabs: analysing a situation, and writing a document about it.
+  const [aiTab, setAiTab] = useState<AiTab>('chat');
+  const writer = useDocumentWriter(platform, pack, boostDocuments);
   /** The field is the AI's, not the search's: an article opened from the answer gives it back to the search. */
   const aiMode = aiOpen && !open;
 
@@ -417,9 +422,10 @@ export function Overlay({
     }
     // In the AI analysis Enter sends the situation; the list keys have no list to walk.
     if (aiMode) {
-      if (e.key === 'Enter' && !e.shiftKey && aiDraft.trim() && !chat.busy) {
+      if (e.key === 'Enter' && !e.shiftKey && aiDraft.trim() && !(aiTab === 'document' ? writer.busy : chat.busy)) {
         e.preventDefault();
-        void chat.send(aiDraft);
+        if (aiTab === 'document') void writer.write(aiDraft);
+        else void chat.send(aiDraft);
         setAiDraft('');
       }
       return;
@@ -494,7 +500,8 @@ export function Overlay({
     setVoice('transcribing');
     try {
       const text = await transcribe(platform, await current.stop());
-      if (text) openAi(text);
+      if (text && aiOpen && aiTab === 'document') void writer.write(text);
+      else if (text) openAi(text);
       else voiceFailed('Не расслышал вопрос. Нажмите 🎤 и говорите чуть громче или ближе к микрофону.');
     } catch (error) {
       voiceFailed(error instanceof Error ? error.message : String(error));
@@ -740,7 +747,9 @@ export function Overlay({
             aria-label="Поиск по законам"
             placeholder={
               aiMode
-                ? chat.messages.length
+                ? aiTab === 'document'
+                  ? 'Опишите, что произошло: кто, где, что сделал…'
+                  : chat.messages.length
                   ? 'Уточните или опишите новую ситуацию…'
                   : 'Опишите ситуацию своими словами…'
                 : scope
@@ -1050,6 +1059,20 @@ export function Overlay({
             }}
             onForget={chat.forget}
           />
+        ) : aiOpen && aiTab === 'document' ? (
+          <DocumentView
+            writer={writer}
+            backLabel={query ? 'Результаты' : scope ? 'Оглавление' : 'Поиск'}
+            onBack={() => {
+              setAiOpen(false);
+              searchRef.current?.focus();
+            }}
+            onOpen={openHit}
+            onTab={(tab) => {
+              setAiTab(tab);
+              searchRef.current?.focus();
+            }}
+          />
         ) : aiOpen ? (
           <AiView
             chat={chat}
@@ -1060,6 +1083,10 @@ export function Overlay({
             }}
             onOpen={openHit}
             onSettings={() => setSettingsOpen(true)}
+            onTab={(tab) => {
+              setAiTab(tab);
+              searchRef.current?.focus();
+            }}
           />
         ) : changesView ? (
           <ChangesView
@@ -1143,7 +1170,7 @@ export function Overlay({
         {aiMode ? (
           <>
             <span>
-              <b>Enter</b> спросить ИИ
+              <b>Enter</b> {aiTab === 'document' ? 'составить документ' : 'спросить ИИ'}
             </span>
             <span>клик по статье — открыть</span>
             <span>

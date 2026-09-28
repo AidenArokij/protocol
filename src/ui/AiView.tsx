@@ -5,16 +5,37 @@ import { AI_KEY_URL, PERSPECTIVES, type AiChat, type AiMessage } from './ai';
 import { BackIcon, WarnIcon } from './icons';
 
 /** «УК ст. 65» — how an answer names an article, without its title. */
-const shortLabel = (hit: SearchHit) => `${hit.document.short} ${articleLabel(hit.article, undefined, hit.document.unit)}`;
+export const shortLabel = (hit: SearchHit) => `${hit.document.short} ${articleLabel(hit.article, undefined, hit.document.unit)}`;
 
 /** The source a line of the answer cites, if it names one; the longest label first, so «ст. 65.1» is not taken for «ст. 65». */
-function citedIn(line: string, sources: SearchHit[]): SearchHit | undefined {
+export function citedIn(line: string, sources: SearchHit[]): SearchHit | undefined {
   const byLength = [...sources].sort((a, b) => shortLabel(b).length - shortLabel(a).length);
   return byLength.find((hit) => {
     const label = shortLabel(hit);
     const at = line.indexOf(label);
     return at >= 0 && !/^\.?\d/.test(line.slice(at + label.length));
   });
+}
+
+/** What the AI does for the player: analyses a situation, or writes a document about it. */
+export type AiTab = 'chat' | 'document';
+
+/** The two things the AI does, as the heading of its screen. */
+export function AiTabs({ tab, onTab }: { tab: AiTab; onTab: (tab: AiTab) => void }) {
+  return (
+    <div className="ai__tabs tabs" role="radiogroup" aria-label="Что сделать ИИ">
+      {(
+        [
+          ['chat', 'Разбор ситуации'],
+          ['document', 'Составить документ'],
+        ] as const
+      ).map(([id, label]) => (
+        <button key={id} type="button" role="radio" aria-checked={tab === id} className={tab === id ? 'tabs__btn tabs__btn--on' : 'tabs__btn'} onClick={() => onTab(id)}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 const SECTION = /^(Суть|Статьи|Статья|Детали)\s*:\s*/i;
@@ -60,6 +81,7 @@ export function AiView({
   onBack,
   onOpen,
   onSettings,
+  onTab,
 }: {
   chat: AiChat;
   backLabel: string;
@@ -67,6 +89,8 @@ export function AiView({
   /** Opens a found article, as from the search. */
   onOpen: (hit: SearchHit) => void;
   onSettings: () => void;
+  /** Switches between the analysis and writing a document. */
+  onTab: (tab: AiTab) => void;
 }) {
   const platform = usePlatform();
   const endRef = useRef<HTMLDivElement>(null);
@@ -91,7 +115,7 @@ export function AiView({
           </button>
         )}
       </div>
-      <h2 className="art__title">ИИ-разбор ситуации</h2>
+      <AiTabs tab="chat" onTab={onTab} />
 
       {chat.messages.length === 0 && (
         <div className="ai__intro">

@@ -3252,3 +3252,81 @@ input {
   white-space: nowrap;
 }
 .history__meta { font-size: 12.5px; color: var(--text-muted); }
+
+/* «Составить документ»: the kind as chips, who writes, and the document as a sheet with its gaps marked. */
+.ai__tabs {
+  align-self: flex-start;
+}
+.ai__chip--on,
+.ai__chip--on:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.doc__author {
+  padding: 10px 12px;
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  font-size: 13.5px;
+}
+.doc__author summary {
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.doc__author[open] summary {
+  margin-bottom: 10px;
+}
+.doc__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.doc__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+.doc__paper {
+  padding: 16px 18px;
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  line-height: 1.6;
+  user-select: text;
+}
+.doc__line {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.doc__gap {
+  padding: 0 3px;
+  border-radius: 4px;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+}
+.doc__edit {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  border: 1px solid color-mix(in oklch, var(--accent) 50%, transparent);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: 14px/1.6 var(--font);
+  resize: vertical;
+  outline: 0;
+}
+.doc__actions {
+  gap: 10px;
+}
+.doc__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.doc__situation {
+  font-style: italic;
+}
