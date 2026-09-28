@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sets up the ПРОТОКОЛ AI server on a fresh Ubuntu (22.04 or 24.04), as root:
+# Sets up the ПРОТОКОЛ AI server on a fresh Ubuntu 24.04, as root:
 #   curl -fsSL https://raw.githubusercontent.com/AidenArokij/protocol/main/server/install.sh | bash
 # Then give it the AI key:  bash /opt/protocol/set-key.sh
 # Running it again updates the server and keeps the settings and the key.
