@@ -25,6 +25,8 @@ describe('the privacy policy', () => {
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('article', { name: 'Политика конфиденциальности' })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Настройки' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
     expect(screen.getByRole('searchbox', { name: 'Поиск по законам' })).toHaveFocus();
   });
 

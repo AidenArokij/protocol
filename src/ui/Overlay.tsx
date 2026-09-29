@@ -531,6 +531,13 @@ export function Overlay({
     searchRef.current?.focus();
   };
 
+  /** The profile and the settings are pages of their own (direction C): their name in the header, no search. */
+  const inner = profileOpen ? 'Профиль' : settingsOpen ? 'Настройки' : null;
+  // Back from them the search is there again, with the focus.
+  useEffect(() => {
+    if (!inner) searchRef.current?.focus();
+  }, [inner]);
+
   const onList = !whatsNew && !settingsOpen && !profileOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
   const wasOnList = useRef(onList);
   useLayoutEffect(() => {
@@ -678,8 +685,9 @@ export function Overlay({
       <div className="overlay__main">
       <div className="overlay__head" data-tauri-drag-region>
         <span className="brand" data-tauri-drag-region>
-          {pack.server.name}
+          {inner ?? pack.server.name}
         </span>
+        {!inner && (
         <button
           className={switchOpen ? 'chip chip--switch chip--on' : 'chip chip--switch'}
           type="button"
@@ -692,6 +700,7 @@ export function Overlay({
           <span>{organization && organization.id !== 'none' ? organization.name : 'Без организации'}</span>
           <ChevronDownIcon size={16} />
         </button>
+        )}
         <span className="sp" data-tauri-drag-region />
         <button
           className="icon-btn"
@@ -748,6 +757,7 @@ export function Overlay({
         }}
       />
 
+      {!inner && (
       <div className="search">
         <SearchIcon />
         {scope && (
@@ -782,6 +792,7 @@ export function Overlay({
         />
         <span className="kbd">Esc</span>
       </div>
+      )}
 
       <div
         ref={contentRef}
@@ -892,20 +903,9 @@ export function Overlay({
             }
           />
         ) : profileOpen ? (
-          <ProfileView
-            backLabel={open ? 'Статья' : 'Поиск'}
-            onBack={() => {
-              setProfileOpen(false);
-              searchRef.current?.focus();
-            }}
-          />
+          <ProfileView server={pack.server} organization={organization} />
         ) : settingsOpen && !changesView ? (
           <SettingsView
-            backLabel={open ? 'Статья' : 'Поиск'}
-            onBack={() => {
-              setSettingsOpen(false);
-              searchRef.current?.focus();
-            }}
             pack={pack}
             organization={organization}
             onServer={() => setServerOpen(true)}
@@ -932,6 +932,7 @@ export function Overlay({
             onPrivacy={() => setPrivacyOpen(true)}
             laws={laws}
             onHistory={() => setWhatsNew({ title: 'История версий', sections: CHANGELOG, backLabel: 'Настройки' })}
+            onProfile={() => openSection('profile')}
           />
         ) : open ? (
           <ArticleView

@@ -1,9 +1,11 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import type { Organization, ServerPack } from '../core';
+import { useAccount } from '../account/AccountContext';
 import { usePlatform } from '../platform/PlatformContext';
+import { Avatar } from './ProfileView';
 import { ACCENT_HUES, THEMES, organizationHue, type AppearanceControl } from './appearance';
 import { APP_VERSION, AUTHOR, LINKS } from './about';
-import { BackIcon, CloseIcon, DiscordIcon, GitHubIcon, WarnIcon } from './icons';
+import { CloseIcon, DiscordIcon, GitHubIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
 import { MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
@@ -232,8 +234,6 @@ function PresetForm({ disabled, placeholder, onSave }: { disabled: boolean; plac
 }
 
 export interface SettingsViewProps {
-  backLabel: string;
-  onBack: () => void;
   pack: ServerPack;
   organization?: Organization;
   /** Opens the choice of server, and of organisation, each on its own screen. */
@@ -265,12 +265,12 @@ export interface SettingsViewProps {
   laws?: Pick<Laws, 'status' | 'check'>;
   /** Opens what is new in every version. */
   onHistory: () => void;
+  /** Opens the profile: signing in, or who is signed in. */
+  onProfile: () => void;
 }
 
 /** The settings screen: what the helper works with, how it looks, the laws, updates and the app itself. */
 export function SettingsView({
-  backLabel,
-  onBack,
   pack,
   organization,
   onServer,
@@ -294,18 +294,36 @@ export function SettingsView({
   onPrivacy,
   laws,
   onHistory,
+  onProfile,
 }: SettingsViewProps) {
   const platform = usePlatform();
+  const { status: accountStatus } = useAccount();
   const transparency = Math.round((1 - opacity) * 100);
   const checking = updates.status.kind === 'checking' || updates.status.kind === 'installing';
 
   return (
     <div className="settings" role="group" aria-label="Настройки">
-      <button className="back" type="button" onClick={onBack}>
-        <BackIcon />
-        <span>{backLabel}</span>
-      </button>
-      <h2 className="art__title">Настройки</h2>
+      {/* As in the mockup, the account first; the sync switch comes with the sync. */}
+      <Block title="Аккаунт">
+        {accountStatus.kind === 'signed-in' ? (
+          <div className="set__row">
+            <Avatar account={accountStatus.account} size={24} />
+            <span className="set__value">{accountStatus.account.name}</span>
+            <span className="set__label">· Discord</span>
+            <span className="sp" />
+            <button className="settings__button" type="button" onClick={onProfile}>
+              Профиль
+            </button>
+          </div>
+        ) : (
+          <Row label="Вход не выполнен">
+            <button className="settings__button" type="button" onClick={onProfile}>
+              Войти
+            </button>
+          </Row>
+        )}
+      </Block>
+
 
       <Block title="Сервер и организация">
         <Row label="Сервер" value={pack.server.name}>

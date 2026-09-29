@@ -42,11 +42,24 @@ describe('the profile', () => {
   it('knows the player signed in before, and signs out', async () => {
     const { accounts, user } = await renderApp({ account: SKYZE });
     await user.click(await within(rail()).findByRole('button', { name: 'Профиль: Skyze' }));
-    expect(profile()).toHaveTextContent('Skyze');
+    // A page of its own, as in the mockup: its name in the header, no search; the player's card.
+    expect(document.querySelector('.brand')).toHaveTextContent('Профиль');
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(profile()).toHaveTextContent('SkyzeТверской · Без организации');
     await user.click(within(profile()).getByRole('button', { name: 'Выйти' }));
     expect(accounts.calls).toEqual(['signOut']);
     expect(await within(profile()).findByRole('button', { name: 'Войти через Discord' })).toBeInTheDocument();
     expect(within(rail()).getByRole('button', { name: 'Профиль' })).toBeInTheDocument();
+  });
+
+  it('is at the top of the settings, as in the mockup', async () => {
+    const { user } = await renderApp({ account: SKYZE });
+    await user.click(within(rail()).getByRole('button', { name: 'Настройки' }));
+    const block = within(screen.getByRole('group', { name: 'Настройки' })).getAllByRole('region')[0];
+    expect(block).toHaveAccessibleName('Аккаунт');
+    expect(block).toHaveTextContent('Skyze· Discord');
+    await user.click(within(block).getByRole('button', { name: 'Профиль' }));
+    expect(profile()).toHaveTextContent('Skyze');
   });
 
   it('opens with Ctrl+6 and closes with Esc', async () => {

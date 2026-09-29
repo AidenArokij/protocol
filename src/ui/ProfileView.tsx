@@ -1,12 +1,23 @@
 import { useState } from 'react';
+import type { Organization, ServerPack } from '../core';
 import { useAccount } from '../account/AccountContext';
 import type { Account } from '../account/types';
-import { BackIcon, DiscordIcon, ProfileIcon } from './icons';
+import { DiscordIcon, ServerIcon } from './icons';
 
-/** The player's Discord avatar, or the profile icon when they have none or it can't be loaded (offline). */
+/**
+ * The player's Discord avatar; without one, or when it can't be loaded (offline), their initials on a
+ * gradient, as in the mockup.
+ */
 export function Avatar({ account, size, label }: { account: Account; size: number; label?: string }) {
   const [broken, setBroken] = useState(false);
-  if (!account.avatar || broken) return <ProfileIcon size={size} />;
+  if (!account.avatar || broken) {
+    const initials = account.name.replace(/[^\p{L}\p{N}]/gu, '').slice(0, 2).toUpperCase() || '?';
+    return (
+      <span className="avatar avatar--initials" role={label ? 'img' : undefined} aria-label={label} style={{ width: size, height: size, fontSize: size * 0.36 }}>
+        {initials}
+      </span>
+    );
+  }
   return (
     <img
       className="avatar"
@@ -26,66 +37,72 @@ const FAILED = {
   cancelled: '',
 };
 
-/** The profile (2.1): signing in with Discord, optional for now; who is signed in, and signing out. */
-export function ProfileView({ backLabel, onBack }: { backLabel: string; onBack: () => void }) {
+/**
+ * The profile (direction C). Signed out: the sign-in screen of the mockup — optional for now, so it lives
+ * here rather than before the helper. Signed in: the player's card; the sync, the stats and the leader's
+ * tiles come with their own tickets.
+ */
+export function ProfileView({ server, organization }: { server: ServerPack['server']; organization?: Organization }) {
   const { status, signIn, cancelSignIn, signOut } = useAccount();
+  const faction = organization && organization.id !== 'none' ? organization.name : 'Без организации';
+
+  if (status.kind === 'signed-in') {
+    const { account } = status;
+    return (
+      <div className="profile" role="group" aria-label="Профиль">
+        <div className="pcard">
+          <Avatar account={account} size={52} label={`Аватар ${account.name}`} />
+          <div className="pcard__who">
+            <div className="pcard__name">{account.name}</div>
+            <div className="pcard__meta">
+              <ServerIcon id={server.id} size={14} />
+              {server.name} · {faction}
+            </div>
+          </div>
+          <span className="sp" />
+          <span className="pcard__via" title="Вход через Discord">
+            <DiscordIcon size={18} />
+          </span>
+        </div>
+        <button className="link-btn profile__out" type="button" onClick={signOut}>
+          Выйти
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <div className="settings" role="group" aria-label="Профиль">
-      <button className="back" type="button" onClick={onBack}>
-        <BackIcon />
-        <span>{backLabel}</span>
-      </button>
-      <h2 className="art__title">Профиль</h2>
-
-      {status.kind === 'signed-in' ? (
-        <section className="set profile" aria-label="Аккаунт">
-          <div className="profile__who">
-            <Avatar account={status.account} size={56} label={`Аватар ${status.account.name}`} />
-            <div className="profile__names">
-              <span className="profile__name">{status.account.name}</span>
-              <span className="profile__via">
-                <DiscordIcon size={14} /> Вход через Discord
-              </span>
-            </div>
-            <span className="sp" />
-            <button className="settings__button" type="button" onClick={signOut}>
-              Выйти
+    <div className="profile" role="group" aria-label="Профиль">
+      <div className="login">
+        <div className="login__logo" aria-hidden="true">
+          РО
+        </div>
+        <h2 className="login__title">РО Хелпер</h2>
+        <p className="login__lead">Войдите — скоро настройки, закреплённое и избранное будут с вами на любом компьютере.</p>
+        {status.kind === 'signing-in' ? (
+          <div className="login__wait">
+            <span>Подтвердите вход в браузере — он открылся в Discord.</span>
+            <button className="settings__button" type="button" onClick={cancelSignIn}>
+              Отмена
             </button>
           </div>
-          <p className="set__hint">
-            Скоро здесь будут игровой ник и должность, а настройки, избранное и закреплённое станут одинаковыми на всех ваших компьютерах.
-          </p>
-        </section>
-      ) : (
-        <section className="set profile" aria-label="Вход">
-          <p className="profile__lead">
-            Войдите через Discord — скоро через аккаунт придут памятки от лидера фракции, а настройки, избранное и закреплённое будут
-            одинаковыми на всех ваших компьютерах. Пока вход по желанию: без него всё работает как раньше.
-          </p>
-          {status.kind === 'signing-in' ? (
-            <div className="profile__wait">
-              <span>Подтвердите вход в браузере — он открылся в Discord.</span>
-              <span className="sp" />
-              <button className="settings__button" type="button" onClick={cancelSignIn}>
-                Отмена
-              </button>
-            </div>
-          ) : (
-            <>
-              {status.kind === 'signed-out' && status.error && (
-                <p className="profile__error" role="alert">
-                  {FAILED[status.error]}
-                </p>
-              )}
-              <button className="profile__discord" type="button" disabled={status.kind === 'loading'} onClick={signIn}>
-                <DiscordIcon size={20} />
-                Войти через Discord
-              </button>
-            </>
-          )}
-        </section>
-      )}
+        ) : (
+          <>
+            {status.kind === 'signed-out' && status.error && (
+              <p className="login__error" role="alert">
+                {FAILED[status.error]}
+              </p>
+            )}
+            <button className="oauth oauth--discord" type="button" disabled={status.kind === 'loading'} onClick={signIn}>
+              <DiscordIcon size={20} />
+              Войти через Discord
+            </button>
+          </>
+        )}
+        <small className="login__note">
+          Вход по желанию: без него всё работает как раньше. Мы получим ник, аватар и почту из Discord. После входа интернет не нужен.
+        </small>
+      </div>
     </div>
   );
 }
