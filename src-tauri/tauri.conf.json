@@ -15,8 +15,8 @@
       {
         "label": "main",
         "title": "РО Хелпер",
-        "width": 640,
-        "height": 900,
+        "width": 900,
+        "height": 620,
         "minWidth": 492,
         "minHeight": 420,
         "resizable": true,

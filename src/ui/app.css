@@ -70,15 +70,15 @@ input {
 
 .stage--preview .shell {
   position: absolute;
-  top: 24px;
+  top: max(24px, calc(50vh - 310px));
   right: 24px;
   width: auto;
-  height: calc(100vh - 48px);
+  height: min(620px, calc(100vh - 48px));
 }
 
 .stage--preview .shell > .overlay {
   flex: none;
-  width: min(600px, calc(100vw - 48px));
+  width: min(880px, calc(100vw - 48px));
 }
 
 /* Glass panel */
@@ -1070,6 +1070,18 @@ input {
 /* Favourites and recent */
 .home__title {
   padding: 8px 10px 6px;
+}
+
+.home__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home__clear {
+  margin-right: 4px;
+  padding: 3px 8px;
+  font-size: 12.5px;
 }
 
 /* Document picked in the menu: a tag in the search field */

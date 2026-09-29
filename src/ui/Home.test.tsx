@@ -54,4 +54,25 @@ describe('home', () => {
     expect(screen.getByRole('list', { name: 'Недавние' }).querySelector('.row--tile')).not.toBeInTheDocument();
     expect(tile.querySelector('[aria-current="true"]')).toBeInTheDocument();
   });
+
+  it('clears the recent articles, keeping the favourites', async () => {
+    const settings = { [SEEN]: TVERSKOI_PACK.version, [BANNER_KEY]: TVERSKOI_PACK.changes[0].version };
+    const { platform, user } = await renderApp({ settings });
+    for (const query of ['ук 65', 'ук 66', 'коап 8.6']) {
+      await user.clear(search());
+      await user.type(search(), query);
+      await user.keyboard('{ArrowRight}');
+      if (query === 'ук 65') await user.click(screen.getByRole('button', { name: 'В избранное' }));
+    }
+    await user.clear(search());
+    await user.keyboard('{Escape}');
+    expect(within(screen.getByRole('list', { name: 'Недавние' })).getAllByRole('listitem')).toHaveLength(2);
+
+    await user.click(screen.getByRole('button', { name: 'Очистить недавние' }));
+    expect(screen.queryByRole('list', { name: 'Недавние' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Очистить недавние' })).not.toBeInTheDocument();
+    expect(within(screen.getByRole('list', { name: 'Избранное' })).getAllByRole('listitem')).toHaveLength(1);
+    expect(platform.settings.get('recent:tverskoi')).toEqual([]);
+    expect(search()).toHaveFocus();
+  });
 });

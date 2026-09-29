@@ -974,7 +974,21 @@ export function Overlay({
             )}
             {recent.length > 0 && (
               <>
-                <div className="sec-t home__title">Недавние</div>
+                <div className="home__head">
+                  <div className="sec-t home__title">Недавние</div>
+                  <button
+                    type="button"
+                    className="link-btn home__clear"
+                    aria-label="Очистить недавние"
+                    onClick={() => {
+                      updateRecent(() => []);
+                      setSelected(0);
+                      searchRef.current?.focus();
+                    }}
+                  >
+                    Очистить
+                  </button>
+                </div>
                 <div className="list" role="list" aria-label="Недавние">
                   {recent.map((hit, i) => rowFor(hit, favorites.length + i))}
                 </div>
