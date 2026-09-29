@@ -1,3 +1,4 @@
+import type { RemoteSetting } from './sync';
 import { SignInError, type Account, type Accounts } from './types';
 
 export interface FakeAccounts extends Accounts {
@@ -5,6 +6,8 @@ export interface FakeAccounts extends Accounts {
   finishSignIn(result: Account | SignInError['reason']): void;
   /** «signIn:discord», «linkTelegram», «signOut»… in order. */
   readonly calls: string[];
+  /** The account's settings, by key. */
+  readonly table: Map<string, RemoteSetting>;
 }
 
 /** Accounts in memory, for tests: a sign-in waits until `finishSignIn`. */
@@ -12,12 +15,20 @@ export function createFakeAccounts(signedIn: Account | null = null): FakeAccount
   let account = signedIn;
   let waiting: { resolve: (account: Account) => void; reject: (error: SignInError) => void } | null = null;
   const calls: string[] = [];
+  const table = new Map<string, RemoteSetting>();
   const wait = () =>
     new Promise<Account>((resolve, reject) => {
       waiting = { resolve, reject };
     });
   return {
     calls,
+    table,
+    settings: {
+      pull: async (since) => [...table.values()].filter((row) => !since || row.updated_at > since),
+      push: async (rows) => {
+        for (const row of rows) if (!table.has(row.key) || table.get(row.key)!.updated_at <= row.updated_at) table.set(row.key, row);
+      },
+    },
     current: async () => account,
     signIn(provider) {
       calls.push(`signIn:${provider}`);

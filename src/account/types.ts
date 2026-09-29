@@ -1,3 +1,5 @@
+import type { SyncBackend } from './sync';
+
 /** How a player signs in. */
 export type Provider = 'discord' | 'telegram';
 
@@ -45,4 +47,6 @@ export interface Accounts {
   /** Gives up the sign-in or the joining under way: it then throws «cancelled». */
   cancelSignIn(): void;
   signOut(): Promise<void>;
+  /** The signed-in player's settings in the account, synced with this computer's. */
+  readonly settings: SyncBackend;
 }

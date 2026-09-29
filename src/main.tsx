@@ -9,6 +9,8 @@ import './ui/app.css';
 import { App } from './ui/App';
 import { AccountProvider } from './account/AccountContext';
 import { createSupabaseAccounts } from './account/supabase';
+import { SyncProvider } from './account/SyncContext';
+import { SYNC_RULES } from './ui/syncedSettings';
 import { createBrowserPlatform } from './platform/browser';
 import { PlatformProvider } from './platform/PlatformContext';
 import { createPinBridge, createTauriPlatform, isPinWindow, isTauri } from './platform/tauri';
@@ -32,7 +34,9 @@ async function start() {
     <StrictMode>
       <PlatformProvider platform={platform}>
         <AccountProvider accounts={accounts}>
-          <App />
+          <SyncProvider accounts={accounts} rules={SYNC_RULES}>
+            <App />
+          </SyncProvider>
         </AccountProvider>
       </PlatformProvider>
     </StrictMode>,

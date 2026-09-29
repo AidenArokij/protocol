@@ -2984,6 +2984,8 @@ input {
   /* Two columns across the whole width, as in the mockup; one in a narrow window. */
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  /* Room before «Недавние» under them. */
+  margin-bottom: 14px;
 }
 
 @media (max-width: 560px) {
@@ -3348,4 +3350,29 @@ input {
 
 .rail__item[aria-current='page'] .avatar {
   outline-color: var(--accent);
+}
+
+/* Where the settings are with the account, under the player's card. */
+.syncline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.syncline i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: oklch(0.8 0.15 150);
+}
+
+.syncline--syncing i {
+  background: var(--accent);
+}
+
+.syncline--offline i {
+  background: var(--warn-text);
 }

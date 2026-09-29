@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { Organization, ServerPack } from '../core';
 import { useAccount } from '../account/AccountContext';
+import { useSyncStatus } from '../account/SyncContext';
+import type { SyncStatus } from '../account/sync';
 import type { Account, Provider } from '../account/types';
 
 const PROVIDER_NAME: Record<Provider, string> = { discord: 'Discord', telegram: 'Telegram' };
@@ -48,6 +50,32 @@ export function AccountCard({ current, onSelect }: { current: boolean; onSelect:
   );
 }
 
+/** «2 мин назад» */
+function ago(iso: string, now = Date.now()): string {
+  const minutes = Math.floor((now - Date.parse(iso)) / 60000);
+  if (minutes < 1) return 'только что';
+  if (minutes < 60) return `${minutes} мин назад`;
+  const hours = Math.floor(minutes / 60);
+  return hours < 24 ? `${hours} ч назад` : new Date(iso).toLocaleDateString('ru-RU');
+}
+
+/** As in the mockup: a dot and where the settings are with the account. */
+function SyncLine({ status }: { status: SyncStatus }) {
+  if (status.kind === 'off') return null;
+  const text =
+    status.kind === 'syncing'
+      ? 'Синхронизирую…'
+      : status.kind === 'synced'
+        ? `Настройки, избранное и наборы закреплённого синхронизированы · ${ago(status.at)}`
+        : 'Нет связи — изменения отправятся, когда появится интернет';
+  return (
+    <div className={`syncline syncline--${status.kind}`} role="status" aria-label="Синхронизация">
+      <i />
+      {text}
+    </div>
+  );
+}
+
 const FAILED = {
   failed: 'Не удалось войти. Проверьте интернет и попробуйте ещё раз.',
   unsupported: 'Вход работает только в самом хелпере, не в браузере.',
@@ -66,6 +94,7 @@ const WAITING: Record<Provider, string> = {
  */
 export function AccountSection({ server, organization }: { server: ServerPack['server']; organization?: Organization }) {
   const { status, signIn, linkTelegram, cancelSignIn, signOut } = useAccount();
+  const sync = useSyncStatus();
   const faction = organization && organization.id !== 'none' ? organization.name : 'Без организации';
 
   if (status.kind === 'signed-in') {
@@ -119,7 +148,7 @@ export function AccountSection({ server, organization }: { server: ServerPack['s
           </p>
         )}
         <div className="set__row">
-          <span className="set__label">Скоро: настройки, избранное и закреплённое — на всех ваших компьютерах.</span>
+          <SyncLine status={sync} />
           <span className="sp" />
           <button className="settings__button" type="button" onClick={signOut}>
             Выйти
@@ -131,7 +160,7 @@ export function AccountSection({ server, organization }: { server: ServerPack['s
 
   return (
     <div className="login">
-      <p className="login__lead">Войдите — скоро настройки, закреплённое и избранное будут с вами на любом компьютере.</p>
+      <p className="login__lead">Войдите, чтобы настройки, избранное и наборы закреплённого были с вами на любом компьютере.</p>
       {status.kind === 'signing-in' ? (
         <div className="login__wait">
           <span>{WAITING[status.provider]}</span>

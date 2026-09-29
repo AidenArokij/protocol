@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AccountProvider } from '../account/AccountContext';
 import { createFakeAccounts } from '../account/fake';
+import { SyncProvider } from '../account/SyncContext';
+import { SYNC_RULES } from '../ui/syncedSettings';
 import type { Account } from '../account/types';
 import { createFakePlatform, type FakeOptions, type FakePlatform } from '../platform/fake';
 import { PlatformProvider } from '../platform/PlatformContext';
@@ -37,7 +39,9 @@ export async function renderApp(options: RenderOptions = {}) {
   render(
     <PlatformProvider platform={platform}>
       <AccountProvider accounts={accounts}>
-        <App />
+        <SyncProvider accounts={accounts} rules={SYNC_RULES}>
+          <App />
+        </SyncProvider>
       </AccountProvider>
     </PlatformProvider>,
   );

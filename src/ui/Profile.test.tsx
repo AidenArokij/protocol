@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderApp } from '../test/renderApp';
 
 const rail = () => screen.getByRole('navigation', { name: 'Разделы' });
@@ -31,6 +31,21 @@ describe('the account, in the settings', () => {
     // Who is signed in, on top of the settings' column and at the foot of the side column.
     expect(within(settingsNav()).getByRole('button', { name: /Skyze/ })).toHaveTextContent('SkyzeDiscord');
     expect(within(rail()).getByRole('button', { name: 'Профиль: Skyze' }).querySelector('img')).toHaveAttribute('src', SKYZE.avatar);
+  });
+
+  it('takes this computer’s settings into the account at the first sign-in, and keeps them in step', async () => {
+    const { accounts, user } = await renderApp({ settings: { 'favorites:tverskoi': ['uk-65#1'] } });
+    await user.click(within(rail()).getByRole('button', { name: 'Профиль' }));
+    await user.click(within(account()).getByRole('button', { name: 'Войти через Discord' }));
+    accounts.finishSignIn(SKYZE);
+
+    await vi.waitFor(() => expect(accounts.table.get('profile')?.value).toEqual({ server: 'tverskoi', organization: 'none' }));
+    expect(accounts.table.get('favorites:tverskoi')?.value).toEqual(['uk-65#1']);
+    expect(await within(account()).findByRole('status', { name: 'Синхронизация' })).toHaveTextContent('синхронизированы · только что');
+
+    // A change here goes to the account a moment later.
+    await user.click(within(settings()).getByRole('radio', { name: 'Минимализм' }));
+    await vi.waitFor(() => expect(accounts.table.get('appearance.theme')?.value).toBe('minimal'), { timeout: 4000 });
   });
 
   it('can give up the sign-in, and says when it failed', async () => {

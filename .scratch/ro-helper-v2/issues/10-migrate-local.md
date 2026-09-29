@@ -4,4 +4,6 @@
 
 **Blocked by:** 09
 
-**Status:** needs-triage
+**Status:** done — ждёт SQL в Supabase и проверки в 2.2.0
+
+Сделано: `join` в `src/account/sync.ts` — пустой аккаунт получает всё локальное; аккаунт с другого компьютера: избранное/недавние/наборы объединяются, остальное из аккаунта (`src/ui/syncedSettings.ts`).

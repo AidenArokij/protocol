@@ -124,6 +124,26 @@ export function createSupabaseAccounts(platform: PlatformAdapter, options: Supab
   };
 
   return {
+    settings: {
+      async pull(since) {
+        let query = client.from('user_settings').select('key,value,updated_at');
+        if (since) query = query.gt('updated_at', since);
+        const { data, error } = await query;
+        if (error) throw new Error(error.message);
+        return data;
+      },
+      async push(rows) {
+        const { data } = await client.auth.getSession();
+        const user = data.session?.user.id;
+        if (!user) throw new Error('signed out');
+        const { error } = await client.from('user_settings').upsert(
+          rows.map((row) => ({ user_id: user, ...row })),
+          { onConflict: 'user_id,key' },
+        );
+        if (error) throw new Error(error.message);
+      },
+    },
+
     current: async () => (await platform.readSetting<Account | null>(ACCOUNT_KEY)) ?? null,
 
     signIn: (provider) => (provider === 'telegram' ? signInWithTelegram() : signInWithDiscord()),
