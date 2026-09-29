@@ -3259,6 +3259,11 @@ input {
   color: var(--text-muted);
 }
 
+.pcard__field {
+  flex: none;
+  width: 104px;
+}
+
 .pcard__via {
   display: grid;
   opacity: 0.6;

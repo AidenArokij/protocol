@@ -3,15 +3,17 @@ import { PACKS } from '../data';
 import { ACCENT_KEY, THEME_KEY } from './appearance';
 import { DEFAULT_HOTKEY, OPACITY_KEY } from './overlaySettings';
 import { presetsKey, type PinPreset } from './pinPresets';
+import { PLAYER_KEY } from './player';
 import { PROFILE_KEY, type Profile } from './profile';
 import { favoritesKey, RECENT_LIMIT, recentKey } from './saved';
 
 /**
- * What follows the player between computers (Q14): the server and the faction, the look, the favourites, the
- * recent articles and the sets of pinned cards. Not the hotkey and the windows' places — this computer's own —
- * nor what is pinned right now (its places are on this screen), nor what this copy has seen.
+ * What follows the player between computers (Q14): the server and the faction, their game name and position,
+ * the look, the favourites, the recent articles and the sets of pinned cards. Not the hotkey and the windows'
+ * places — this computer's own — nor what is pinned right now (its places are on this screen), nor what this
+ * copy has seen.
  */
-const WHOLE = [PROFILE_KEY, THEME_KEY, ACCENT_KEY, OPACITY_KEY];
+const WHOLE = [PROFILE_KEY, PLAYER_KEY, THEME_KEY, ACCENT_KEY, OPACITY_KEY];
 const PER_SERVER = /^(favorites|recent|pin-presets):/;
 
 const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);

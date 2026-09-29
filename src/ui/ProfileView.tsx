@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePlatform } from '../platform/PlatformContext';
+import { GAME_NAME_MAX, POSITION_MAX, usePlayerCard } from './player';
 import type { Organization, ServerPack } from '../core';
 import { useAccount } from '../account/AccountContext';
 import { useSyncStatus } from '../account/SyncContext';
@@ -76,6 +78,36 @@ function SyncLine({ status }: { status: SyncStatus }) {
   );
 }
 
+/** A line of the card the player fills in: kept when they leave the field or press Enter. */
+function CardField({ label, value, placeholder, max, onSave }: { label: string; value: string; placeholder: string; max: number; onSave: (value: string) => void }) {
+  const [draft, setDraft] = useState(value);
+  useEffect(() => setDraft(value), [value]);
+  const save = () => {
+    if (draft.trim() !== value) onSave(draft);
+  };
+  return (
+    <label className="set__row">
+      <span className="set__label pcard__field">{label}</span>
+      <input
+        className="presets__input"
+        type="text"
+        aria-label={label}
+        placeholder={placeholder}
+        maxLength={max}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            save();
+          }
+        }}
+      />
+    </label>
+  );
+}
+
 const FAILED = {
   failed: 'Не удалось войти. Проверьте интернет и попробуйте ещё раз.',
   unsupported: 'Вход работает только в самом хелпере, не в браузере.',
@@ -95,6 +127,7 @@ const WAITING: Record<Provider, string> = {
 export function AccountSection({ server, organization }: { server: ServerPack['server']; organization?: Organization }) {
   const { status, signIn, linkTelegram, cancelSignIn, signOut } = useAccount();
   const sync = useSyncStatus();
+  const [card, saveCard] = usePlayerCard(usePlatform());
   const faction = organization && organization.id !== 'none' ? organization.name : 'Без организации';
 
   if (status.kind === 'signed-in') {
@@ -108,13 +141,17 @@ export function AccountSection({ server, organization }: { server: ServerPack['s
             <div className="pcard__meta">
               <ServerIcon id={server.id} size={14} />
               {server.name} · {faction}
+              {card.position && ` · ${card.position}`}
             </div>
+            {card.gameName && <div className="pcard__meta">В игре: {card.gameName}</div>}
           </div>
           <span className="sp" />
           <span className="pcard__via" title={`Вход через ${PROVIDER_NAME[account.via ?? 'discord']}`}>
             {account.via === 'telegram' ? <TelegramIcon size={18} /> : <DiscordIcon size={18} />}
           </span>
         </div>
+        <CardField label="Игровой ник" value={card.gameName ?? ''} placeholder="Например, Ivan_Petrov — по желанию" max={GAME_NAME_MAX} onSave={(gameName) => saveCard({ ...card, gameName })} />
+        <CardField label="Должность" value={card.position ?? ''} placeholder="Например, сержант ППС — по желанию" max={POSITION_MAX} onSave={(position) => saveCard({ ...card, position })} />
         {/* Telegram joins a Discord account, so either signs in to it. */}
         {account.via !== 'telegram' && (
           <div className="set__row">

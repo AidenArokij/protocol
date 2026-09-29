@@ -112,6 +112,27 @@ describe('the account, in the settings', () => {
     expect(within(account()).queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it('takes a game name and a position, if the player wants, onto their card — and into the account', async () => {
+    const { platform, accounts, user } = await renderApp({ account: SKYZE, profile: { organization: 'mvd' } });
+    await user.click(await within(rail()).findByRole('button', { name: 'Профиль: Skyze' }));
+    const gameName = within(account()).getByRole('textbox', { name: 'Игровой ник' });
+    const position = within(account()).getByRole('textbox', { name: 'Должность' });
+    expect(gameName).toHaveValue('');
+
+    await user.type(gameName, 'Ivan_Petrov{Enter}');
+    await user.type(position, 'Сержант');
+    await user.tab();
+    expect(account()).toHaveTextContent('SkyzeТверской · МВД · СержантВ игре: Ivan_Petrov');
+    expect(platform.settings.get('player')).toEqual({ gameName: 'Ivan_Petrov', position: 'Сержант' });
+    await vi.waitFor(() => expect(accounts.table.get('player')?.value).toEqual({ gameName: 'Ivan_Petrov', position: 'Сержант' }), { timeout: 4000 });
+
+    // Emptied, it is gone from the card.
+    await user.clear(position);
+    await user.tab();
+    expect(account()).not.toHaveTextContent('Сержант');
+    expect(platform.settings.get('player')).toEqual({ gameName: 'Ivan_Petrov' });
+  });
+
   it('lists the parts of the settings in a column: the account on top, then the rest', async () => {
     const { user } = await renderApp();
     await user.click(within(rail()).getByRole('button', { name: 'Настройки' }));
