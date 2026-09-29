@@ -70,7 +70,7 @@
 
 ## Конфиденциальность
 
-Без входа в аккаунт РО Хелпер не собирает данные: ни аналитики, ни телеметрии. Настройки, избранное и недавние хранятся только на вашем компьютере. В интернет программа обращается за обновлениями к GitHub — это можно выключить в настройках. Вход через Discord — по желанию: тогда ваши имя, аватар и почта из Discord хранятся в аккаунте на Supabase. Подробно — в [политике конфиденциальности](PRIVACY.md); она же открывается в программе: «Настройки» → «Политика конфиденциальности».
+Без входа в аккаунт РО Хелпер не собирает данные о вас: автору уходят только обезличенные счётчики за день (сколько открыто статей, поисков и расчётов на каждом сервере), и их можно выключить в настройках. Настройки, избранное и недавние хранятся только на вашем компьютере. В интернет программа обращается за обновлениями к GitHub — это можно выключить в настройках. Вход через Discord — по желанию: тогда ваши имя, аватар и почта из Discord хранятся в аккаунте на Supabase. Подробно — в [политике конфиденциальности](PRIVACY.md); она же открывается в программе: «Настройки» → «Политика конфиденциальности».
 
 ## Серверы
 
@@ -113,7 +113,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 - Committers and reviewers / Авторы и ревьюеры: [skyze](https://github.com/skyyyzeee)
 - Approvers / Утверждают релизы: [skyze](https://github.com/skyyyzeee)
 
-Privacy / Конфиденциальность: see the [privacy policy](PRIVACY.md). This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it, except for the automatic update check against GitHub Releases described in the policy, which can be turned off in the settings, and the optional sign-in with Discord through Supabase, which happens only when the user asks for it.
+Privacy / Конфиденциальность: see the [privacy policy](PRIVACY.md). This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it, except for the automatic update check against GitHub Releases described in the policy, which can be turned off in the settings, the anonymous daily usage counts described in the policy, which can be turned off in the settings, and the optional sign-in with Discord or Telegram through Supabase, which happens only when the user asks for it.
 
 ## Автор
 

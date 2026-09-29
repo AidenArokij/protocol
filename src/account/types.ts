@@ -49,4 +49,14 @@ export interface Accounts {
   signOut(): Promise<void>;
   /** The signed-in player's settings in the account, synced with this computer's. */
   readonly settings: SyncBackend;
+  /** Adds anonymous counts to the author's (signed in or not). Throws when offline. */
+  sendUsage(counts: UsageCount[]): Promise<void>;
+}
+
+/** A count for the author: a day, a server, what was done, how many times. Nothing of the player. */
+export interface UsageCount {
+  day: string;
+  server: string;
+  event: string;
+  count: number;
 }

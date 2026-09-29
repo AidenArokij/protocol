@@ -4,6 +4,7 @@ import type { PlatformAdapter } from '../platform/types';
 import { useAccount } from './AccountContext';
 import { createSync, type SyncRules, type SyncStatus } from './sync';
 import type { Accounts } from './types';
+import { sendUsage } from './usage';
 
 const SyncContext = createContext<SyncStatus>({ kind: 'off' });
 
@@ -30,6 +31,12 @@ export function SyncProvider({ accounts, rules, children }: { accounts: Accounts
     else if (signedOut) engine.stop();
   }, [engine, user, signedOut]);
   useEffect(() => base.onOverlayShown(() => void engine.sync()), [base, engine]);
+  // The author's anonymous counts: at start and when the helper is opened, at most once an hour.
+  useEffect(() => {
+    const send = () => void sendUsage(base, (counts) => accounts.sendUsage(counts)).catch(() => undefined);
+    send();
+    return base.onOverlayShown(send);
+  }, [base, accounts]);
 
   // What the app saves goes to the account too; everything else is the platform's own, looked up as it is called.
   const platform = useMemo<PlatformAdapter>(() => {

@@ -144,6 +144,11 @@ export function createSupabaseAccounts(platform: PlatformAdapter, options: Supab
       },
     },
 
+    async sendUsage(counts) {
+      const { error } = await client.rpc('count_usage', { counts });
+      if (error) throw new Error(error.message);
+    },
+
     current: async () => (await platform.readSetting<Account | null>(ACCOUNT_KEY)) ?? null,
 
     signIn: (provider) => (provider === 'telegram' ? signInWithTelegram() : signInWithDiscord()),

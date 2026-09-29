@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import type { Organization, ServerPack } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
+import { USAGE_SHARE_KEY } from '../account/usage';
 import { AccountCard, AccountSection } from './ProfileView';
 import { ACCENT_HUES, THEMES, organizationHue, type AppearanceControl } from './appearance';
 import { APP_VERSION, AUTHOR, LINKS } from './about';
@@ -342,6 +343,11 @@ export function SettingsView({
     scroller.addEventListener('scroll', onScroll, { passive: true });
     return () => scroller.removeEventListener('scroll', onScroll);
   }, []);
+  // The author's anonymous counts: on unless turned off.
+  const [share, setShare] = useState(true);
+  useEffect(() => {
+    void platform.readSetting<boolean>(USAGE_SHARE_KEY).then((saved) => setShare(saved !== false));
+  }, [platform]);
   const transparency = Math.round((1 - opacity) * 100);
   const checking = updates.status.kind === 'checking' || updates.status.kind === 'installing';
 
@@ -366,7 +372,7 @@ export function SettingsView({
       <div className="settings__body">
       <div className="settings__part" id={sectionId('account')}>
         <Block title="Аккаунт">
-          <AccountSection server={pack.server} organization={organization} />
+          <AccountSection pack={pack} organization={organization} />
         </Block>
       </div>
 
@@ -513,6 +519,21 @@ export function SettingsView({
             <DiscordIcon />
           </button>
         </div>
+        <label className="set__row settings__check">
+          <input
+            type="checkbox"
+            checked={share}
+            onChange={(e) => {
+              setShare(e.target.checked);
+              void platform.writeSetting(USAGE_SHARE_KEY, e.target.checked);
+            }}
+          />
+          <span>Отправлять автору обезличенную статистику</span>
+        </label>
+        <p className="set__hint">
+          Сколько за день открыли статей, сделали поисков и расчётов на каждом сервере — без аккаунта, компьютера и самих статей.
+          Помогает понять, чем пользуются.
+        </p>
         <p className="set__hint">Иконки — Material Symbols от Google (лицензия Apache 2.0), значки серверов — с вики Russia Online.</p>
         <div className="set__row set__links">
           <button className="link" type="button" onClick={onPrivacy}>

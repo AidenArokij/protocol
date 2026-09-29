@@ -42,6 +42,7 @@ import { ResultRow } from './ResultRow';
 import { RECENT_LIMIT, entryPart, favoritesKey, hitKey, recentKey, useHitLookup, useStoredKeys } from './saved';
 import { ServerChoice } from './ServerChoice';
 import { SettingsView, type SettingsSection } from './SettingsView';
+import { useStats } from './stats';
 import { Avatar } from './ProfileView';
 import { useAccount } from '../account/AccountContext';
 import type { Laws } from './laws';
@@ -262,6 +263,8 @@ export function Overlay({
 
   // Calculator: charges of both codes, the mode and the offender for the whole detention, the fine typed in.
   const [charges, setCharges] = useState<Entry[]>([]);
+  // What the player does, for their profile and — unless turned off — the author's anonymous counts.
+  const count = useStats(platform, pack.server.id);
   const [mode, setMode] = useState<Mode>('custody');
   const [offender, setOffender] = useState<Offender>('citizen');
   const [fineInput, setFineInput] = useState('');
@@ -274,7 +277,11 @@ export function Overlay({
   const inCalculator = (hit: SearchHit) => charges.some((c) => c.key === hitKey(hit));
   const toggleCharge = (hit: SearchHit) => {
     const key = hitKey(hit);
-    if (!inCalculator(hit)) remember(hit);
+    if (!inCalculator(hit)) {
+      remember(hit);
+      count({ kind: 'charge', article: key });
+      if (charges.length === 0) count({ kind: 'calculation' });
+    }
     setCharges((list) =>
       list.some((c) => c.key === key) ? list.filter((c) => c.key !== key) : [...list, { key, hit, stage: 'done', amount: '', days: '', unpaid: '' }],
     );
@@ -507,6 +514,7 @@ export function Overlay({
   const openHit = (hit: SearchHit) => {
     setOpen(hit);
     remember(hit);
+    count({ kind: 'open', article: hitKey(hit) });
     searchRef.current?.focus();
   };
   // Back from an article (or any screen over the list) the list is where it was left, not at its top;
@@ -772,6 +780,7 @@ export function Overlay({
           spellCheck={false}
           value={query}
           onChange={(e) => {
+            if (!query.trim() && e.target.value.trim()) count({ kind: 'search' });
             setQuery(e.target.value);
             setOpen(null);
             setDiff(null);

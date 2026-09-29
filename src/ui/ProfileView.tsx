@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePlatform } from '../platform/PlatformContext';
 import { GAME_NAME_MAX, POSITION_MAX, usePlayerCard } from './player';
 import type { Organization, ServerPack } from '../core';
+import { EMPTY_STATS, topArticles, totalStats, type Stats } from './stats';
 import { useAccount } from '../account/AccountContext';
 import { useSyncStatus } from '../account/SyncContext';
 import type { SyncStatus } from '../account/sync';
@@ -108,6 +109,80 @@ function CardField({ label, value, placeholder, max, onSave }: { label: string; 
   );
 }
 
+/** «статья», «статьи», «статей» for a count. */
+function wordFor(n: number, [one, few, many]: [string, string, string]): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+}
+
+/**
+ * The player's own counts, as in the mockup: three numbers, and the articles they use most as bars. Seen by
+ * them only; summed over their computers.
+ */
+function StatsBlock({ pack }: { pack: ServerPack }) {
+  const platform = usePlatform();
+  const [stats, setStats] = useState<Stats>(EMPTY_STATS);
+  useEffect(() => {
+    let active = true;
+    void totalStats(platform).then((total) => {
+      if (active) setStats(total);
+    });
+    return () => {
+      active = false;
+    };
+  }, [platform]);
+  // «УК ст. 65 ч. 1» for an article's key; articles of other servers are left out.
+  const names = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const document of pack.documents) for (const article of document.articles) byId.set(article.id, `${document.short} ст. ${article.number}`);
+    return byId;
+  }, [pack]);
+  const top = topArticles(stats, 50)
+    .map(([key, n]) => {
+      const [id, part] = key.split('#');
+      const name = names.get(id);
+      return name ? { key, n, name: part ? `${name} ч. ${part}` : name } : null;
+    })
+    .filter((row) => row !== null)
+    .slice(0, 4);
+  const most = top[0]?.n ?? 1;
+  const figures: [number, [string, string, string]][] = [
+    [stats.opened, ['открыта статья', 'открыто статьи', 'открыто статей']],
+    [stats.searches, ['поиск', 'поиска', 'поисков']],
+    [stats.calculations, ['расчёт наказания', 'расчёта наказания', 'расчётов наказания']],
+  ];
+  return (
+    <div className="pstats" role="group" aria-label="Статистика">
+      <div className="stats">
+        {figures.map(([n, forms]) => (
+          <div key={forms[2]} className="stat">
+            <b>{n.toLocaleString('ru-RU')}</b>
+            <span>{wordFor(n, forms)}</span>
+          </div>
+        ))}
+      </div>
+      {top.length > 0 && (
+        <>
+          <h4 className="set__sub">Чаще всего · {pack.server.name}</h4>
+          <div className="bars" role="list" aria-label="Чаще всего">
+            {top.map((row) => (
+              <div key={row.key} className="barrow" role="listitem" title={`${row.name}: ${row.n}`}>
+                <span className="bn">{row.name}</span>
+                <span className="bt">
+                  <i style={{ width: `${Math.max(6, (row.n / most) * 100)}%` }} />
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 const FAILED = {
   failed: 'Не удалось войти. Проверьте интернет и попробуйте ещё раз.',
   unsupported: 'Вход работает только в самом хелпере, не в браузере.',
@@ -124,7 +199,8 @@ const WAITING: Record<Provider, string> = {
  * server · faction, how they signed in), joining Telegram to a Discord account, and signing out. Signed
  * out: signing in with Discord or Telegram, optional for now.
  */
-export function AccountSection({ server, organization }: { server: ServerPack['server']; organization?: Organization }) {
+export function AccountSection({ pack, organization }: { pack: ServerPack; organization?: Organization }) {
+  const { server } = pack;
   const { status, signIn, linkTelegram, cancelSignIn, signOut } = useAccount();
   const sync = useSyncStatus();
   const [card, saveCard] = usePlayerCard(usePlatform());
@@ -150,6 +226,7 @@ export function AccountSection({ server, organization }: { server: ServerPack['s
             {account.via === 'telegram' ? <TelegramIcon size={18} /> : <DiscordIcon size={18} />}
           </span>
         </div>
+        <StatsBlock pack={pack} />
         <CardField label="Игровой ник" value={card.gameName ?? ''} placeholder="Например, Ivan_Petrov — по желанию" max={GAME_NAME_MAX} onSave={(gameName) => saveCard({ ...card, gameName })} />
         <CardField label="Должность" value={card.position ?? ''} placeholder="Например, сержант ППС — по желанию" max={POSITION_MAX} onSave={(position) => saveCard({ ...card, position })} />
         {/* Telegram joins a Discord account, so either signs in to it. */}

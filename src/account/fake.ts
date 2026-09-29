@@ -1,5 +1,5 @@
 import type { RemoteSetting } from './sync';
-import { SignInError, type Account, type Accounts } from './types';
+import { SignInError, type Account, type Accounts, type UsageCount } from './types';
 
 export interface FakeAccounts extends Accounts {
   /** The sign-in or the joining under way ends: signed in as this player, or failed for this reason. */
@@ -8,6 +8,8 @@ export interface FakeAccounts extends Accounts {
   readonly calls: string[];
   /** The account's settings, by key. */
   readonly table: Map<string, RemoteSetting>;
+  /** The anonymous counts sent, call by call. */
+  readonly usage: UsageCount[][];
 }
 
 /** Accounts in memory, for tests: a sign-in waits until `finishSignIn`. */
@@ -16,6 +18,7 @@ export function createFakeAccounts(signedIn: Account | null = null): FakeAccount
   let waiting: { resolve: (account: Account) => void; reject: (error: SignInError) => void } | null = null;
   const calls: string[] = [];
   const table = new Map<string, RemoteSetting>();
+  const usage: UsageCount[][] = [];
   const wait = () =>
     new Promise<Account>((resolve, reject) => {
       waiting = { resolve, reject };
@@ -23,6 +26,10 @@ export function createFakeAccounts(signedIn: Account | null = null): FakeAccount
   return {
     calls,
     table,
+    usage,
+    sendUsage: async (counts) => {
+      usage.push(counts);
+    },
     settings: {
       pull: async (since) => [...table.values()].filter((row) => !since || row.updated_at > since),
       push: async (rows) => {

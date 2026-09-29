@@ -4,4 +4,6 @@
 
 **Blocked by:** 12
 
-**Status:** needs-triage
+**Status:** done — ждёт SQL `usage_counts` в Supabase
+
+Сделано: личные счётчики по компьютерам (`stats:<device>`, `stats.devices` синхронизируются), профиль складывает их (`src/ui/stats.ts`, `StatsBlock`); обезличенные счётчики дня по серверу — `usage.pending`, отправка раз в час через `count_usage` (`src/account/usage.ts`, `supabase/migrations/20260929020000_usage_counts.sql`), переключатель в «О программе». PRIVACY.md и README обновлены.
