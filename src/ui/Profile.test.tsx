@@ -3,71 +3,85 @@ import { describe, expect, it } from 'vitest';
 import { renderApp } from '../test/renderApp';
 
 const rail = () => screen.getByRole('navigation', { name: 'Разделы' });
-const profile = () => screen.getByRole('group', { name: 'Профиль' });
+const settings = () => screen.getByRole('group', { name: 'Настройки' });
+/** The account: the first block of the settings. */
+const account = () => within(settings()).getByRole('region', { name: 'Аккаунт' });
+const settingsNav = () => within(settings()).getByRole('navigation', { name: 'Разделы настроек' });
 const SKYZE = { id: 'user-1', name: 'Skyze', avatar: 'https://cdn.discordapp.com/avatars/1/a.png' };
 
-describe('the profile', () => {
+describe('the account, in the settings', () => {
   it('signs in with Discord, optionally: the browser opens, and the player comes back signed in', async () => {
     const { accounts, user } = await renderApp();
     await user.click(within(rail()).getByRole('button', { name: 'Профиль' }));
-    expect(profile()).toHaveTextContent('без него всё работает как раньше');
+    // A page of its own (direction C): its name in the header, no search.
+    expect(document.querySelector('.brand')).toHaveTextContent('Настройки');
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    expect(within(settingsNav()).getByRole('button', { name: /Аккаунт/ })).toHaveAttribute('aria-current', 'true');
+    expect(account()).toHaveTextContent('без него всё работает как раньше');
 
-    await user.click(within(profile()).getByRole('button', { name: 'Войти через Discord' }));
+    await user.click(within(account()).getByRole('button', { name: 'Войти через Discord' }));
     expect(accounts.calls).toEqual(['signIn']);
-    expect(profile()).toHaveTextContent('Подтвердите вход в браузере');
-    expect(within(profile()).queryByRole('button', { name: 'Войти через Discord' })).not.toBeInTheDocument();
+    expect(account()).toHaveTextContent('Подтвердите вход в браузере');
+    expect(within(account()).queryByRole('button', { name: 'Войти через Discord' })).not.toBeInTheDocument();
 
     accounts.finishSignIn(SKYZE);
-    expect(await within(profile()).findByText('Skyze')).toBeInTheDocument();
-    expect(within(profile()).getByRole('img', { name: 'Аватар Skyze' })).toHaveAttribute('src', SKYZE.avatar);
-    // The side column shows who is signed in.
+    expect(await within(account()).findByText('Skyze')).toBeInTheDocument();
+    expect(within(account()).getByRole('img', { name: 'Аватар Skyze' })).toHaveAttribute('src', SKYZE.avatar);
+    expect(account()).toHaveTextContent('SkyzeТверской · Без организации');
+    // Who is signed in, on top of the settings' column and at the foot of the side column.
+    expect(within(settingsNav()).getByRole('button', { name: /Skyze/ })).toHaveTextContent('SkyzeDiscord');
     expect(within(rail()).getByRole('button', { name: 'Профиль: Skyze' }).querySelector('img')).toHaveAttribute('src', SKYZE.avatar);
   });
 
   it('can give up the sign-in, and says when it failed', async () => {
     const { accounts, user } = await renderApp();
     await user.click(within(rail()).getByRole('button', { name: 'Профиль' }));
-    await user.click(within(profile()).getByRole('button', { name: 'Войти через Discord' }));
-    await user.click(within(profile()).getByRole('button', { name: 'Отмена' }));
+    await user.click(within(account()).getByRole('button', { name: 'Войти через Discord' }));
+    await user.click(within(account()).getByRole('button', { name: 'Отмена' }));
     expect(accounts.calls).toEqual(['signIn', 'cancelSignIn']);
-    expect(await within(profile()).findByRole('button', { name: 'Войти через Discord' })).toBeInTheDocument();
-    expect(profile()).not.toHaveTextContent('Не удалось войти');
+    expect(await within(account()).findByRole('button', { name: 'Войти через Discord' })).toBeInTheDocument();
+    expect(account()).not.toHaveTextContent('Не удалось войти');
 
-    await user.click(within(profile()).getByRole('button', { name: 'Войти через Discord' }));
+    await user.click(within(account()).getByRole('button', { name: 'Войти через Discord' }));
     accounts.finishSignIn('failed');
-    expect(await within(profile()).findByText(/Не удалось войти/)).toBeInTheDocument();
-    expect(within(profile()).getByRole('button', { name: 'Войти через Discord' })).toBeInTheDocument();
+    expect(await within(account()).findByText(/Не удалось войти/)).toBeInTheDocument();
+    expect(within(account()).getByRole('button', { name: 'Войти через Discord' })).toBeInTheDocument();
   });
 
   it('knows the player signed in before, and signs out', async () => {
     const { accounts, user } = await renderApp({ account: SKYZE });
     await user.click(await within(rail()).findByRole('button', { name: 'Профиль: Skyze' }));
-    // A page of its own, as in the mockup: its name in the header, no search; the player's card.
-    expect(document.querySelector('.brand')).toHaveTextContent('Профиль');
-    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
-    expect(profile()).toHaveTextContent('SkyzeТверской · Без организации');
-    await user.click(within(profile()).getByRole('button', { name: 'Выйти' }));
+    expect(account()).toHaveTextContent('Skyze');
+    await user.click(within(account()).getByRole('button', { name: 'Выйти' }));
     expect(accounts.calls).toEqual(['signOut']);
-    expect(await within(profile()).findByRole('button', { name: 'Войти через Discord' })).toBeInTheDocument();
+    expect(await within(account()).findByRole('button', { name: 'Войти через Discord' })).toBeInTheDocument();
+    expect(within(settingsNav()).getByRole('button', { name: /Аккаунт/ })).toHaveTextContent('Вход не выполнен');
     expect(within(rail()).getByRole('button', { name: 'Профиль' })).toBeInTheDocument();
   });
 
-  it('is at the top of the settings, as in the mockup', async () => {
-    const { user } = await renderApp({ account: SKYZE });
+  it('lists the parts of the settings in a column: the account on top, then the rest', async () => {
+    const { user } = await renderApp();
     await user.click(within(rail()).getByRole('button', { name: 'Настройки' }));
-    const block = within(screen.getByRole('group', { name: 'Настройки' })).getAllByRole('region')[0];
-    expect(block).toHaveAccessibleName('Аккаунт');
-    expect(block).toHaveTextContent('Skyze· Discord');
-    await user.click(within(block).getByRole('button', { name: 'Профиль' }));
-    expect(profile()).toHaveTextContent('Skyze');
+    expect(within(settingsNav()).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      'АккаунтВход не выполнен',
+      'Основное',
+      'Внешний вид',
+      'Закреплённые',
+      'Законы и обновления',
+      'Клавиши',
+      'О программе',
+    ]);
+    await user.click(within(settingsNav()).getByRole('button', { name: 'Клавиши' }));
+    expect(within(settingsNav()).getByRole('button', { name: 'Клавиши' })).toHaveAttribute('aria-current', 'true');
+    expect(within(settingsNav()).getByRole('button', { name: /Аккаунт/ })).not.toHaveAttribute('aria-current');
   });
 
   it('opens with Ctrl+6 and closes with Esc', async () => {
     const { user } = await renderApp();
     await user.keyboard('{Control>}6{/Control}');
-    expect(profile()).toBeInTheDocument();
-    expect(within(rail()).getByRole('button', { name: 'Профиль' })).toHaveAttribute('aria-current', 'page');
+    expect(account()).toBeInTheDocument();
     await user.keyboard('{Escape}');
-    expect(screen.queryByRole('group', { name: 'Профиль' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Настройки' })).not.toBeInTheDocument();
+    expect(screen.getByRole('searchbox', { name: 'Поиск по законам' })).toHaveFocus();
   });
 });

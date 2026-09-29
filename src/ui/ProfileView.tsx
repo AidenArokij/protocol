@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Organization, ServerPack } from '../core';
 import { useAccount } from '../account/AccountContext';
 import type { Account } from '../account/types';
-import { DiscordIcon, ServerIcon } from './icons';
+import { DiscordIcon, ProfileIcon, ServerIcon } from './icons';
 
 /**
  * The player's Discord avatar; without one, or when it can't be loaded (offline), their initials on a
@@ -31,6 +31,21 @@ export function Avatar({ account, size, label }: { account: Account; size: numbe
   );
 }
 
+/** The top of the settings' column: who is signed in, or that nobody is. Leads to the account block. */
+export function AccountCard({ current, onSelect }: { current: boolean; onSelect: () => void }) {
+  const { status } = useAccount();
+  const account = status.kind === 'signed-in' ? status.account : null;
+  return (
+    <button className="setnav__account" type="button" aria-current={current ? 'true' : undefined} onClick={onSelect}>
+      {account ? <Avatar account={account} size={36} /> : <span className="setnav__nobody"><ProfileIcon size={22} /></span>}
+      <span className="setnav__who">
+        <span className="setnav__name">{account ? account.name : 'Аккаунт'}</span>
+        <span className="setnav__via">{account ? 'Discord' : 'Вход не выполнен'}</span>
+      </span>
+    </button>
+  );
+}
+
 const FAILED = {
   failed: 'Не удалось войти. Проверьте интернет и попробуйте ещё раз.',
   unsupported: 'Вход работает только в самом хелпере, не в браузере.',
@@ -38,18 +53,17 @@ const FAILED = {
 };
 
 /**
- * The profile (direction C). Signed out: the sign-in screen of the mockup — optional for now, so it lives
- * here rather than before the helper. Signed in: the player's card; the sync, the stats and the leader's
- * tiles come with their own tickets.
+ * The account, first in the settings. Signed in: the player's card of the mockup (avatar, name,
+ * server · faction, Discord) and signing out. Signed out: signing in with Discord, optional for now.
  */
-export function ProfileView({ server, organization }: { server: ServerPack['server']; organization?: Organization }) {
+export function AccountSection({ server, organization }: { server: ServerPack['server']; organization?: Organization }) {
   const { status, signIn, cancelSignIn, signOut } = useAccount();
   const faction = organization && organization.id !== 'none' ? organization.name : 'Без организации';
 
   if (status.kind === 'signed-in') {
     const { account } = status;
     return (
-      <div className="profile" role="group" aria-label="Профиль">
+      <>
         <div className="pcard">
           <Avatar account={account} size={52} label={`Аватар ${account.name}`} />
           <div className="pcard__who">
@@ -64,45 +78,43 @@ export function ProfileView({ server, organization }: { server: ServerPack['serv
             <DiscordIcon size={18} />
           </span>
         </div>
-        <button className="link-btn profile__out" type="button" onClick={signOut}>
-          Выйти
-        </button>
-      </div>
+        <div className="set__row">
+          <span className="set__label">Скоро: настройки, избранное и закреплённое — на всех ваших компьютерах.</span>
+          <span className="sp" />
+          <button className="settings__button" type="button" onClick={signOut}>
+            Выйти
+          </button>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="profile" role="group" aria-label="Профиль">
-      <div className="login">
-        <div className="login__logo" aria-hidden="true">
-          РО
+    <div className="login">
+      <p className="login__lead">Войдите — скоро настройки, закреплённое и избранное будут с вами на любом компьютере.</p>
+      {status.kind === 'signing-in' ? (
+        <div className="login__wait">
+          <span>Подтвердите вход в браузере — он открылся в Discord.</span>
+          <button className="settings__button" type="button" onClick={cancelSignIn}>
+            Отмена
+          </button>
         </div>
-        <h2 className="login__title">РО Хелпер</h2>
-        <p className="login__lead">Войдите — скоро настройки, закреплённое и избранное будут с вами на любом компьютере.</p>
-        {status.kind === 'signing-in' ? (
-          <div className="login__wait">
-            <span>Подтвердите вход в браузере — он открылся в Discord.</span>
-            <button className="settings__button" type="button" onClick={cancelSignIn}>
-              Отмена
-            </button>
-          </div>
-        ) : (
-          <>
-            {status.kind === 'signed-out' && status.error && (
-              <p className="login__error" role="alert">
-                {FAILED[status.error]}
-              </p>
-            )}
-            <button className="oauth oauth--discord" type="button" disabled={status.kind === 'loading'} onClick={signIn}>
-              <DiscordIcon size={20} />
-              Войти через Discord
-            </button>
-          </>
-        )}
-        <small className="login__note">
-          Вход по желанию: без него всё работает как раньше. Мы получим ник, аватар и почту из Discord. После входа интернет не нужен.
-        </small>
-      </div>
+      ) : (
+        <>
+          {status.kind === 'signed-out' && status.error && (
+            <p className="login__error" role="alert">
+              {FAILED[status.error]}
+            </p>
+          )}
+          <button className="oauth oauth--discord" type="button" disabled={status.kind === 'loading'} onClick={signIn}>
+            <DiscordIcon size={20} />
+            Войти через Discord
+          </button>
+        </>
+      )}
+      <small className="login__note">
+        Вход по желанию: без него всё работает как раньше. Мы получим ник, аватар и почту из Discord. После входа интернет не нужен.
+      </small>
     </div>
   );
 }

@@ -43,6 +43,9 @@ export const CalculatorIcon = icon('calculate', 20);
 export const MemoIcon = icon('sticky_note_2', 20);
 export const ProfileIcon = icon('account_circle', 20);
 export const PaletteIcon = icon('palette', 18);
+export const TuneIcon = icon('tune', 18);
+export const BookIcon = icon('menu_book', 18);
+export const InfoIcon = icon('info', 18);
 
 /** Star for favourites: outlined, and filled when its button is on (`.fav--on`). */
 export const FavoriteIcon = ({ size = 20 }: Size) => (

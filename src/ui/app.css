@@ -203,12 +203,120 @@ input {
   transform: scale(0.97);
 }
 
-/* Settings: a screen of its own, in blocks */
+/* Settings: a page of its own — the account and the parts in a column on the left, their blocks on the right. */
 .settings {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+  padding: 4px 6px 18px;
+}
+
+.settings__body,
+.settings__part {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 4px 16px 18px;
+  min-width: 0;
+}
+
+.settings__part {
+  scroll-margin-top: 4px;
+}
+
+.setnav {
+  position: sticky;
+  top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setnav__account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.setnav__account:hover,
+.setnav__account[aria-current='true'] {
+  background: var(--surface-hover);
+}
+
+.setnav__nobody {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-active);
+  color: var(--text-muted);
+}
+
+.setnav__who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.setnav__name {
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.setnav__via {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.setnav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  text-align: left;
+  color: var(--text-muted);
+}
+
+.setnav__item svg {
+  flex: none;
+}
+
+.setnav__item:hover {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.setnav__item[aria-current='true'] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.setnav__item[aria-current='true'] svg {
+  color: var(--accent-text);
+}
+
+/* A narrow window has no room for the column: the blocks alone. */
+@media (max-width: 680px) {
+  .settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .setnav {
+    display: none;
+  }
 }
 
 .set {
@@ -1428,7 +1536,8 @@ input {
   border-radius: 16px;
   background: var(--toast-bg);
   border: 1px solid var(--glass-border);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  /* No shadow: the window over the game draws only the notice's own rectangle, so a shadow would be cut
+     off at its edge into a dim frame around it. */
   pointer-events: auto;
   cursor: pointer;
   animation: toast-in 0.28s cubic-bezier(0.22, 1.2, 0.42, 1);
@@ -2818,12 +2927,17 @@ input {
 }
 
 .rail__item {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   border-radius: 12px;
   display: grid;
   place-items: center;
   color: var(--text-muted);
+}
+
+.rail__item svg {
+  width: 24px;
+  height: 24px;
 }
 
 .rail__item:hover:not(:disabled) {
@@ -3080,15 +3194,7 @@ input {
   border-color: var(--accent);
 }
 
-/* Profile (direction C): the sign-in screen of the mockup, or the player's card. */
-.profile {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 100%;
-  padding: 8px 6px 16px;
-}
-
+/* The account: the player's card of the mockup, or signing in with Discord. */
 .avatar {
   display: block;
   flex: none;
@@ -3140,36 +3246,13 @@ input {
   opacity: 0.6;
 }
 
-.profile__out {
-  align-self: flex-start;
-}
-
 .login {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  padding: 24px 22px;
+  gap: 12px;
+  padding: 8px 8px 4px;
   text-align: center;
-}
-
-.login__logo {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
-  display: grid;
-  place-items: center;
-  background: oklch(0.78 0.1 var(--accent-hue) / 0.18);
-  color: var(--accent-text);
-  font-size: 28px;
-  font-weight: 700;
-}
-
-.login__title {
-  margin: 6px 0 0;
-  font-size: 22px;
 }
 
 .login__lead,
@@ -3201,6 +3284,10 @@ input {
   align-items: center;
   gap: 10px;
   font-size: 14px;
+}
+
+.login__wait .settings__button {
+  align-self: center;
 }
 
 .oauth {

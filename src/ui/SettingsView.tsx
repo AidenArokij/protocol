@@ -1,11 +1,10 @@
-import { useEffect, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import type { Organization, ServerPack } from '../core';
-import { useAccount } from '../account/AccountContext';
 import { usePlatform } from '../platform/PlatformContext';
-import { Avatar } from './ProfileView';
+import { AccountCard, AccountSection } from './ProfileView';
 import { ACCENT_HUES, THEMES, organizationHue, type AppearanceControl } from './appearance';
 import { APP_VERSION, AUTHOR, LINKS } from './about';
-import { CloseIcon, DiscordIcon, GitHubIcon, WarnIcon } from './icons';
+import { BookIcon, CloseIcon, DiscordIcon, GitHubIcon, InfoIcon, KeyboardIcon, PaletteIcon, PinIcon, TuneIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
 import { MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
@@ -46,6 +45,18 @@ function lawsNote(status: LawsStatus): string | null {
       return null;
   }
 }
+
+/** The parts of the settings, in the column on their left: the account on top, then these. */
+export type SettingsSection = 'account' | 'main' | 'look' | 'pinned' | 'laws' | 'keys' | 'about';
+const SECTIONS: { id: SettingsSection; label: string; icon: ReactNode }[] = [
+  { id: 'main', label: 'Основное', icon: <TuneIcon /> },
+  { id: 'look', label: 'Внешний вид', icon: <PaletteIcon /> },
+  { id: 'pinned', label: 'Закреплённые', icon: <PinIcon /> },
+  { id: 'laws', label: 'Законы и обновления', icon: <BookIcon /> },
+  { id: 'keys', label: 'Клавиши', icon: <KeyboardIcon /> },
+  { id: 'about', label: 'О программе', icon: <InfoIcon /> },
+];
+const sectionId = (id: SettingsSection) => `settings-${id}`;
 
 /** One block of the settings, with its heading. */
 function Block({ title, children }: { title: string; children: ReactNode }) {
@@ -265,8 +276,8 @@ export interface SettingsViewProps {
   laws?: Pick<Laws, 'status' | 'check'>;
   /** Opens what is new in every version. */
   onHistory: () => void;
-  /** Opens the profile: signing in, or who is signed in. */
-  onProfile: () => void;
+  /** A part to bring into view — the account from the side column's profile, what is pinned from its pin — asked for at `at`. */
+  focus?: { section: SettingsSection; at: number };
 }
 
 /** The settings screen: what the helper works with, how it looks, the laws, updates and the app itself. */
@@ -294,37 +305,72 @@ export function SettingsView({
   onPrivacy,
   laws,
   onHistory,
-  onProfile,
+  focus,
 }: SettingsViewProps) {
   const platform = usePlatform();
-  const { status: accountStatus } = useAccount();
+  const root = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState<SettingsSection>(focus?.section ?? 'account');
+  /** While a part picked in the column scrolls into view, the scrolling doesn't move the mark. */
+  const picked = useRef(0);
+
+  const show = (section: SettingsSection, smooth: boolean) => {
+    setActive(section);
+    picked.current = Date.now();
+    document.getElementById(sectionId(section))?.scrollIntoView?.({ block: 'start', behavior: smooth ? 'smooth' : 'auto' });
+  };
+  useEffect(() => {
+    if (focus) show(focus.section, false);
+    // Only when asked again, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.at]);
+
+  // The column marks the part being read: the last one whose top has come up to the top.
+  useEffect(() => {
+    const scroller = root.current?.closest('.overlay__content');
+    if (!scroller) return;
+    const onScroll = () => {
+      if (Date.now() - picked.current < 800) return;
+      const top = scroller.getBoundingClientRect().top + 48;
+      let current: SettingsSection = 'account';
+      for (const id of SECTIONS.map((section) => section.id)) {
+        const element = document.getElementById(sectionId(id));
+        if (element && element.getBoundingClientRect().top <= top) current = id;
+      }
+      if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) current = SECTIONS[SECTIONS.length - 1].id;
+      setActive(current);
+    };
+    scroller.addEventListener('scroll', onScroll, { passive: true });
+    return () => scroller.removeEventListener('scroll', onScroll);
+  }, []);
   const transparency = Math.round((1 - opacity) * 100);
   const checking = updates.status.kind === 'checking' || updates.status.kind === 'installing';
 
   return (
-    <div className="settings" role="group" aria-label="Настройки">
-      {/* As in the mockup, the account first; the sync switch comes with the sync. */}
-      <Block title="Аккаунт">
-        {accountStatus.kind === 'signed-in' ? (
-          <div className="set__row">
-            <Avatar account={accountStatus.account} size={24} />
-            <span className="set__value">{accountStatus.account.name}</span>
-            <span className="set__label">· Discord</span>
-            <span className="sp" />
-            <button className="settings__button" type="button" onClick={onProfile}>
-              Профиль
-            </button>
-          </div>
-        ) : (
-          <Row label="Вход не выполнен">
-            <button className="settings__button" type="button" onClick={onProfile}>
-              Войти
-            </button>
-          </Row>
-        )}
-      </Block>
+    <div className="settings" role="group" aria-label="Настройки" ref={root}>
+      <nav className="setnav" aria-label="Разделы настроек">
+        <AccountCard current={active === 'account'} onSelect={() => show('account', true)} />
+        {SECTIONS.map((section) => (
+          <button
+            key={section.id}
+            className="setnav__item"
+            type="button"
+            aria-current={active === section.id ? 'true' : undefined}
+            onClick={() => show(section.id, true)}
+          >
+            {section.icon}
+            <span>{section.label}</span>
+          </button>
+        ))}
+      </nav>
 
+      <div className="settings__body">
+      <div className="settings__part" id={sectionId('account')}>
+        <Block title="Аккаунт">
+          <AccountSection server={pack.server} organization={organization} />
+        </Block>
+      </div>
 
+      <div className="settings__part" id={sectionId('main')}>
       <Block title="Сервер и организация">
         <Row label="Сервер" value={pack.server.name}>
           <button className="settings__button" type="button" aria-label="Сменить сервер" onClick={onServer}>
@@ -339,10 +385,19 @@ export function SettingsView({
         <p className="set__hint">Законы и устав вашей организации идут первыми в поиске.</p>
       </Block>
 
-      <Block title="Горячая клавиша">
-        <HotkeyField hotkey={hotkey} onHotkey={onHotkey} onCapturing={onCapturing} />
+      <Block title="Настройки игры">
+        <p className="set__hint">
+          <b>Тип экрана — «Оконный без рамки»</b> (GTA V → «Графика»): поверх полноэкранного режима Windows других окон не
+          показывает, и хелпера не будет видно.
+        </p>
+        <p className="set__hint">
+          <b>«Отключение звука при потере фокуса» — «Выкл»</b> (GTA V → «Аудио»): иначе, пока открыт хелпер, игра глушит
+          звук.
+        </p>
       </Block>
+      </div>
 
+      <div className="settings__part" id={sectionId('look')}>
       <Block title="Внешний вид">
         {appearance && <AppearancePicker appearance={appearance} organization={organization?.id ?? 'none'} />}
         <label className="set__row">
@@ -366,18 +421,9 @@ export function SettingsView({
           </button>
         )}
       </Block>
+      </div>
 
-      <Block title="Настройки игры">
-        <p className="set__hint">
-          <b>Тип экрана — «Оконный без рамки»</b> (GTA V → «Графика»): поверх полноэкранного режима Windows других окон не
-          показывает, и хелпера не будет видно.
-        </p>
-        <p className="set__hint">
-          <b>«Отключение звука при потере фокуса» — «Выкл»</b> (GTA V → «Аудио»): иначе, пока открыт хелпер, игра глушит
-          звук.
-        </p>
-      </Block>
-
+      <div className="settings__part" id={sectionId('pinned')}>
       <Block title="Закреплено поверх игры">
         <Row label={cardsLabel(pinned)}>
           {pinned > 0 && (
@@ -410,7 +456,9 @@ export function SettingsView({
         )}
         <PresetForm disabled={pinned === 0} placeholder={nextPresetName} onSave={onSavePreset} />
       </Block>
+      </div>
 
+      <div className="settings__part" id={sectionId('laws')}>
       <Block title="Законы">
         <Row label="Актуально на" value={formatDate(pack.version)} />
         <button className="settings__button" type="button" onClick={onChanges}>
@@ -443,7 +491,15 @@ export function SettingsView({
           <span>Проверять обновления автоматически</span>
         </label>
       </Block>
+      </div>
 
+      <div className="settings__part" id={sectionId('keys')}>
+      <Block title="Горячая клавиша">
+        <HotkeyField hotkey={hotkey} onHotkey={onHotkey} onCapturing={onCapturing} />
+      </Block>
+      </div>
+
+      <div className="settings__part" id={sectionId('about')}>
       <Block title="О программе">
         <div className="set__row settings__about">
           <span>
@@ -471,6 +527,8 @@ export function SettingsView({
           </button>
         </div>
       </Block>
+      </div>
+      </div>
     </div>
   );
 }

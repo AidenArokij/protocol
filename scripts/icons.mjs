@@ -13,6 +13,7 @@ const NAMES = [
   'search', 'menu', 'settings', 'arrow_back', 'arrow_forward', 'add', 'check', 'close', 'chevron_left', 'chevron_right',
   'keyboard_arrow_down', 'warning', 'open_in_new', 'download', 'keyboard', 'drag_indicator', 'resize', 'view_carousel',
   'unfold_less', 'keep', 'star', 'star-fill', 'description', 'calculate', 'sticky_note_2', 'account_circle', 'palette',
+  'tune', 'menu_book', 'info',
   // Organisations.
   'local_police', 'traffic', 'security', 'verified_user', 'military_tech', 'policy', 'gavel', 'balance',
   'account_balance', 'local_hospital', 'newspaper', 'cases', 'how_to_vote', 'skull', 'person',

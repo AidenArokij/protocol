@@ -41,8 +41,8 @@ import { ResizeEdges } from './ResizeEdges';
 import { ResultRow } from './ResultRow';
 import { RECENT_LIMIT, entryPart, favoritesKey, hitKey, recentKey, useHitLookup, useStoredKeys } from './saved';
 import { ServerChoice } from './ServerChoice';
-import { SettingsView } from './SettingsView';
-import { Avatar, ProfileView } from './ProfileView';
+import { SettingsView, type SettingsSection } from './SettingsView';
+import { Avatar } from './ProfileView';
 import { useAccount } from '../account/AccountContext';
 import type { Laws } from './laws';
 import { APP_VERSION } from './about';
@@ -123,7 +123,8 @@ export function Overlay({
   const [open, setOpen] = useState<SearchHit | null>(null);
   const [selected, setSelected] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
+  /** The part of the settings the side column asked for: the account from the profile, what is pinned from the pin. */
+  const [settingsFocus, setSettingsFocus] = useState<{ section: SettingsSection; at: number }>();
   const { status: accountStatus } = useAccount();
   const account = accountStatus.kind === 'signed-in' ? accountStatus.account : null;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -416,7 +417,7 @@ export function Overlay({
       return;
     }
     // «Что изменилось» and «было → стало» are read with the mouse; the list keys would move a hidden selection.
-    if (whatsNew || settingsOpen || profileOpen || switchOpen || organizationOpen || serverOpen || notesFor || privacyOpen || diff || (changesView && !open)) return;
+    if (whatsNew || settingsOpen || switchOpen || organizationOpen || serverOpen || notesFor || privacyOpen || diff || (changesView && !open)) return;
     if (open) {
       // Enter in an open article puts its part into the calculator, or takes it out.
       if (e.key === 'Enter' && addable(open)) {
@@ -476,7 +477,6 @@ export function Overlay({
     else if (diff) setDiff(null);
     else if (changesView && settingsOpen) setChangesView(null);
     else if (settingsOpen) setSettingsOpen(false);
-    else if (profileOpen) setProfileOpen(false);
     else if (open) setOpen(null);
     else if (changesView) setChangesView(null);
     else if (query) {
@@ -522,23 +522,20 @@ export function Overlay({
     setDiff(null);
     setMenuOpen(section === 'documents');
     setSwitchOpen(section === 'switch');
-    setSettingsOpen(section === 'pinned' || section === 'settings');
-    setProfileOpen(section === 'profile');
-    if (section === 'pinned') {
-      // Once the settings are on screen: straight to what is pinned.
-      window.setTimeout(() => document.querySelector('[aria-label="Закреплено поверх игры"]')?.scrollIntoView({ block: 'start' }));
-    }
+    setSettingsOpen(section === 'pinned' || section === 'settings' || section === 'profile');
+    // The profile is the account at the top of the settings; the pin, what is pinned in them.
+    setSettingsFocus(section === 'profile' ? { section: 'account', at: Date.now() } : section === 'pinned' ? { section: 'pinned', at: Date.now() } : undefined);
     searchRef.current?.focus();
   };
 
-  /** The profile and the settings are pages of their own (direction C): their name in the header, no search. */
-  const inner = profileOpen ? 'Профиль' : settingsOpen ? 'Настройки' : null;
+  /** The settings are a page of their own (direction C): their name in the header, no search. */
+  const inner = settingsOpen ? 'Настройки' : null;
   // Back from them the search is there again, with the focus.
   useEffect(() => {
     if (!inner) searchRef.current?.focus();
   }, [inner]);
 
-  const onList = !whatsNew && !settingsOpen && !profileOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
+  const onList = !whatsNew && !settingsOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
   const wasOnList = useRef(onList);
   useLayoutEffect(() => {
     const content = contentRef.current;
@@ -638,7 +635,7 @@ export function Overlay({
             <ServerIcon id={pack.server.id} size={24} />
           </button>
         }
-        current={settingsOpen ? 'settings' : profileOpen ? 'profile' : menuOpen ? 'documents' : switchOpen ? undefined : 'search'}
+        current={settingsOpen ? 'settings' : menuOpen ? 'documents' : switchOpen ? undefined : 'search'}
         items={[
           { id: 'search', label: 'Поиск', icon: <SearchIcon />, shortcut: 1, onSelect: () => openSection('search') },
           {
@@ -674,11 +671,10 @@ export function Overlay({
             id: 'profile',
             label: 'Профиль',
             ariaLabel: account ? `Профиль: ${account.name}` : undefined,
-            expanded: profileOpen,
             icon: account ? <Avatar account={account} size={26} /> : <ProfileIcon />,
             shortcut: 6,
             bottom: true,
-            onSelect: () => openSection(profileOpen ? 'search' : 'profile'),
+            onSelect: () => openSection('profile'),
           },
         ]}
       />
@@ -902,8 +898,6 @@ export function Overlay({
                 : undefined
             }
           />
-        ) : profileOpen ? (
-          <ProfileView server={pack.server} organization={organization} />
         ) : settingsOpen && !changesView ? (
           <SettingsView
             pack={pack}
@@ -932,7 +926,7 @@ export function Overlay({
             onPrivacy={() => setPrivacyOpen(true)}
             laws={laws}
             onHistory={() => setWhatsNew({ title: 'История версий', sections: CHANGELOG, backLabel: 'Настройки' })}
-            onProfile={() => openSection('profile')}
+            focus={settingsFocus}
           />
         ) : open ? (
           <ArticleView
