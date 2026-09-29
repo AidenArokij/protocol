@@ -52,6 +52,9 @@ import { CHANGELOG, SEEN_VERSION_KEY, compareVersions, notesSince, type VersionN
 import { UpdateBanner } from './UpdateBanner';
 import { DISMISSED_KEY, TOASTED_KEY, useUpdates } from './updates';
 
+/** Put off with «Позже», the notice that signing in will be required is not shown again. */
+const LOGIN_NOTICE_KEY = 'login.notice';
+
 /** «1 результат», «3 результата», «11 результатов». */
 function plural(n: number, [one, few, many]: [string, string, string]): string {
   const mod10 = n % 10;
@@ -128,6 +131,13 @@ export function Overlay({
   const [settingsFocus, setSettingsFocus] = useState<{ section: SettingsSection; at: number }>();
   const { status: accountStatus } = useAccount();
   const account = accountStatus.kind === 'signed-in' ? accountStatus.account : null;
+  // Signing in becomes required with the next version: a player not signed in is told so on the home
+  // screen until they sign in or put it off.
+  const [loginNoticeOff, setLoginNoticeOff] = useState(true);
+  useEffect(() => {
+    void platform.readSetting<string>(LOGIN_NOTICE_KEY).then((saved) => setLoginNoticeOff(saved === 'later'));
+  }, [platform]);
+  const loginNotice = accountStatus.kind === 'signed-out' && !loginNoticeOff;
   const [menuOpen, setMenuOpen] = useState(false);
   const [opacity, setOpacity] = useState(DEFAULT_OPACITY);
   const organization = pack.organizations.find((o) => o.id === profile.organization);
@@ -991,6 +1001,30 @@ export function Overlay({
                 <span className="sp" />
                 <b>Смотреть →</b>
               </button>
+            )}
+            {loginNotice && (
+              <section className="home__notice" aria-label="Вход скоро станет обязательным">
+                <span>
+                  <b>Со следующего обновления хелпер попросит войти</b> через Discord или Telegram — это займёт минуту, а
+                  настройки и избранное переедут в аккаунт. Интернет нужен только для самого входа.
+                </span>
+                <span className="home__notice-actions">
+                  <button className="settings__button" type="button" onClick={() => openSection('profile')}>
+                    Войти
+                  </button>
+                  <button
+                    className="link-btn"
+                    type="button"
+                    onClick={() => {
+                      setLoginNoticeOff(true);
+                      void platform.writeSetting(LOGIN_NOTICE_KEY, 'later');
+                      searchRef.current?.focus();
+                    }}
+                  >
+                    Позже
+                  </button>
+                </span>
+              </section>
             )}
             {favorites.length > 0 && (
               <>

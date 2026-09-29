@@ -2970,6 +2970,30 @@ input {
   text-align: left;
 }
 
+/* The notice that signing in will be required, in the colours of the mockup's memo. */
+.home__notice {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 10px 12px;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  background: oklch(0.85 0.12 80 / 0.1);
+  border: 1px solid oklch(0.85 0.12 80 / 0.35);
+}
+
+.home__notice b {
+  color: var(--favorite);
+}
+
+.home__notice-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .home__banner:hover {
   background: oklch(0.78 0.1 var(--accent-hue) / 0.2);
 }

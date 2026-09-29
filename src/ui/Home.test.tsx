@@ -76,3 +76,26 @@ describe('home', () => {
     expect(search()).toHaveFocus();
   });
 });
+
+describe('the notice that signing in will be required', () => {
+  it('asks a player not signed in to sign in, leads to the account, and goes once put off', async () => {
+    const settings = { [SEEN]: TVERSKOI_PACK.version, [BANNER_KEY]: TVERSKOI_PACK.changes[0].version };
+    const { platform, user } = await renderApp({ settings });
+    const notice = await screen.findByRole('region', { name: 'Вход скоро станет обязательным' });
+    expect(notice).toHaveTextContent('Со следующего обновления');
+
+    await user.click(within(notice).getByRole('button', { name: 'Войти' }));
+    expect(within(screen.getByRole('group', { name: 'Настройки' })).getByRole('region', { name: 'Аккаунт' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+
+    await user.click(within(screen.getByRole('region', { name: 'Вход скоро станет обязательным' })).getByRole('button', { name: 'Позже' }));
+    expect(screen.queryByRole('region', { name: 'Вход скоро станет обязательным' })).not.toBeInTheDocument();
+    expect(platform.settings.get('login.notice')).toBe('later');
+  });
+
+  it('is not shown to a player signed in', async () => {
+    await renderApp({ settings: { [SEEN]: TVERSKOI_PACK.version }, account: { id: 'user-1', name: 'Skyze', via: 'discord' } });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.queryByRole('region', { name: 'Вход скоро станет обязательным' })).not.toBeInTheDocument();
+  });
+});
