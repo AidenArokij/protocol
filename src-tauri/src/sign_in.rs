@@ -19,8 +19,37 @@ const TIMEOUT: Duration = Duration::from_secs(600);
 /// Which sign-in is under way: a new one, or a cancel, moves it on and the older listener stops.
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 
-const PAGE_DONE: &str = "Вход выполнен. Вкладку можно закрыть и вернуться в игру.";
-const PAGE_FAILED: &str = "Войти не получилось. Вернитесь в хелпер и попробуйте ещё раз.";
+/// The page the browser shows once it is back: in the helper's look, filled in by `page`.
+const PAGE: &str = include_str!("sign_in.html");
+const CHECK: &str = "<svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"m5 12.5 4.5 4.5L19 7.5\"/></svg>";
+const CROSS: &str = "<svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.4\" stroke-linecap=\"round\" d=\"M6 6l12 12M18 6 6 18\"/></svg>";
+
+/// The page for a sign-in that went through, or one that did not.
+fn page(done: bool) -> String {
+  let (title, text, hint, mark, color) = if done {
+    (
+      "Вход выполнен",
+      "Хелпер уже знает, кто вы. Эту вкладку можно закрыть.",
+      "Хелпер открывается горячей клавишей прямо в игре",
+      CHECK,
+      "--ok",
+    )
+  } else {
+    (
+      "Войти не получилось",
+      "Discord не подтвердил вход. Вернитесь в хелпер и попробуйте ещё раз.",
+      "«Настройки» → «Аккаунт» → «Войти через Discord»",
+      CROSS,
+      "--fail",
+    )
+  };
+  PAGE
+    .replace("{title}", title)
+    .replace("{text}", text)
+    .replace("{hint}", hint)
+    .replace("{mark-color}", color)
+    .replace("{mark}", mark)
+}
 
 /// Starts listening for the browser; returns this sign-in's number, which comes back with the answer.
 #[tauri::command]
@@ -86,12 +115,7 @@ fn answer(mut stream: TcpStream) -> Option<String> {
     let _ = stream.write_all(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
     return None;
   };
-  let text = if has_key(query, "code") { PAGE_DONE } else { PAGE_FAILED };
-  let page = format!(
-    "<!doctype html><html lang=\"ru\"><head><meta charset=\"utf-8\"><title>РО Хелпер</title></head>\
-     <body style=\"margin:0;height:100vh;display:grid;place-items:center;background:#12151c;color:#e8ebf2;\
-     font:600 20px system-ui,sans-serif\"><p>{text}</p></body></html>"
-  );
+  let page = page(has_key(query, "code"));
   let _ = stream.write_all(
     format!(
       "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{page}",
@@ -125,6 +149,17 @@ mod tests {
     let refused = "GET /auth/callback?error=access_denied&error_description=The+user+denied HTTP/1.1\r\n\r\n";
     assert_eq!(returned_query(refused), Some("error=access_denied&error_description=The+user+denied"));
     assert_eq!(returned_query("GET /?code=xyz HTTP/1.1\r\n\r\n"), Some("code=xyz"));
+  }
+
+  #[test]
+  fn fills_in_the_page() {
+    let done = super::page(true);
+    assert!(done.contains("<title>РО Хелпер — Вход выполнен</title>") && done.contains("var(--ok)"));
+    let failed = super::page(false);
+    assert!(failed.contains("<h1>Войти не получилось</h1>") && failed.contains("var(--fail)"));
+    for placeholder in ["{title}", "{text}", "{hint}", "{mark}", "{mark-color}"] {
+      assert!(!done.contains(placeholder) && !failed.contains(placeholder));
+    }
   }
 
   #[test]
