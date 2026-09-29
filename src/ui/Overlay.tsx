@@ -688,6 +688,42 @@ export function Overlay({
         </button>
       </div>
 
+      {switchOpen && (
+        <>
+          {/* Clicked beside it, the switcher closes. */}
+          <div
+            className="switch-pop__backdrop"
+            onClick={() => {
+              setSwitchOpen(false);
+              searchRef.current?.focus();
+            }}
+          />
+          <section className="switch-pop" aria-label="Сервер и организация">
+            <h3 className="switch-pop__title">Сервер</h3>
+            <ServerChoice
+              compact
+              value={profile.server}
+              onPick={(id) => {
+                // It stays open: the organisation is picked next, from the new server's own.
+                const keep = packFor(id).organizations.some((o) => o.id === profile.organization);
+                onProfile({ ...profile, server: id, organization: keep ? profile.organization : 'none' });
+              }}
+            />
+            <h3 className="switch-pop__title">Фракция</h3>
+            <OrganizationChoice
+              compact
+              pack={pack}
+              value={profile.organization}
+              onPick={(id) => {
+                onProfile({ ...profile, organization: id });
+                setSwitchOpen(false);
+                searchRef.current?.focus();
+              }}
+            />
+          </section>
+        </>
+      )}
+
       <UpdateBanner
         updates={updates}
         onNotes={() => {
@@ -748,38 +784,6 @@ export function Overlay({
               searchRef.current?.focus();
             }}
           />
-        ) : switchOpen ? (
-          <section className="art art--switch" aria-label="Сервер и организация">
-            <button
-              className="back"
-              type="button"
-              onClick={() => {
-                setSwitchOpen(false);
-                searchRef.current?.focus();
-              }}
-            >
-              <BackIcon />
-              <span>Поиск</span>
-            </button>
-            <h2 className="art__title">Сервер и организация</h2>
-            <ServerChoice
-              value={profile.server}
-              onPick={(id) => {
-                // The screen stays open: the organisation is picked next, from the new server's own.
-                const keep = packFor(id).organizations.some((o) => o.id === profile.organization);
-                onProfile({ ...profile, server: id, organization: keep ? profile.organization : 'none' });
-              }}
-            />
-            <OrganizationChoice
-              pack={pack}
-              value={profile.organization}
-              onPick={(id) => {
-                onProfile({ ...profile, organization: id });
-                setSwitchOpen(false);
-                searchRef.current?.focus();
-              }}
-            />
-          </section>
         ) : organizationOpen ? (
           <section className="art" aria-label="Ваша организация">
             <button
