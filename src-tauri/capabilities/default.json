@@ -27,7 +27,9 @@
         { "url": "https://forum.russia.online/*" },
         { "url": "https://github.com/skyyyzeee/*" },
         { "url": "https://discord.gg/*" },
-        { "url": "https://docs.github.com/*" }
+        { "url": "https://docs.github.com/*" },
+        { "url": "https://evwyrdytojwxlvgqrkar.supabase.co/*" },
+        { "url": "https://supabase.com/*" }
       ]
     }
   ]

@@ -7,6 +7,8 @@ import '@fontsource/onest/700.css';
 import './ui/tokens.css';
 import './ui/app.css';
 import { App } from './ui/App';
+import { AccountProvider } from './account/AccountContext';
+import { createSupabaseAccounts } from './account/supabase';
 import { createBrowserPlatform } from './platform/browser';
 import { PlatformProvider } from './platform/PlatformContext';
 import { createPinBridge, createTauriPlatform, isPinWindow, isTauri } from './platform/tauri';
@@ -24,10 +26,14 @@ async function start() {
     return;
   }
   const platform = isTauri() ? await createTauriPlatform() : createBrowserPlatform();
+  // In the preview nothing listens for the browser coming back: signing in says it works in the app only.
+  const accounts = createSupabaseAccounts(platform);
   root.render(
     <StrictMode>
       <PlatformProvider platform={platform}>
-        <App />
+        <AccountProvider accounts={accounts}>
+          <App />
+        </AccountProvider>
       </PlatformProvider>
     </StrictMode>,
   );

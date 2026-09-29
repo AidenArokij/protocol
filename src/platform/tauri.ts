@@ -29,6 +29,15 @@ const PIN_TOAST_EVENT = 'pin-toast';
 /** The theme and accent of the cards: sent by the overlay, and kept in the settings for the window's next start. */
 const PIN_LOOK_EVENT = 'pin-look';
 const PIN_LOOK_KEY = 'pin.look';
+/**
+ * The browser coming back from a sign-in, told by the native listener: the query string it brought,
+ * or null when the sign-in was given up or timed out. `generation` tells one sign-in from the next.
+ */
+const SIGN_IN_EVENT = 'sign-in-back';
+interface SignInBack {
+  generation: number;
+  query: string | null;
+}
 
 /** True in the window of the pinned cards, which renders them instead of the overlay. */
 export function isPinWindow(): boolean {
@@ -260,6 +269,36 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
     readSetting: <T,>(key: string) => store.get<T>(key),
     writeSetting: (key, value) => store.set(key, value),
     openExternal: (url) => openUrl(url),
+
+    signInRedirect: 'http://127.0.0.1:47321/auth/callback',
+    async signInInBrowser(url) {
+      // Listening before the listener starts: the answer can't be missed, and is matched to this sign-in.
+      const heard: SignInBack[] = [];
+      let settle: ((back: SignInBack) => void) | null = null;
+      let generation: number | null = null;
+      const unlisten = await listen<SignInBack>(SIGN_IN_EVENT, (event) => {
+        heard.push(event.payload);
+        if (event.payload.generation === generation) settle?.(event.payload);
+      });
+      try {
+        generation = await invoke<number>('sign_in_listen');
+        const back = new Promise<SignInBack>((resolve) => {
+          settle = resolve;
+          const early = heard.find((b) => b.generation === generation);
+          if (early) resolve(early);
+        });
+        await openUrl(url).catch(async (error: unknown) => {
+          await invoke('sign_in_cancel');
+          throw error;
+        });
+        const { query } = await back;
+        if (query === null) throw new Error('cancelled');
+        return query;
+      } finally {
+        unlisten();
+      }
+    },
+    cancelSignIn: () => invoke('sign_in_cancel'),
 
     async checkForUpdate() {
       found = await check();

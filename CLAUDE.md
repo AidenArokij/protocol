@@ -27,6 +27,7 @@ The user wrote the Tverskoi law texts and allows copying them. The forum sits be
 - `src/core` — law core: pure TypeScript, no React/Tauri/UI/importer imports (a boundary test enforces it)
 - `src/platform` — `PlatformAdapter` interface over everything native; `fake` for tests, `browser` for the preview, `tauri` for the app (window bounds and settings in the store plugin's `settings.json`)
 - `src-tauri` — native side: plugins (global-shortcut, store, clipboard, opener, single-instance), tray menu, and `remember_foreground` / `restore_foreground` commands that hand focus back to the game when the overlay hides
+- `src/account` — accounts (2.1): `Accounts` interface, Supabase with Discord (PKCE; the session in the settings, so signed-in works offline), a fake for tests. The browser comes back to a one-off listener of the app at `127.0.0.1:47321` (`src-tauri/src/sign_in.rs`), which must match the Supabase project's redirect URLs. Only the publishable key lives in the code — never the secret or service_role key
 - `src/ui` — React UI; visual tokens in `tokens.css` come from the approved mockup in `design/mockup`
 
 ## Agent skills

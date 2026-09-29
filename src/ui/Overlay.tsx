@@ -42,6 +42,8 @@ import { ResultRow } from './ResultRow';
 import { RECENT_LIMIT, entryPart, favoritesKey, hitKey, recentKey, useHitLookup, useStoredKeys } from './saved';
 import { ServerChoice } from './ServerChoice';
 import { SettingsView } from './SettingsView';
+import { Avatar, ProfileView } from './ProfileView';
+import { useAccount } from '../account/AccountContext';
 import type { Laws } from './laws';
 import { APP_VERSION } from './about';
 import { WhatsNewView } from './WhatsNewView';
@@ -121,6 +123,9 @@ export function Overlay({
   const [open, setOpen] = useState<SearchHit | null>(null);
   const [selected, setSelected] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const { status: accountStatus } = useAccount();
+  const account = accountStatus.kind === 'signed-in' ? accountStatus.account : null;
   const [menuOpen, setMenuOpen] = useState(false);
   const [opacity, setOpacity] = useState(DEFAULT_OPACITY);
   const organization = pack.organizations.find((o) => o.id === profile.organization);
@@ -411,7 +416,7 @@ export function Overlay({
       return;
     }
     // «Что изменилось» and «было → стало» are read with the mouse; the list keys would move a hidden selection.
-    if (whatsNew || settingsOpen || switchOpen || organizationOpen || serverOpen || notesFor || privacyOpen || diff || (changesView && !open)) return;
+    if (whatsNew || settingsOpen || profileOpen || switchOpen || organizationOpen || serverOpen || notesFor || privacyOpen || diff || (changesView && !open)) return;
     if (open) {
       // Enter in an open article puts its part into the calculator, or takes it out.
       if (e.key === 'Enter' && addable(open)) {
@@ -471,6 +476,7 @@ export function Overlay({
     else if (diff) setDiff(null);
     else if (changesView && settingsOpen) setChangesView(null);
     else if (settingsOpen) setSettingsOpen(false);
+    else if (profileOpen) setProfileOpen(false);
     else if (open) setOpen(null);
     else if (changesView) setChangesView(null);
     else if (query) {
@@ -508,7 +514,7 @@ export function Overlay({
   const contentRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
   /** The side menu's sections: each closes what is on screen and opens its own. */
-  const openSection = (section: 'search' | 'documents' | 'switch' | 'pinned' | 'settings') => {
+  const openSection = (section: 'search' | 'documents' | 'switch' | 'pinned' | 'settings' | 'profile') => {
     setWhatsNew(null);
     setOrganizationOpen(false);
     setServerOpen(false);
@@ -517,6 +523,7 @@ export function Overlay({
     setMenuOpen(section === 'documents');
     setSwitchOpen(section === 'switch');
     setSettingsOpen(section === 'pinned' || section === 'settings');
+    setProfileOpen(section === 'profile');
     if (section === 'pinned') {
       // Once the settings are on screen: straight to what is pinned.
       window.setTimeout(() => document.querySelector('[aria-label="Закреплено поверх игры"]')?.scrollIntoView({ block: 'start' }));
@@ -524,7 +531,7 @@ export function Overlay({
     searchRef.current?.focus();
   };
 
-  const onList = !whatsNew && !settingsOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
+  const onList = !whatsNew && !settingsOpen && !profileOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView;
   const wasOnList = useRef(onList);
   useLayoutEffect(() => {
     const content = contentRef.current;
@@ -624,7 +631,7 @@ export function Overlay({
             <ServerIcon id={pack.server.id} size={24} />
           </button>
         }
-        current={settingsOpen ? 'settings' : menuOpen ? 'documents' : switchOpen ? undefined : 'search'}
+        current={settingsOpen ? 'settings' : profileOpen ? 'profile' : menuOpen ? 'documents' : switchOpen ? undefined : 'search'}
         items={[
           { id: 'search', label: 'Поиск', icon: <SearchIcon />, shortcut: 1, onSelect: () => openSection('search') },
           {
@@ -656,7 +663,16 @@ export function Overlay({
             bottom: true,
             onSelect: () => openSection(settingsOpen ? 'search' : 'settings'),
           },
-          { id: 'profile', label: 'Профиль', icon: <ProfileIcon />, bottom: true, disabled: true, hint: 'Профиль — скоро', onSelect: () => {} },
+          {
+            id: 'profile',
+            label: 'Профиль',
+            ariaLabel: account ? `Профиль: ${account.name}` : undefined,
+            expanded: profileOpen,
+            icon: account ? <Avatar account={account} size={26} /> : <ProfileIcon />,
+            shortcut: 6,
+            bottom: true,
+            onSelect: () => openSection(profileOpen ? 'search' : 'profile'),
+          },
         ]}
       />
       <div className="overlay__main">
@@ -874,6 +890,14 @@ export function Overlay({
                   }
                 : undefined
             }
+          />
+        ) : profileOpen ? (
+          <ProfileView
+            backLabel={open ? 'Статья' : 'Поиск'}
+            onBack={() => {
+              setProfileOpen(false);
+              searchRef.current?.focus();
+            }}
           />
         ) : settingsOpen && !changesView ? (
           <SettingsView

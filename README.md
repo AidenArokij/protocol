@@ -70,7 +70,7 @@
 
 ## Конфиденциальность
 
-РО Хелпер не собирает данные: ни аккаунтов, ни аналитики, ни телеметрии. Настройки, избранное и недавние хранятся только на вашем компьютере. В интернет программа обращается лишь за обновлениями к GitHub — это можно выключить в настройках. Подробно — в [политике конфиденциальности](PRIVACY.md); она же открывается в программе: «Настройки» → «Политика конфиденциальности».
+Без входа в аккаунт РО Хелпер не собирает данные: ни аналитики, ни телеметрии. Настройки, избранное и недавние хранятся только на вашем компьютере. В интернет программа обращается за обновлениями к GitHub — это можно выключить в настройках. Вход через Discord — по желанию: тогда ваши имя, аватар и почта из Discord хранятся в аккаунте на Supabase. Подробно — в [политике конфиденциальности](PRIVACY.md); она же открывается в программе: «Настройки» → «Политика конфиденциальности».
 
 ## Серверы
 
@@ -113,7 +113,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 - Committers and reviewers / Авторы и ревьюеры: [skyze](https://github.com/skyyyzeee)
 - Approvers / Утверждают релизы: [skyze](https://github.com/skyyyzeee)
 
-Privacy / Конфиденциальность: see the [privacy policy](PRIVACY.md). This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it, except for the automatic update check against GitHub Releases described in the policy, which can be turned off in the settings.
+Privacy / Конфиденциальность: see the [privacy policy](PRIVACY.md). This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it, except for the automatic update check against GitHub Releases described in the policy, which can be turned off in the settings, and the optional sign-in with Discord through Supabase, which happens only when the user asks for it.
 
 ## Автор
 

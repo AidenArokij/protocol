@@ -1,3 +1,5 @@
+mod sign_in;
+
 use serde_json::Value;
 use std::sync::Mutex;
 use tauri::{
@@ -362,7 +364,9 @@ pub fn run() {
       pin_state,
       pin_live,
       pin_toast,
-      pin_toast_done
+      pin_toast_done,
+      sign_in::sign_in_listen,
+      sign_in::sign_in_cancel
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {
