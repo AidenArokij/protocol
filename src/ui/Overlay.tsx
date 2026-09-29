@@ -25,7 +25,7 @@ import { ArticleView } from './ArticleView';
 import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } from './CalculatorPanel';
 import { ChangeDiff, ChangesView, type ChangeRef } from './ChangesView';
 import { DocumentsMenu } from './DocumentsMenu';
-import { BackIcon, CalculatorIcon, ChevronDownIcon, ChevronRightIcon, CloseIcon, DocumentsIcon, MemoIcon, OrganizationIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon } from './icons';
+import { BackIcon, CalculatorIcon, ChevronDownIcon, CloseIcon, DocumentsIcon, MemoIcon, OrganizationIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon } from './icons';
 import { SideRail } from './SideRail';
 import { DEFAULT_OPACITY, OPACITY_KEY, applyOpacity, clampOpacity } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
@@ -985,11 +985,11 @@ export function Overlay({
             {banner && (
               <button className="home__banner" type="button" onClick={showRecentChanges}>
                 <span>
-                  Законы обновлены <b>{formatDate(banner.version).slice(0, 5)}</b> — {plural(banner.documents.length, ['документ', 'документа', 'документов'])}
+                  Законы обновлены <b>{formatDate(banner.version).slice(0, 5)}</b> —{' '}
+                  {plural(banner.documents.length, ['документ изменился', 'документа изменились', 'документов изменились'])}
                 </span>
                 <span className="sp" />
-                <b>Что изменилось</b>
-                <ChevronRightIcon />
+                <b>Смотреть →</b>
               </button>
             )}
             {favorites.length > 0 && (
