@@ -3313,6 +3313,14 @@ input {
   background: #4752c4;
 }
 
+.oauth--tg {
+  background: #2aabee;
+}
+
+.oauth--tg:hover:not(:disabled) {
+  background: #1f95d0;
+}
+
 .oauth:disabled {
   opacity: 0.5;
 }

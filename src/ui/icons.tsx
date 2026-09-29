@@ -119,3 +119,12 @@ export const DiscordIcon = ({ size = 18 }: { size?: number }) => (
     />
   </svg>
 );
+
+export const TelegramIcon = ({ size = 18 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+    <path
+      fill="currentColor"
+      d="M21.5 4.3 18.3 19.6c-.2 1-.9 1.3-1.7.8l-4.9-3.6-2.3 2.3c-.3.3-.5.5-1 .5l.3-5 9.1-8.2c.4-.4-.1-.6-.6-.2L5.9 13.3 1 11.8c-1-.3-1-1 .2-1.5L20.2 3c.9-.3 1.6.2 1.3 1.3Z"
+    />
+  </svg>
+);

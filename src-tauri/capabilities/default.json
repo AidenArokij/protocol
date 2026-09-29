@@ -29,7 +29,9 @@
         { "url": "https://discord.gg/*" },
         { "url": "https://docs.github.com/*" },
         { "url": "https://evwyrdytojwxlvgqrkar.supabase.co/*" },
-        { "url": "https://supabase.com/*" }
+        { "url": "https://supabase.com/*" },
+        { "url": "https://t.me/*" },
+        { "url": "https://telegram.org/*" }
       ]
     }
   ]

@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import type { Organization, ServerPack } from '../core';
 import { useAccount } from '../account/AccountContext';
-import type { Account } from '../account/types';
-import { DiscordIcon, ProfileIcon, ServerIcon } from './icons';
+import type { Account, Provider } from '../account/types';
+
+const PROVIDER_NAME: Record<Provider, string> = { discord: 'Discord', telegram: 'Telegram' };
+import { DiscordIcon, ProfileIcon, ServerIcon, TelegramIcon } from './icons';
 
 /**
  * The player's Discord avatar; without one, or when it can't be loaded (offline), their initials on a
@@ -40,7 +42,7 @@ export function AccountCard({ current, onSelect }: { current: boolean; onSelect:
       {account ? <Avatar account={account} size={36} /> : <span className="setnav__nobody"><ProfileIcon size={22} /></span>}
       <span className="setnav__who">
         <span className="setnav__name">{account ? account.name : 'Аккаунт'}</span>
-        <span className="setnav__via">{account ? 'Discord' : 'Вход не выполнен'}</span>
+        <span className="setnav__via">{account ? PROVIDER_NAME[account.via ?? 'discord'] : 'Вход не выполнен'}</span>
       </span>
     </button>
   );
@@ -49,15 +51,21 @@ export function AccountCard({ current, onSelect }: { current: boolean; onSelect:
 const FAILED = {
   failed: 'Не удалось войти. Проверьте интернет и попробуйте ещё раз.',
   unsupported: 'Вход работает только в самом хелпере, не в браузере.',
-  cancelled: '',
+  expired: 'Время на вход вышло — нажмите ещё раз.',
+  taken: 'Этот Telegram уже привязан к другому аккаунту.',
+};
+const WAITING: Record<Provider, string> = {
+  discord: 'Подтвердите вход в браузере — он открылся в Discord.',
+  telegram: 'Нажмите «Запустить» у бота в Telegram — он открылся сам.',
 };
 
 /**
  * The account, first in the settings. Signed in: the player's card of the mockup (avatar, name,
- * server · faction, Discord) and signing out. Signed out: signing in with Discord, optional for now.
+ * server · faction, how they signed in), joining Telegram to a Discord account, and signing out. Signed
+ * out: signing in with Discord or Telegram, optional for now.
  */
 export function AccountSection({ server, organization }: { server: ServerPack['server']; organization?: Organization }) {
-  const { status, signIn, cancelSignIn, signOut } = useAccount();
+  const { status, signIn, linkTelegram, cancelSignIn, signOut } = useAccount();
   const faction = organization && organization.id !== 'none' ? organization.name : 'Без организации';
 
   if (status.kind === 'signed-in') {
@@ -74,10 +82,42 @@ export function AccountSection({ server, organization }: { server: ServerPack['s
             </div>
           </div>
           <span className="sp" />
-          <span className="pcard__via" title="Вход через Discord">
-            <DiscordIcon size={18} />
+          <span className="pcard__via" title={`Вход через ${PROVIDER_NAME[account.via ?? 'discord']}`}>
+            {account.via === 'telegram' ? <TelegramIcon size={18} /> : <DiscordIcon size={18} />}
           </span>
         </div>
+        {/* Telegram joins a Discord account, so either signs in to it. */}
+        {account.via !== 'telegram' && (
+          <div className="set__row">
+            <TelegramIcon size={16} />
+            {account.telegram ? (
+              <span className="set__label">
+                Telegram <b className="set__value">{account.telegram}</b> привязан — через него тоже можно войти
+              </span>
+            ) : status.linking ? (
+              <>
+                <span className="set__label">{WAITING.telegram}</span>
+                <span className="sp" />
+                <button className="settings__button" type="button" onClick={cancelSignIn}>
+                  Отмена
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="set__label">Привяжите Telegram, чтобы входить и через него.</span>
+                <span className="sp" />
+                <button className="settings__button" type="button" onClick={linkTelegram}>
+                  Привязать Telegram
+                </button>
+              </>
+            )}
+          </div>
+        )}
+        {status.error && (
+          <p className="login__error" role="alert">
+            {FAILED[status.error]}
+          </p>
+        )}
         <div className="set__row">
           <span className="set__label">Скоро: настройки, избранное и закреплённое — на всех ваших компьютерах.</span>
           <span className="sp" />
@@ -94,7 +134,7 @@ export function AccountSection({ server, organization }: { server: ServerPack['s
       <p className="login__lead">Войдите — скоро настройки, закреплённое и избранное будут с вами на любом компьютере.</p>
       {status.kind === 'signing-in' ? (
         <div className="login__wait">
-          <span>Подтвердите вход в браузере — он открылся в Discord.</span>
+          <span>{WAITING[status.provider]}</span>
           <button className="settings__button" type="button" onClick={cancelSignIn}>
             Отмена
           </button>
@@ -106,14 +146,18 @@ export function AccountSection({ server, organization }: { server: ServerPack['s
               {FAILED[status.error]}
             </p>
           )}
-          <button className="oauth oauth--discord" type="button" disabled={status.kind === 'loading'} onClick={signIn}>
+          <button className="oauth oauth--discord" type="button" disabled={status.kind === 'loading'} onClick={() => signIn('discord')}>
             <DiscordIcon size={20} />
             Войти через Discord
+          </button>
+          <button className="oauth oauth--tg" type="button" disabled={status.kind === 'loading'} onClick={() => signIn('telegram')}>
+            <TelegramIcon size={20} />
+            Войти через Telegram
           </button>
         </>
       )}
       <small className="login__note">
-        Вход по желанию: без него всё работает как раньше. Мы получим ник, аватар и почту из Discord. После входа интернет не нужен.
+        Вход по желанию: без него всё работает как раньше. Мы получим ник, аватар и почту из Discord или имя и ник из Telegram. После входа интернет не нужен.
       </small>
     </div>
   );
