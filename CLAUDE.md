@@ -1,12 +1,12 @@
-# Кремлёвский ассистент (formerly РО Хелпер)
+# Кремлёвский Ассистент (formerly РО Хелпер)
 
 A Windows overlay for the players of Russia Online (GTA V RP): the laws, charters and rules of each server,
 searched in a keystroke over the game, a punishment calculator, cards pinned over the game, accounts and sync.
 Owner: skyze (`skyyyzeee/ro-helper` on GitHub). A friend (`AidenArokij`, fork `AidenArokij/protocol`) works on
 it too, through branches and pull requests. This file is shared by everyone's Claude Code: follow it as written.
 
-**The name.** On 29.09.2026 the owner renamed the app «Кремлёвский ассистент» (the icon: PR #6; the rest of the
-rename: a separate pull request). What players read says «Кремлёвский ассистент». What installed copies depend on
+**The name.** On 29.09.2026 the owner renamed the app «Кремлёвский Ассистент» (the icon: PR #6; the rest of the
+rename: a separate pull request). What players read says «Кремлёвский Ассистент». What installed copies depend on
 stays as it is, so their settings, sign-in and updates carry on: the identifier `com.skyze.rohelper` (and the
 `%APPDATA%com.skyze.rohelper` folder), the repository `skyyyzeee/ro-helper` and its URLs (updates, laws,
 `latest.json`), the binary `ro-helper`, the settings keys, the Supabase project and the bot. Code and docs may
