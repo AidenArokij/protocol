@@ -139,6 +139,7 @@ describe('the account, in the settings', () => {
     expect(within(settingsNav()).getAllByRole('button').map((b) => b.textContent)).toEqual([
       'АккаунтВход не выполнен',
       'Основное',
+      'ИИ',
       'Внешний вид',
       'Закреплённые',
       'Законы и обновления',

@@ -8,12 +8,19 @@
 
 Вход через Discord или Telegram — по желанию. Если вы войдёте, в аккаунте хранятся ваши данные оттуда: из Discord — номер, имя, аватар и почта, из Telegram — номер, имя и ник (подробно — ниже).
 
+ИИ-разбор — тоже по желанию. Только когда вы сами спрашиваете ИИ, текст вашего вопроса и найденные статьи законов уходят на сервер ИИ, а оттуда — к модели OpenAI (подробно — ниже). Голос никуда не уходит: речь распознаётся прямо на вашем компьютере. Ключей ИИ в программе нет — ключ хранится только на сервере.
+
 ## Что хранится на компьютере
 
 - Настройки: сервер, организация, горячая клавиша, прозрачность, положение окон.
 - Избранное и недавние статьи.
 - Последняя просмотренная версия законов (для экрана «Что изменилось»), последняя запущенная версия программы (для «Что нового») и версия обновления, отложенная кнопкой «Позже».
 - Законы, скачанные с GitHub, — в папке `laws` рядом с настройками.
+- История ИИ-разборов: ваши вопросы и ответы ИИ, последние 30 на каждом сервере игры. Удаляется по одному или вся сразу: «История» → «Очистить историю».
+- Ваши данные для документов (ФИО, звание, должность), если вы их ввели в «Составить документ».
+- Случайный номер этого компьютера, который программа создала сама, — по нему сервер ИИ считает дневной лимит вопросов.
+- Модель распознавания речи (около 45 МБ, в кэше программы), если вы спрашивали голосом.
+- Ваш ключ Gemini, если вы выбрали «Свой ключ Gemini» и ввели его.
 
 - Если вы вошли в аккаунт: ваше имя и аватар из Discord (или имя и ник из Telegram) и ключи входа, по которым программа помнит вас без интернета.
 
@@ -37,6 +44,19 @@
 
 **Вход через Telegram (по желанию).** «Войти через Telegram» (или «Привязать Telegram» к аккаунту Discord) открывает в Telegram бота Кремлёвского Ассистента со случайным кодом входа. Когда вы нажимаете у бота «Запустить», Telegram передаёт боту ваш номер пользователя Telegram, имя и ник; сервер Кремлёвского Ассистента на Supabase сохраняет их в аккаунте и отвечает вам одним сообщением. Пока вход не завершён, программа раз в две секунды спрашивает у сервера, нажали ли вы «Запустить»; код входа забывается через 10 минут. Бот не читает других сообщений и никому не пишет сам. Как Telegram обращается с данными, описано в [его политике конфиденциальности](https://telegram.org/privacy).
 
+**ИИ-разбор, документы, тренажёр, требования адвоката (по желанию).** Только когда вы сами спрашиваете ИИ (пишете в «ИИ» или держите клавишу вопроса поверх игры), программа отправляет на **сервер ИИ**:
+
+- где он работает: `185-84-163-232.sslip.io` — виртуальный сервер в облаке Timeweb Cloud, Россия; его код открыт — папка `server/` в репозитории;
+- кто за него платит: соавтор программы AidenArokij — и за сервер, и за доступ к ИИ; игрокам ИИ бесплатен, с дневным лимитом вопросов на компьютер;
+- что уходит: текст вашего вопроса или описания ситуации (для тренажёра — ваш ответ), факты и выводы этого разговора, тексты статей законов, найденных по вопросу, для документов — ФИО, звание и должность, если вы их ввели, и случайный номер компьютера; сервер видит и ваш интернет-адрес, как любой сайт;
+- куда дальше: сервер передаёт вопрос модели OpenAI (США) через сервис ProxyAPI (proxyapi.ru, Россия) и возвращает ответ; у них вопрос обрабатывается по их правилам. Не пишите в вопросе ничего личного;
+- что хранится на сервере: ни вопросов, ни ответов сервер не хранит. До полуночи по Москве он помнит только, сколько вопросов задано с номера компьютера и с интернет-адреса, — чтобы соблюдать лимиты; в полночь счётчики обнуляются. В журнал ошибок сервера текст вопросов не попадает;
+- ключ ИИ хранится только на сервере; в программе его нет.
+
+**Голосовой вопрос.** Микрофон включается, только когда вы нажмёте 🎤 или клавишу вопроса поверх игры, и выключается, когда вы нажмёте ещё раз или отпустите клавишу (и в любом случае через минуту). Речь превращается в текст прямо на вашем компьютере (распознавание Vosk): запись никуда не отправляется и не хранится, на сервер ИИ уходит только распознанный текст — как обычный вопрос. Для этого при первом голосовом вопросе программа один раз скачивает с того же сервера модель распознавания русской речи (около 45 МБ).
+
+**Свой ключ Gemini (по желанию).** Если в «Настройки» → «ИИ» выбран «Свой ключ Gemini», всё перечисленное вместо сервера ИИ уходит напрямую в Google Gemini (`generativelanguage.googleapis.com`) с вашим ключом, а голосовая запись — в Gemini, чтобы превратить её в текст. См. [условия Gemini API](https://ai.google.dev/gemini-api/terms) и [политику конфиденциальности Google](https://policies.google.com/privacy).
+
 **Ссылки.** «Тема на форуме», «Что нового», GitHub и Discord открываются в вашем браузере и только когда вы на них нажмёте. Дальше действуют правила этих сайтов.
 
 Больше программа ничего не отправляет. Без входа в аккаунт она обращается к Supabase только с обезличенными счётчиками (если они не выключены) и не обращается к боту в Telegram. Законы встроены в неё и работают без интернета; скачанные с GitHub лишь заменяют встроенные, когда те устарели.
@@ -59,7 +79,7 @@
 
 ## English
 
-**Privacy policy of Kremlin Assistant («Кремлёвский Ассистент», formerly Kremlin Assistant) for Windows, as of 29 September 2026.**
+**Privacy policy of Kremlin Assistant («Кремлёвский Ассистент», formerly RO Helper) for Windows, as of 29 September 2026.**
 
 Until you sign in, Kremlin Assistant does not collect or send any data about you and shows no ads. It sends the author only anonymous daily counts — articles opened, searches and punishment calculations per game server, nothing about you — which can be turned off. Signing in with Discord or Telegram is optional.
 
@@ -70,6 +90,8 @@ Until you sign in, Kremlin Assistant does not collect or send any data about you
 - **Your statistics (when signed in):** the counts shown in your profile, and the articles you use most, are kept in your account (one set per computer) and seen by you only.
 - **Sync (when signed in):** your server and organisation, the game name and position if you gave them, theme, accent and transparency, favourite and recent articles and saved sets of pinned cards are kept in your account at Supabase so that every computer you sign in on has the same; the hotkey, window positions, the cards pinned right now and what you have seen stay on the computer. Changes are sent a couple of seconds after they are made and fetched at start and whenever the overlay opens; the database's rules let only you read or change them.
 - **Telegram (optional):** "Sign in with Telegram" (or "Link Telegram") opens the Kremlin Assistant bot with a random sign-in code; pressing "Start" there gives the bot your Telegram user id, name and username, which the Kremlin Assistant server at Supabase keeps in your account. Until then the app asks the server every two seconds; the code is forgotten after 10 minutes. The bot reads no other messages ([Telegram Privacy Policy](https://telegram.org/privacy)).
+- **AI (optional):** only when you ask the AI, your question (or situation, or trainer answer), the facts and conclusions of the conversation, the law articles found for it, your name, rank and position for documents if you entered them, and a random id of your computer go to the AI server — `185-84-163-232.sslip.io`, a Timeweb Cloud server in Russia run and paid for by AidenArokij, co-author of the app; its code is in `server/`. It passes the question to an OpenAI model (USA) through ProxyAPI (Russia) and returns the answer. It keeps no questions or answers — only per-day counters by computer id and IP address for its limits, reset at midnight Moscow time. The AI key is on the server only, never in the app.
+- **Voice:** recorded only while you press 🎤 or hold the question key (a minute at most) and recognised on your computer (Vosk); the recording is neither sent nor kept — only the recognised text goes, as a question. The Russian speech model (~45 MB) is downloaded from the AI server once. With your own Gemini key chosen, questions and the recording go to Google Gemini instead ([Gemini API terms](https://ai.google.dev/gemini-api/terms), [Google Privacy Policy](https://policies.google.com/privacy)).
 - **Keyboard, clipboard, game:** only the hotkey you choose is registered with Windows; other keystrokes are not recorded. The clipboard is written only when you copy a charge and is never read. The app does not read or modify game memory or inject into the game; it only remembers the active window to give it the focus back.
 
 Contact: [Discord](https://discord.gg/VBNn86EmDd) or [GitHub issues](https://github.com/skyyyzeee/ro-helper/issues).

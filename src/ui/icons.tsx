@@ -43,6 +43,11 @@ export const CalculatorIcon = icon('calculate', 20);
 export const MemoIcon = icon('sticky_note_2', 20);
 export const ProfileIcon = icon('account_circle', 20);
 export const PaletteIcon = icon('palette', 18);
+/** The AI analysis. */
+export const SparkIcon = icon('wand_stars', 20);
+export const MicIcon = icon('mic', 20);
+/** The history of AI analyses. */
+export const HistoryIcon = icon('history', 20);
 export const TuneIcon = icon('tune', 18);
 export const BookIcon = icon('menu_book', 18);
 export const InfoIcon = icon('info', 18);

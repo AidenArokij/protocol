@@ -4,10 +4,11 @@ import { usePlatform } from '../platform/PlatformContext';
 import { USAGE_SHARE_KEY } from '../account/usage';
 import { AccountCard, AccountSection } from './ProfileView';
 import { ACCENT_HUES, THEMES, organizationHue, type AppearanceControl } from './appearance';
-import { APP_VERSION, AUTHOR, LINKS } from './about';
-import { BookIcon, CloseIcon, DiscordIcon, GitHubIcon, InfoIcon, KeyboardIcon, PaletteIcon, PinIcon, TuneIcon, WarnIcon } from './icons';
+import { AI_SERVER, APP_VERSION, AUTHOR, LINKS } from './about';
+import { AI_KEY_SETTING, AI_KEY_URL, AI_PROVIDER_SETTING, AI_SERVER_SETTING, type AiProvider } from './ai';
+import { BookIcon, CloseIcon, DiscordIcon, GitHubIcon, InfoIcon, KeyboardIcon, PaletteIcon, PinIcon, SparkIcon, TuneIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
-import { MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
+import { DEFAULT_VOICE_HOTKEY, MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
 import type { Laws, LawsStatus } from './laws';
 import type { Updates } from './updates';
@@ -48,9 +49,10 @@ function lawsNote(status: LawsStatus): string | null {
 }
 
 /** The parts of the settings, in the column on their left: the account on top, then these. */
-export type SettingsSection = 'account' | 'main' | 'look' | 'pinned' | 'laws' | 'keys' | 'about';
+export type SettingsSection = 'account' | 'main' | 'ai' | 'look' | 'pinned' | 'laws' | 'keys' | 'about';
 const SECTIONS: { id: SettingsSection; label: string; icon: ReactNode }[] = [
   { id: 'main', label: 'Основное', icon: <TuneIcon /> },
+  { id: 'ai', label: 'ИИ', icon: <SparkIcon size={18} /> },
   { id: 'look', label: 'Внешний вид', icon: <PaletteIcon /> },
   { id: 'pinned', label: 'Закреплённые', icon: <PinIcon /> },
   { id: 'laws', label: 'Законы и обновления', icon: <BookIcon /> },
@@ -82,7 +84,17 @@ function Row({ label, value, children }: { label: string; value?: ReactNode; chi
 }
 
 /** The hotkey, changed right here: press the field, then the combination. */
-function HotkeyField({ hotkey, onHotkey, onCapturing }: { hotkey: string; onHotkey: (accelerator: string) => void; onCapturing: (capturing: boolean) => void }) {
+function HotkeyField({
+  hotkey,
+  onHotkey,
+  onCapturing,
+  label = 'Открыть и скрыть оверлей',
+}: {
+  hotkey: string;
+  onHotkey: (accelerator: string) => void;
+  onCapturing: (capturing: boolean) => void;
+  label?: string;
+}) {
   const [listening, setListening] = useState(false);
   const [unsupported, setUnsupported] = useState(false);
 
@@ -113,7 +125,7 @@ function HotkeyField({ hotkey, onHotkey, onCapturing }: { hotkey: string; onHotk
   return (
     <>
       <div className="set__row">
-        <span className="set__label">Открыть и скрыть оверлей</span>
+        <span className="set__label">{label}</span>
         <span className="sp" />
         <button
           type="button"
@@ -200,6 +212,78 @@ function AppearancePicker({ appearance, organization }: { appearance: Appearance
   );
 }
 
+/** The player's Gemini key for the AI analysis: kept in the settings file on this computer, shown only as a mask. */
+function AiKeyField() {
+  const platform = usePlatform();
+  const [saved, setSaved] = useState<boolean | null>(null);
+  const [key, setKey] = useState('');
+  const [note, setNote] = useState<string | null>(null);
+  useEffect(() => {
+    void platform.readSetting<string>(AI_KEY_SETTING).then((value) => setSaved(!!value?.trim()));
+  }, [platform]);
+  const save = (event: FormEvent) => {
+    event.preventDefault();
+    const value = key.trim();
+    if (!value) return;
+    void platform.writeSetting(AI_KEY_SETTING, value).then(() => {
+      setSaved(true);
+      setKey('');
+      setNote('Ключ сохранён');
+    });
+  };
+  const remove = () =>
+    void platform.writeSetting(AI_KEY_SETTING, '').then(() => {
+      setSaved(false);
+      setNote('Ключ удалён');
+    });
+  return (
+    <>
+      <Row label="Ключ Gemini" value={saved === null ? '…' : saved ? 'сохранён' : 'не задан'}>
+        {saved && (
+          <button className="settings__button" type="button" onClick={remove}>
+            Удалить
+          </button>
+        )}
+      </Row>
+      <form className="set__row presets__form" onSubmit={save}>
+        <input
+          className="presets__input"
+          type="password"
+          aria-label="Ключ Gemini"
+          placeholder={saved ? 'Вставьте новый ключ, чтобы заменить' : 'Вставьте ключ: AIza…'}
+          autoComplete="off"
+          spellCheck={false}
+          value={key}
+          onChange={(e) => {
+            setKey(e.target.value);
+            setNote(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && key) {
+              e.stopPropagation();
+              setKey('');
+            }
+          }}
+        />
+        <button className="settings__button" type="submit" disabled={!key.trim()}>
+          Сохранить
+        </button>
+      </form>
+      {note && (
+        <span className="settings__note" role="status">
+          {note}
+        </span>
+      )}
+      <p className="set__hint">
+        Ключ бесплатный, у каждого игрока свой. Он хранится только на этом компьютере.{' '}
+        <button className="link" type="button" onClick={() => void platform.openExternal(AI_KEY_URL)}>
+          Получить ключ на aistudio.google.com
+        </button>
+      </p>
+    </>
+  );
+}
+
 /** «1 карточка», «3 карточки», «5 карточек». */
 function cardsLabel(n: number): string {
   const mod10 = n % 10;
@@ -245,6 +329,71 @@ function PresetForm({ disabled, placeholder, onSave }: { disabled: boolean; plac
   );
 }
 
+function Switch({ label, hint, on, disabled, onChange }: { label: string; hint?: string; on: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <>
+      <div className="set__row">
+        <span className="set__label set__label--strong">{label}</span>
+        <span className="sp" />
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          aria-label={label}
+          disabled={disabled}
+          className={on ? 'switch switch--on' : 'switch'}
+          onClick={() => onChange(!on)}
+        >
+          <span className="switch__knob" />
+        </button>
+      </div>
+      {hint && <p className="set__hint">{hint}</p>}
+    </>
+  );
+}
+
+/** «Запускать вместе с Windows»: asked of Windows itself, so it shows what really happens at logon. */
+/** Where the AI's answers come from, when an AI server is known; without one, the player's own Gemini key. */
+function AiProviderField() {
+  const platform = usePlatform();
+  const [server, setServer] = useState<string | null>(null);
+  const [provider, setProvider] = useState<AiProvider>('server');
+  useEffect(() => {
+    void platform.readSetting<string>(AI_SERVER_SETTING).then((saved) => setServer(saved?.trim() || AI_SERVER));
+    void platform.readSetting<AiProvider>(AI_PROVIDER_SETTING).then((saved) => setProvider(saved ?? 'server'));
+  }, [platform]);
+  const choose = (next: AiProvider) => {
+    setProvider(next);
+    void platform.writeSetting(AI_PROVIDER_SETTING, next);
+  };
+  if (server === null) return null;
+  if (!server) return <AiKeyField />;
+  return (
+    <>
+      <div className="ai-provider" role="radiogroup" aria-label="Откуда ответы ИИ">
+        {(
+          [
+            ['server', 'Сервер ИИ'],
+            ['gemini', 'Свой ключ Gemini'],
+          ] as const
+        ).map(([id, label]) => (
+          <button key={id} type="button" role="radio" aria-checked={provider === id} className={provider === id ? 'settings__button ai-provider__on' : 'settings__button'} onClick={() => choose(id)}>
+            {label}
+          </button>
+        ))}
+      </div>
+      {provider === 'gemini' ? (
+        <>
+          <p className="set__hint">Gemini не работает из России. Если он у вас работает — ключ бесплатный, у каждого игрока свой.</p>
+          <AiKeyField />
+        </>
+      ) : (
+        <p className="set__hint">Ничего настраивать не нужно: ответы идут через сервер ИИ, с дневным лимитом вопросов на каждый компьютер.</p>
+      )}
+    </>
+  );
+}
+
 export interface SettingsViewProps {
   pack: ServerPack;
   organization?: Organization;
@@ -256,6 +405,9 @@ export interface SettingsViewProps {
   hotkey: string;
   onHotkey: (accelerator: string) => void;
   onCapturing: (capturing: boolean) => void;
+  /** The push-to-talk key for a question over the game; empty when off. */
+  voiceHotkey: string;
+  onVoiceHotkey: (accelerator: string) => void;
   opacity: number;
   onOpacity: (value: number) => void;
   /** The theme and the accent; without it (a bare overlay in tests) the choice is not shown. */
@@ -291,6 +443,8 @@ export function SettingsView({
   hotkey,
   onHotkey,
   onCapturing,
+  voiceHotkey,
+  onVoiceHotkey,
   opacity,
   onOpacity,
   appearance,
@@ -400,6 +554,28 @@ export function SettingsView({
           <b>«Отключение звука при потере фокуса» — «Выкл»</b> (GTA V → «Аудио»): иначе, пока открыт ассистент, игра глушит
           звук.
         </p>
+      </Block>
+      </div>
+
+      <div className="settings__part" id={sectionId('ai')}>
+      <Block title="ИИ-разбор">
+        <AiProviderField />
+      </Block>
+
+      <Block title="Вопрос голосом поверх игры">
+        <Switch
+          label="Спрашивать, не открывая окно"
+          hint="Держите клавишу и говорите, отпустите — ответ ИИ появится карточкой поверх игры. Окно ассистента не открывается, вопрос попадает в историю."
+          on={!!voiceHotkey}
+          onChange={(on) => onVoiceHotkey(on ? DEFAULT_VOICE_HOTKEY : '')}
+        />
+        {voiceHotkey && <HotkeyField label="Держать, чтобы спросить" hotkey={voiceHotkey} onHotkey={onVoiceHotkey} onCapturing={onCapturing} />}
+        {voiceHotkey && voiceHotkey === hotkey && (
+          <div className="warn" role="alert">
+            <WarnIcon />
+            <span>Это та же клавиша, что открывает ассистент, — выберите другую, иначе вопрос голосом не сработает.</span>
+          </div>
+        )}
       </Block>
       </div>
 
