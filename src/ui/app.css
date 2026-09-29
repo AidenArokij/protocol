@@ -2981,9 +2981,15 @@ input {
 
 .list--tiles {
   display: grid;
-  /* Two columns where they fit, one in a narrow window. */
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 6px;
+  /* Two columns across the whole width, as in the mockup; one in a narrow window. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .list--tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .row--tile {
@@ -3070,7 +3076,17 @@ input {
   color: var(--text-faint);
 }
 
+/* Held to the tile's width (its lines sit at the left, not stretched), the punishment or the chapter over two lines at most. */
+.row--tile .row__main > * {
+  max-width: 100%;
+}
+
 .row--tile .pen {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
   font-size: 13px;
 }
 
