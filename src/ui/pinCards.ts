@@ -31,7 +31,11 @@ function punishmentOf(part?: Part): Pick<PinCard, 'punishment' | 'extra'> {
   };
 }
 
-/** The pinned article: only its part — heading, punishment and text — and whose case it is. */
+/**
+ * The pinned article: the whole of it — every part, numbered, with its points — to read over the game without
+ * the overlay (issue #19). The heading names the part it was pinned from, whose punishment it carries, and
+ * whose case it is.
+ */
 export function articlePinCard(hit: SearchHit, rules?: CalculatorRules): PinCard {
   const own = entryPart(hit.article, hit.part);
   const part = own ?? leadPart(hit.article) ?? hit.part ?? hit.article.parts.find((p) => p.text);
@@ -41,8 +45,13 @@ export function articlePinCard(hit: SearchHit, rules?: CalculatorRules): PinCard
   // The rules of the project and the charters keep their punishment in a note under the article.
   const penalty = part?.punishment ? undefined : penaltyNote(hit.article);
   const heading = `${hit.document.short} ${articleLabel(hit.article, own, hit.document.unit)}` + (title ? `. ${title}` : '');
-  // A point written as a list (ФСО 5.1) shows its items too; a rule, whose text is its own heading, does not repeat it.
-  const lines = [...(part?.text ? [part.text] : []), ...(part?.points.map((point) => `${pointLabel(point)} ${point.text}`) ?? [])];
+  // Every part, numbered when there are several; a point written as a list (ФСО 5.1) shows its items too; a
+  // rule, whose text is its own heading, does not repeat it.
+  const several = hit.article.parts.filter((p) => p.text || p.points.length).length > 1;
+  const lines = hit.article.parts.flatMap((p) => [
+    ...(p.text ? [several && p.number ? `${p.number}. ${p.text}` : p.text] : []),
+    ...p.points.map((point) => `${pointLabel(point)} ${point.text}`),
+  ]);
   return {
     id: hitKey(hit),
     kind: 'article',

@@ -75,7 +75,7 @@ describe('an open article', () => {
       punishment: [{ text: 'штраф от 60 000 до 80 000 ₽ либо 40 мес' }],
       warning: 'федеральная подследственность — дело ФСБ',
     });
-    expect(pinnedCards(platform)[0].lines).toEqual([expect.stringMatching(/^Халатность, то есть/)]);
+    expect(pinnedCards(platform)[0].lines).toEqual([expect.stringMatching(/^1. Халатность, то есть/), expect.stringMatching(/^2. То же деяние/)]);
 
     // Another article is pinned beside the first, not instead of it.
     await openFromSearch(user, 'ук 104');

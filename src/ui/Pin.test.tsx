@@ -27,7 +27,7 @@ const pinArticle = (user: User) => user.click(within(screen.getByRole('article')
 const pinCalculator = (user: User) => user.click(within(panel()).getByRole('button', { name: 'Закрепить итог поверх игры' }));
 
 describe('pinning an article', () => {
-  it('pins only the part it was opened on, and the overlay stays open', async () => {
+  it('pins the whole article under the part it was opened on, and the overlay stays open', async () => {
     const { platform, user } = await renderApp();
     await user.type(search(), 'ук 65');
     await user.keyboard('{ArrowDown}{ArrowRight}');
@@ -40,7 +40,21 @@ describe('pinning an article', () => {
       heading: 'УК ст. 65 ч. 2. Кража',
       punishment: [{ text: 'штраф до 90 000 ₽ либо 40 мес' }],
     });
-    expect(pinnedCards(platform)[0].lines).toEqual([expect.stringMatching(/^Кража, совершенная/)]);
+    // Every part, to read over the game without the overlay (issue #19); the heading and the punishment are the part's.
+    expect(pinnedCards(platform)[0].lines).toEqual([expect.stringMatching(/^1. Кража, то есть/), expect.stringMatching(/^2. Кража, совершенная/)]);
+  });
+
+  it('pins every part of an article without a punishment, whole (issue #19: УПК ст. 4)', async () => {
+    const { platform, user } = await renderApp();
+    await user.type(search(), 'упк 4');
+    await user.keyboard('{ArrowRight}');
+    await pinArticle(user);
+    expect(pinnedCards(platform)[0]).toMatchObject({ heading: 'УПК ст. 4. Разумный срок уголовного процесса' });
+    expect(pinnedCards(platform)[0].lines).toEqual([
+      '1. Уголовный процесс осуществляется в разумный срок.',
+      expect.stringMatching(/^2. Уголовный процесс осуществляется в сроки, установленные настоящим Кодексом..*разумный срок.$/),
+      expect.stringMatching(/^3. Обстоятельства, связанные с организацией работы органов следствия.*уголовного процесса.$/),
+    ]);
   });
 });
 
