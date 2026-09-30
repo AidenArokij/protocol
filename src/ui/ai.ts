@@ -8,11 +8,13 @@ import {
   calculateCharges,
   geminiProvider,
   lawTerms as findLawTerms,
+  openaiProvider,
   serverProvider,
   validateAnswer,
   type AiProvider as AiService,
   type Analysis,
   type CaseState,
+  type CustomAi,
   type Depth,
   type LegalAnswer,
   type Perspective,
@@ -44,10 +46,14 @@ export type GeminiTurn = Turn;
 
 /**
  * The AI a player talks to: an AI server (server/ in the repository), which holds the key and needs nothing from
- * the player — or Gemini with the player's own key, for those it works for (it does not in Russia).
+ * the player — or their own OpenAI-compatible service with their key (issue #2) — or Gemini with their own key,
+ * for those it works for (it does not in Russia).
  */
-export type AiProvider = 'server' | 'gemini';
+export type AiProvider = 'server' | 'custom' | 'gemini';
 export const AI_PROVIDER_SETTING = 'ai.provider';
+/** The player's own service: `{ url, key, model }`, in the settings file on this computer only (not synced). */
+export const AI_CUSTOM_SETTING = 'ai.custom';
+export const NO_CUSTOM = 'Сначала укажите адрес и модель своего ИИ в настройках (⚙ → «ИИ»).';
 /** Another AI server than the built-in one (`AI_SERVER`), to try one out; normally unset. */
 export const AI_SERVER_SETTING = 'ai.server';
 /**
@@ -56,13 +62,24 @@ export const AI_SERVER_SETTING = 'ai.server';
  */
 export const DEVICE_SETTING = 'ai.device';
 
-export type AiConnection = { provider: 'server'; server: string; device: string } | { provider: 'gemini'; key: string };
+export type AiConnection =
+  | { provider: 'server'; server: string; device: string }
+  | ({ provider: 'custom' } & CustomAi)
+  | { provider: 'gemini'; key: string };
 
-/** How to reach the AI now, from the settings; a missing Gemini key is said at once. */
+/** How to reach the AI now, from the settings; a missing key or address is said at once. */
 export async function connect(platform: PlatformAdapter): Promise<AiConnection> {
   const server = ((await platform.readSetting<string>(AI_SERVER_SETTING))?.trim() || AI_SERVER).replace(/\/$/, '');
-  // With no AI server known, the player's own Gemini key is the only way.
-  const provider = server ? ((await platform.readSetting<AiProvider>(AI_PROVIDER_SETTING)) ?? 'server') : 'gemini';
+  const chosen = await platform.readSetting<AiProvider>(AI_PROVIDER_SETTING);
+  if (chosen === 'custom') {
+    const custom = await platform.readSetting<Partial<CustomAi>>(AI_CUSTOM_SETTING);
+    const url = custom?.url?.trim() ?? '';
+    const model = custom?.model?.trim() ?? '';
+    if (!url || !model) throw new AiError(NO_CUSTOM, 'key');
+    return { provider: 'custom', url, key: custom?.key?.trim() ?? '', model };
+  }
+  // With no AI server known, the player's own Gemini key is the only other way.
+  const provider = server ? (chosen ?? 'server') : 'gemini';
   if (provider === 'gemini') {
     const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
     if (!key) throw new AiError(NO_KEY, 'key');
@@ -78,7 +95,11 @@ export async function connect(platform: PlatformAdapter): Promise<AiConnection> 
 
 /** The service behind a connection. */
 export const serviceFor = (connection: AiConnection): AiService =>
-  connection.provider === 'server' ? serverProvider(connection.server, connection.device) : geminiProvider(connection.key);
+  connection.provider === 'server'
+    ? serverProvider(connection.server, connection.device)
+    : connection.provider === 'custom'
+      ? openaiProvider(connection)
+      : geminiProvider(connection.key);
 
 /**
  * Asks the AI. Through the AI server, `counts` says whether this is a question of the player's daily
@@ -377,17 +398,20 @@ export const heard = (text: string) => (PHANTOMS.test(text) ? '' : text);
 /**
  * What was said in a recording, as text; empty when nothing was heard. Through the AI server the speech is
  * recognised on this computer (free, however many questions — `onDownload` says the model is being fetched the
- * first time); with the player's own Gemini key, Gemini writes it down.
+ * first time), with the player's own service as well; with their own Gemini key, Gemini writes it down.
  */
 export async function transcribe(platform: PlatformAdapter, audio: RecordedAudio, onDownload?: () => void): Promise<string> {
   const key = await connect(platform);
-  if (key.provider === 'server') {
+  // With the player's own service too: speech never goes to it, the speech model comes from the AI server.
+  const models = key.provider === 'server' ? key.server : key.provider === 'custom' ? AI_SERVER : '';
+  if (models) {
     try {
-      return heard(await recognize(key.server, audio.chunks, audio.sampleRate, onDownload));
+      return heard(await recognize(models, audio.chunks, audio.sampleRate, onDownload));
     } catch (error) {
       throw new AiError(`Не получилось распознать речь: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
+  if (key.provider !== 'gemini') throw new AiError('Голосом с вашим ИИ спросить не получится — напишите вопрос текстом.');
   const wav = wavBase64(audio);
   const text = await ask(key, TRANSCRIBE_PROMPT, [
     { role: 'user', parts: [{ inlineData: { mimeType: 'audio/wav', data: wav } }, { text: 'Запиши, что сказано.' }] },

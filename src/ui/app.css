@@ -4066,9 +4066,10 @@ input {
   user-select: text;
 }
 
-/* Where the AI answers come from: the AI server or the player's own Gemini key. */
+/* Where the AI answers come from: the AI server, the player's own AI or their own Gemini key. */
 .ai-provider {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 8px;
 }
@@ -4076,6 +4077,23 @@ input {
 .ai-provider__on {
   background: var(--accent);
   color: var(--on-accent);
+}
+
+/* The player's own AI: address, model, key — one field a line. */
+.custom-ai {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-ai__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.custom-ai__field .presets__input {
+  width: 100%;
 }
 
 /* ——— The legal analysis: status, blocks, source cards ——— */

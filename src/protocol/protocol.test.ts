@@ -10,6 +10,7 @@ import {
   buildContext,
   calculateCharges,
   geminiProvider,
+  openaiProvider,
   labelSources,
   lawTerms,
   parseAnswer,
@@ -281,6 +282,42 @@ describe('the AI services and their failures', () => {
     const [url, init] = fetch.mock.calls[0];
     expect(url).not.toContain('secret-key');
     expect(new Headers(init.headers).get('x-goog-api-key')).toBe('secret-key');
+  });
+
+  it('asks the player’s own OpenAI-compatible AI with their key and model, and tells its failures apart (issue #2)', async () => {
+    const fetch = vi.fn(async (_url: string, _init: RequestInit) => new Response(JSON.stringify({ choices: [{ message: { content: '{"ok":true}' } }] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetch);
+    const own = openaiProvider({ url: 'https://ai.example/v1/', key: 'secret-key', model: 'some/model' });
+    expect(await own.complete({ ...request, json: true })).toBe('{"ok":true}');
+    const [url, init] = fetch.mock.calls[0];
+    expect(url).toBe('https://ai.example/v1/chat/completions');
+    expect(url).not.toContain('secret-key');
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer secret-key');
+    const body = JSON.parse(String(init.body));
+    expect(body).toMatchObject({ model: 'some/model', response_format: { type: 'json_object' } });
+    expect(body.messages[0]).toEqual({ role: 'system', content: 's' });
+
+    // A service without the JSON mode: asked again without it.
+    const noJson = vi.fn(async (_url: string, init: RequestInit) =>
+      JSON.parse(String(init.body)).response_format
+        ? new Response(JSON.stringify({ error: { message: 'response_format is not supported' } }), { status: 400 })
+        : new Response(JSON.stringify({ choices: [{ message: { content: '{}' } }] }), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', noJson);
+    expect(await own.complete({ ...request, json: true })).toBe('{}');
+    expect(noJson).toHaveBeenCalledTimes(2);
+
+    const reply = (status: number, body: unknown) => vi.fn(async () => new Response(JSON.stringify(body), { status }));
+    vi.stubGlobal('fetch', reply(401, { error: { message: 'Invalid API key' } }));
+    await expect(own.complete(request)).rejects.toMatchObject({ kind: 'key' });
+    vi.stubGlobal('fetch', reply(429, { error: { message: 'Rate limit' } }));
+    await expect(own.complete(request)).rejects.toMatchObject({ kind: 'busy' });
+    vi.stubGlobal('fetch', reply(200, { choices: [{ message: { content: '' } }] }));
+    await expect(own.complete(request)).rejects.toMatchObject({ kind: 'empty' });
+    // A local model needs no key: none is sent.
+    vi.stubGlobal('fetch', fetch);
+    await openaiProvider({ url: 'http://localhost:11434/v1', key: '', model: 'llama' }).complete(request);
+    expect(new Headers(fetch.mock.calls.at(-1)![1].headers).has('Authorization')).toBe(false);
   });
 
   it('gives up on a request that hangs', async () => {
