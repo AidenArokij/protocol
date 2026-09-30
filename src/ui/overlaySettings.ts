@@ -25,3 +25,6 @@ export function applyOpacity(value: number): void {
  */
 export const VOICE_HOTKEY_KEY = 'voice.hotkey';
 export const DEFAULT_VOICE_HOTKEY = 'Alt+W';
+
+/** Streamer mode: the app is left out of screen capture (OBS, Discord, screenshots). Windows' own, set at every start. */
+export const STREAMER_KEY = 'overlay.streamer';

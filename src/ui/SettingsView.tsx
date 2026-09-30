@@ -12,7 +12,7 @@ import { AI_CUSTOM_SETTING, AI_KEY_SETTING, AI_KEY_URL, AI_PROVIDER_SETTING, AI_
 import type { CustomAi } from '../protocol';
 import { AdminIcon, BookIcon, CloseIcon, DiscordIcon, GitHubIcon, HelpIcon, InfoIcon, KeyboardIcon, PaletteIcon, PinIcon, SparkIcon, TuneIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
-import { DEFAULT_VOICE_HOTKEY, MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
+import { DEFAULT_VOICE_HOTKEY, MAX_OPACITY, MIN_OPACITY, STREAMER_KEY } from './overlaySettings';
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
 import type { Laws, LawsStatus } from './laws';
 import type { Updates } from './updates';
@@ -480,7 +480,90 @@ function Switch({ label, hint, on, disabled, onChange }: { label: string; hint?:
   );
 }
 
+/**
+ * Streamer mode: the assistant and the pinned cards stay on the screen but out of OBS, Discord and screenshots.
+ * Nvidia's own recording stops altogether while a window hides itself so — said beside the switch, as players
+ * asked about it (issue #8).
+ */
+function StreamerField() {
+  const platform = usePlatform();
+  const [on, setOn] = useState<boolean | null>(null);
+  const [note, setNote] = useState<string | null>(null);
+  useEffect(() => {
+    void platform.readSetting<boolean>(STREAMER_KEY).then((saved) => setOn(!!saved));
+  }, [platform]);
+  const change = (next: boolean) => {
+    setOn(next);
+    setNote(null);
+    platform.setCaptureHidden(next).then(
+      () => void platform.writeSetting(STREAMER_KEY, next),
+      () => {
+        setOn(!next);
+        setNote('Windows не дал скрыть окно от записи экрана.');
+      },
+    );
+  };
+  if (on === null) return null;
+  return (
+    <>
+      <Switch
+        label="Режим стримера"
+        hint="Окно ассистента и закреплённые карточки видно вам, но не видно в OBS, Discord и на записи экрана."
+        on={on}
+        onChange={change}
+      />
+      <p className="set__hint">
+        <b>Внимание:</b> пока режим включён, запись Nvidia (мгновенный повтор, ShadowPlay) не работает совсем — так устроена
+        сама Nvidia. Нужен повтор — выключите режим.
+      </p>
+      {note && (
+        <span className="settings__note" role="alert">
+          {note}
+        </span>
+      )}
+    </>
+  );
+}
+
 /** «Запускать вместе с Windows»: asked of Windows itself, so it shows what really happens at logon. */
+function AutostartSwitch() {
+  const platform = usePlatform();
+  const [on, setOn] = useState<boolean | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    void platform.getAutostart().then(setOn, () => setOn(false));
+  }, [platform]);
+  const available = platform.kind !== 'browser';
+  return (
+    <>
+      <Switch
+        label="Запускать вместе с Windows"
+        hint={
+          available
+            ? 'Ассистент запустится при входе в Windows и будет ждать в трее — откройте его горячей клавишей.'
+            : 'Работает только в установленной программе.'
+        }
+        on={!!on}
+        disabled={on === null || !available}
+        onChange={(next) => {
+          setFailed(false);
+          setOn(next);
+          platform.setAutostart(next).catch(() => {
+            setOn(!next);
+            setFailed(true);
+          });
+        }}
+      />
+      {failed && (
+        <div className="warn" role="alert">
+          <WarnIcon />
+          <span>Windows не дал изменить автозапуск. Попробуйте ещё раз.</span>
+        </div>
+      )}
+    </>
+  );
+}
+
 /** Where the AI's answers come from, when an AI server is known; without one, the player's own Gemini key. */
 function AiProviderField() {
   const platform = usePlatform();
@@ -690,6 +773,14 @@ export function SettingsView({
           <b>«Отключение звука при потере фокуса» — «Выкл»</b> (GTA V → «Аудио»): иначе, пока открыт ассистент, игра глушит
           звук.
         </p>
+      </Block>
+
+      <Block title="Запуск">
+        <AutostartSwitch />
+      </Block>
+
+      <Block title="Стрим и запись">
+        <StreamerField />
       </Block>
       </div>
 
