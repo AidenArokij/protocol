@@ -1,7 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useAccount } from '../account/AccountContext';
+import { capabilitiesOf, type Capability } from '../account/capabilities';
 import type { MyRoles, PublicCard, RolesApi } from '../account/roles';
 import type { Accounts } from '../account/types';
+import type { Organization } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
 import { PLAYER_KEY, type PlayerCard } from './player';
 import { PROFILE_KEY, type Profile } from './profile';
@@ -90,6 +92,22 @@ export function RolesProvider({ accounts, children }: { accounts: Accounts; chil
   );
 
   return <RolesContext.Provider value={{ mine, refresh, publish, api: accounts.roles }}>{children}</RolesContext.Provider>;
+}
+
+/**
+ * What the player may do at their server and faction (roadmap 1А): the interface shows by this, never by the
+ * roles themselves. Without a place, only what does not depend on one (the admin's part).
+ */
+export function useCapabilities(place?: { server: string; organization?: Organization }): ReadonlySet<Capability> {
+  const { status } = useAccount();
+  const { mine } = useRoles();
+  const signedIn = status.kind === 'signed-in';
+  const server = place?.server ?? '';
+  const organization = place?.organization;
+  return useMemo(
+    () => capabilitiesOf({ signedIn, roles: mine?.roles ?? [], admin: !!mine?.admin, server, organization }),
+    [signedIn, mine, server, organization],
+  );
 }
 
 export function useRoles(): RolesControl {

@@ -5,7 +5,8 @@ import type { Organization, ServerPack } from '../core';
 import { EMPTY_STATS, topArticles, totalStats, type Stats } from './stats';
 import { LeaderRequestRow } from './LeaderRequest';
 import { FactionPanel } from './FactionPanel';
-import { useRoles } from './roles';
+import { useCapabilities, useRoles } from './roles';
+import { isFaction } from '../account/capabilities';
 import { useAccount } from '../account/AccountContext';
 import { useSyncStatus } from '../account/SyncContext';
 import type { SyncStatus } from '../account/sync';
@@ -209,7 +210,8 @@ export function AccountSection({ pack, organization, onMemos }: { pack: ServerPa
   const [card, saveCard] = usePlayerCard(usePlatform());
   const { mine, publish } = useRoles();
   const here = mine?.roles.find((role) => role.server === server.id && role.organization === organization?.id);
-  const faction = organization && organization.id !== 'none' ? organization.name : 'Без организации';
+  const faction = isFaction(organization) ? organization.name : 'Без организации';
+  const can = useCapabilities({ server: server.id, organization });
 
   if (status.kind === 'signed-in') {
     const { account } = status;
@@ -244,7 +246,7 @@ export function AccountSection({ pack, organization, onMemos }: { pack: ServerPa
           }}
         />
         <LeaderRequestRow server={server.id} organization={organization} />
-        {here?.role === 'leader' && organization && onMemos && <FactionPanel server={server.id} organization={organization.id} onMemos={onMemos} />}
+        {can.has('faction.deputies') && organization && onMemos && <FactionPanel server={server.id} organization={organization.id} onMemos={onMemos} />}
         {/* Telegram joins a Discord account, so either signs in to it. */}
         {account.via !== 'telegram' && (
           <div className="set__row">

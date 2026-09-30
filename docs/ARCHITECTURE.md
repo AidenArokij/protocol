@@ -25,6 +25,13 @@ whatever it says is checked against the pack before it is shown (`docs/SOURCE_GR
 `protocol/validate.ts validateAnswer` + `calculateCharges` (→ `core calculateDetention`) → `ui/AnswerView`.
 Details: `docs/AI_PIPELINE.md`.
 
+## Who may do what
+
+The interface shows by capabilities, not by roles: `src/account/capabilities.ts` `capabilitiesOf` turns being
+signed in, the roles at the player's server and faction, and being the admin into what they may do
+(`useCapabilities()` in `src/ui/roles.tsx`). An organisation restricts nothing: the player picks it themselves.
+What is allowed is decided by the database's rules and, from roadmap stage 4, the AI server — `docs/adr/0001`.
+
 ## The conversation
 
 Each answer leaves a `CaseState` (facts, assumptions, articles, conclusion). The next message — a follow-up,

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Organization } from '../core';
 import { factionName, serverName } from './AdminView';
-import { useRoles } from './roles';
+import { useCapabilities, useRoles } from './roles';
 
 /**
  * A player of a faction asks to be its leader (ticket 15); the admin answers in their part of the settings.
@@ -12,8 +12,8 @@ export function LeaderRequestRow({ server, organization }: { server: string; org
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState('');
   const [failed, setFailed] = useState(false);
-  if (!mine || !organization || organization.id === 'none') return null;
-  if (mine.roles.some((role) => role.server === server && role.organization === organization.id)) return null;
+  const can = useCapabilities({ server, organization });
+  if (!mine || !organization || !can.has('faction.lead-request')) return null;
 
   const request = mine.request;
   if (request?.status === 'pending') {

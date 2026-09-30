@@ -5,7 +5,7 @@ import { USAGE_SHARE_KEY } from '../account/usage';
 import { AccountCard, AccountSection } from './ProfileView';
 import { AdminSection } from './AdminView';
 import { FaqSection } from './Faq';
-import { useRoles } from './roles';
+import { useCapabilities } from './roles';
 import { ACCENT_HUES, THEMES, organizationHue, type AppearanceControl } from './appearance';
 import { AI_SERVER, APP_VERSION, AUTHORS, LINKS } from './about';
 import { AI_CUSTOM_SETTING, AI_KEY_SETTING, AI_KEY_URL, AI_PROVIDER_SETTING, AI_SERVER_SETTING, type AiProvider } from './ai';
@@ -701,8 +701,8 @@ export function SettingsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus?.at]);
 
-  const { mine } = useRoles();
-  const sections = mine?.admin ? [...SECTIONS, ADMIN_SECTION] : SECTIONS;
+  const can = useCapabilities();
+  const sections = can.has('admin') ? [...SECTIONS, ADMIN_SECTION] : SECTIONS;
   const sectionsNow = useRef(sections);
   sectionsNow.current = sections;
 
@@ -983,7 +983,7 @@ export function SettingsView({
       </Block>
       </div>
 
-      {mine?.admin && (
+      {can.has('admin') && (
         <div className="settings__part" id={sectionId('admin')}>
           <Block title="Администратор">
             <AdminSection />

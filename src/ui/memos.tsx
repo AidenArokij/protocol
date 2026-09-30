@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useAccount } from '../account/AccountContext';
+import { capabilitiesOf, isFaction } from '../account/capabilities';
 import type { Memo } from '../account/roles';
 import { usePlatform } from '../platform/PlatformContext';
+import { packFor } from '../data';
 import { factionName } from './AdminView';
 import { PROFILE_KEY, type Profile } from './profile';
 import { useRoles } from './roles';
@@ -57,7 +59,8 @@ export function MemosProvider({ children }: { children: ReactNode }) {
       return;
     }
     const profile = await platform.readSetting<Profile>(PROFILE_KEY);
-    const here = profile && profile.organization !== 'none' ? { server: profile.server, organization: profile.organization } : null;
+    const organization = profile && packFor(profile.server).organizations.find((o) => o.id === profile.organization);
+    const here = profile && isFaction(organization) ? { server: profile.server, organization: organization.id } : null;
     setPlace(here);
     setNow(Date.now());
     if (!here) return setMemos([]);
@@ -93,13 +96,20 @@ export function MemosProvider({ children }: { children: ReactNode }) {
     };
   }, [platform, refresh]);
 
-  const role = place && mine?.roles.find((r) => r.server === place.server && r.organization === place.organization);
+  // What the player may do with the memos of their faction.
+  const can = capabilitiesOf({
+    signedIn: !!account,
+    roles: mine?.roles ?? [],
+    admin: !!mine?.admin,
+    server: place?.server ?? '',
+    organization: place ? packFor(place.server).organizations.find((o) => o.id === place.organization) : undefined,
+  });
   const control: MemosControl = {
     place,
     active: memos.filter((memo) => Date.parse(memo.until) > now),
     archive: memos.filter((memo) => Date.parse(memo.until) <= now),
-    canWrite: !!role,
-    canRemove: (memo) => role?.role === 'leader' || memo.authorId === account?.id,
+    canWrite: can.has('memos.write'),
+    canRemove: (memo) => can.has('memos.moderate') || memo.authorId === account?.id,
     async post(text, days) {
       const here = placeRef.current;
       if (!here || !account) return;
