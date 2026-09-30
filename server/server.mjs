@@ -5,7 +5,8 @@
 // when GigaChat refuses, is busy or has used up its free tokens — so the paid API pays only for what GigaChat does
 // not answer. It keeps the spending in check: a few questions a day per computer and per address, and a daily
 // budget in rubles for everyone together.
-// Plain Node (20+), no packages: `node server.mjs`, behind Caddy for HTTPS (see README.md).
+// Plain Node (18+ — Ubuntu 24.04 ships 18: no global `crypto`, import what is used), no packages: `node server.mjs`, behind Caddy for HTTPS (see README.md).
+import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs';
 
@@ -190,7 +191,7 @@ async function gigachatToken() {
   if (token.value && Date.now() < token.until - 60_000) return token.value;
   const response = await fetch(CONFIG.gigachat.oauth, {
     method: 'POST',
-    headers: { Authorization: `Basic ${CONFIG.gigachat.key}`, RqUID: crypto.randomUUID(), 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+    headers: { Authorization: `Basic ${CONFIG.gigachat.key}`, RqUID: randomUUID(), 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
     body: new URLSearchParams({ scope: CONFIG.gigachat.scope }),
   });
   const body = await response.json().catch(() => null);
