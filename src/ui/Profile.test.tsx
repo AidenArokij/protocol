@@ -144,6 +144,7 @@ describe('the account, in the settings', () => {
       'Закреплённые',
       'Законы и обновления',
       'Клавиши',
+      'Частые вопросы',
       'О программе',
     ]);
     await user.click(within(settingsNav()).getByRole('button', { name: 'Клавиши' }));

@@ -112,14 +112,16 @@ Installers are built from the source code in this repository by GitHub Actions (
 
 Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/) — *applied for; until the application is approved, installers are not signed.*
 
-- Committers and reviewers / Авторы и ревьюеры: [skyze](https://github.com/skyyyzeee)
+- Committers and reviewers / Авторы и ревьюеры: [skyze](https://github.com/skyyyzeee), [AidenArokij](https://github.com/AidenArokij)
 - Approvers / Утверждают релизы: [skyze](https://github.com/skyyyzeee)
 
 Privacy / Конфиденциальность: see the [privacy policy](PRIVACY.md). This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it, except for the automatic update check against GitHub Releases described in the policy, which can be turned off in the settings, the anonymous daily usage counts described in the policy, which can be turned off in the settings, and the optional sign-in with Discord or Telegram through Supabase, which happens only when the user asks for it.
 
-## Автор
+## Авторы
 
 **skyze** — [GitHub](https://github.com/skyyyzeee) · [Discord](https://discord.gg/VBNn86EmDd)
+
+**AidenArokij** — ИИ-помощник и его сервер · [GitHub](https://github.com/AidenArokij)
 
 Нашли ошибку в статье или в расчёте — пишите в Discord или создайте [issue](https://github.com/skyyyzeee/ro-helper/issues).
 

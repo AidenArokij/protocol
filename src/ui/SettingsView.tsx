@@ -4,12 +4,13 @@ import { usePlatform } from '../platform/PlatformContext';
 import { USAGE_SHARE_KEY } from '../account/usage';
 import { AccountCard, AccountSection } from './ProfileView';
 import { AdminSection } from './AdminView';
+import { FaqSection } from './Faq';
 import { useRoles } from './roles';
 import { ACCENT_HUES, THEMES, organizationHue, type AppearanceControl } from './appearance';
-import { AI_SERVER, APP_VERSION, AUTHOR, LINKS } from './about';
+import { AI_SERVER, APP_VERSION, AUTHORS, LINKS } from './about';
 import { AI_CUSTOM_SETTING, AI_KEY_SETTING, AI_KEY_URL, AI_PROVIDER_SETTING, AI_SERVER_SETTING, type AiProvider } from './ai';
 import type { CustomAi } from '../protocol';
-import { AdminIcon, BookIcon, CloseIcon, DiscordIcon, GitHubIcon, InfoIcon, KeyboardIcon, PaletteIcon, PinIcon, SparkIcon, TuneIcon, WarnIcon } from './icons';
+import { AdminIcon, BookIcon, CloseIcon, DiscordIcon, GitHubIcon, HelpIcon, InfoIcon, KeyboardIcon, PaletteIcon, PinIcon, SparkIcon, TuneIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
 import { DEFAULT_VOICE_HOTKEY, MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
@@ -52,7 +53,7 @@ function lawsNote(status: LawsStatus): string | null {
 }
 
 /** The parts of the settings, in the column on their left: the account on top, then these. */
-export type SettingsSection = 'account' | 'main' | 'ai' | 'look' | 'pinned' | 'laws' | 'keys' | 'about' | 'admin';
+export type SettingsSection = 'account' | 'main' | 'ai' | 'look' | 'pinned' | 'laws' | 'keys' | 'faq' | 'about' | 'admin';
 const SECTIONS: { id: SettingsSection; label: string; icon: ReactNode }[] = [
   { id: 'main', label: 'Основное', icon: <TuneIcon /> },
   { id: 'ai', label: 'ИИ', icon: <SparkIcon size={18} /> },
@@ -60,6 +61,7 @@ const SECTIONS: { id: SettingsSection; label: string; icon: ReactNode }[] = [
   { id: 'pinned', label: 'Закреплённые', icon: <PinIcon /> },
   { id: 'laws', label: 'Законы и обновления', icon: <BookIcon /> },
   { id: 'keys', label: 'Клавиши', icon: <KeyboardIcon /> },
+  { id: 'faq', label: 'Частые вопросы', icon: <HelpIcon /> },
   { id: 'about', label: 'О программе', icon: <InfoIcon /> },
 ];
 /** The admin's part, after the rest — shown to the admin only. */
@@ -815,11 +817,17 @@ export function SettingsView({
       </Block>
       </div>
 
+      <div className="settings__part" id={sectionId('faq')}>
+        <Block title="Частые вопросы">
+          <FaqSection />
+        </Block>
+      </div>
+
       <div className="settings__part" id={sectionId('about')}>
       <Block title="О программе">
         <div className="set__row settings__about">
           <span>
-            Кремлёвский Ассистент {APP_VERSION} · автор {AUTHOR}
+            Кремлёвский Ассистент {APP_VERSION} · авторы {AUTHORS.join(' и ')}
           </span>
           <span className="sp" />
           <button className="icon-btn icon-btn--sm" type="button" aria-label="GitHub" title="GitHub" onClick={() => void platform.openExternal(LINKS.repository)}>

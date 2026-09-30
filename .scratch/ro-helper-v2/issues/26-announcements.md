@@ -6,4 +6,6 @@
 
 **Blocked by:** —
 
-**Status:** ready-for-agent
+**Status:** done
+
+Сделано: `src/ui/announcements.ts` (файл `src/data/announcements.json` с `main`, при запуске и раз в 6 ч, кэш на офлайн, скрытые по id, ссылки только на разрешённые сайты), плашка на главной над «Законы обновлены», PRIVACY.md и CLAUDE.md.

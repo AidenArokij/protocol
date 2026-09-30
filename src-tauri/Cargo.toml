@@ -2,7 +2,7 @@
 name = "ro-helper"
 version = "1.0.0"
 description = "Кремлёвский Ассистент — законы Russia Online поверх игры"
-authors = ["skyze"]
+authors = ["skyze", "AidenArokij"]
 license = "MIT"
 repository = "https://github.com/skyyyzeee/ro-helper"
 edition = "2021"

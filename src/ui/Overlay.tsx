@@ -38,7 +38,7 @@ import { useDetentionReview } from './detention';
 import { useTrainer } from './trainer';
 import { useDocumentWriter } from './documents';
 import { HistoryView } from './HistoryView';
-import { BackIcon, CalculatorIcon, ChevronDownIcon, CloseIcon, DocumentsIcon, HistoryIcon, MemoIcon, MicIcon, OrganizationIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon, SparkIcon } from './icons';
+import { BackIcon, CalculatorIcon, ChevronDownIcon, CloseIcon, DocumentsIcon, NewsIcon, HistoryIcon, MemoIcon, MicIcon, OrganizationIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon, SparkIcon } from './icons';
 import { SideRail } from './SideRail';
 import { canRecord, startRecording, type Recording } from './voice';
 import { DEFAULT_OPACITY, DEFAULT_VOICE_HOTKEY, OPACITY_KEY, VOICE_HOTKEY_KEY, applyOpacity, clampOpacity } from './overlaySettings';
@@ -57,6 +57,7 @@ import { RECENT_LIMIT, entryPart, favoritesKey, hitKey, recentKey, useHitLookup,
 import { ServerChoice } from './ServerChoice';
 import { SettingsView, type SettingsSection } from './SettingsView';
 import { useStats } from './stats';
+import { useAnnouncements } from './announcements';
 import { Avatar } from './ProfileView';
 import { useAccount } from '../account/AccountContext';
 import type { Laws } from './laws';
@@ -312,6 +313,8 @@ export function Overlay({
   const [charges, setCharges] = useState<Entry[]>([]);
   // What the player does, for their profile and — unless turned off — the author's anonymous counts.
   const count = useStats(platform, pack.server.id);
+  // The author's notice to every player, from GitHub (ticket 26).
+  const announcements = useAnnouncements(pack.server.id);
   const [mode, setMode] = useState<Mode>('custody');
   const [offender, setOffender] = useState<Offender>('citizen');
   const [fineInput, setFineInput] = useState('');
@@ -1390,6 +1393,32 @@ export function Overlay({
           />
         ) : home ? (
           <>
+            {announcements.current && (
+              <section className="home__news" aria-label="Объявление">
+                <NewsIcon />
+                <div className="home__news-text">
+                  {announcements.current.title && <b>{announcements.current.title}</b>}
+                  <span>{announcements.current.text}</span>
+                  {announcements.current.link && (
+                    <button className="link" type="button" onClick={() => void platform.openExternal(announcements.current!.link!.url)}>
+                      {announcements.current.link.label}
+                    </button>
+                  )}
+                </div>
+                <button
+                  className="icon-btn icon-btn--sm"
+                  type="button"
+                  aria-label="Скрыть объявление"
+                  title="Скрыть объявление"
+                  onClick={() => {
+                    announcements.dismiss(announcements.current!.id);
+                    searchRef.current?.focus();
+                  }}
+                >
+                  <CloseIcon size={16} />
+                </button>
+              </section>
+            )}
             {banner && (
               <button className="home__banner" type="button" onClick={showRecentChanges}>
                 <span>

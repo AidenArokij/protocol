@@ -52,6 +52,8 @@ export const TuneIcon = icon('tune', 18);
 export const BookIcon = icon('menu_book', 18);
 export const InfoIcon = icon('info', 18);
 export const AdminIcon = icon('admin_panel_settings', 18);
+export const HelpIcon = icon('help', 18);
+export const NewsIcon = icon('campaign', 18);
 
 /** Star for favourites: outlined, and filled when its button is on (`.fav--on`). */
 export const FavoriteIcon = ({ size = 20 }: Size) => (

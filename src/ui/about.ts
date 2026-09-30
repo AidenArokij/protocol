@@ -3,7 +3,8 @@ declare const __APP_VERSION__: string;
 /** This build's version, from package.json. */
 export const APP_VERSION = __APP_VERSION__;
 
-export const AUTHOR = 'skyze';
+/** Who made it: skyze, and AidenArokij — the AI helper and its server. */
+export const AUTHORS = ['skyze', 'AidenArokij'];
 
 export const LINKS = {
   repository: 'https://github.com/skyyyzeee/ro-helper',

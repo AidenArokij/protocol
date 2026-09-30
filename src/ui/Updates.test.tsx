@@ -106,7 +106,7 @@ describe('updates of the app', () => {
   it('names the version and the author, with links to GitHub and Discord', async () => {
     const { platform, user } = await renderApp();
     await user.click(screen.getByRole('button', { name: 'Настройки' }));
-    expect(settings()).toHaveTextContent(`Кремлёвский Ассистент ${APP_VERSION} · автор skyze`);
+    expect(settings()).toHaveTextContent(`Кремлёвский Ассистент ${APP_VERSION} · авторы skyze и AidenArokij`);
     await user.click(within(settings()).getByRole('button', { name: 'GitHub' }));
     expect(platform.calls.at(-1)?.args).toEqual(['https://github.com/skyyyzeee/ro-helper']);
     await user.click(within(settings()).getByRole('button', { name: 'Discord' }));
