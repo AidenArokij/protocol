@@ -67,13 +67,16 @@ pub fn quick_show(app: AppHandle, position: Option<QuickPosition>) -> Result<(),
   app.emit_to(QUICK_LABEL, QUICK_SHOWN_EVENT, ()).map_err(|e| e.to_string())
 }
 
-/// Hides the bar; the focus goes back to the game.
+/// Hides the bar; the focus goes back to the game — unless the overlay is taking the bar's place and has the
+/// focus already (`keep_focus`, issue #21).
 #[tauri::command]
-pub fn quick_hide(app: AppHandle, state: tauri::State<crate::PreviousForeground>) -> Result<(), String> {
+pub fn quick_hide(app: AppHandle, state: tauri::State<crate::PreviousForeground>, keep_focus: Option<bool>) -> Result<(), String> {
   if let Some(window) = app.get_webview_window(QUICK_LABEL) {
     window.hide().map_err(|e| e.to_string())?;
   }
-  crate::give_focus_back(&state);
+  if keep_focus != Some(true) {
+    crate::give_focus_back(&state);
+  }
   Ok(())
 }
 

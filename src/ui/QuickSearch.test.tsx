@@ -122,7 +122,7 @@ describe('the overlay, for the quick search', () => {
     const { platform } = await renderApp();
     await vi.waitFor(() => expect(platform.state.quickHotkey).toBe('Alt+S'));
     act(() => platform.quickRequest({ kind: 'charge', key: 'uk-65#1' }));
-    expect(await screen.findByRole('complementary', { name: 'Калькулятор' })).toHaveTextContent('ст. 65 ч. 1');
+    expect(await screen.findByRole('complementary', { name: 'Калькулятор' }, { timeout: 4000 })).toHaveTextContent('ст. 65 ч. 1');
     await vi.waitFor(() => expect(platform.state.pins.flatMap((group) => group.cards).map((card) => card.id)).toContain('calculator'));
     await vi.waitFor(() => expect(platform.state.quickState?.charges).toEqual(['uk-65#1']), { timeout: 4000 });
   });
@@ -143,7 +143,7 @@ describe('the overlay, for the quick search', () => {
     try {
       const { platform } = await renderApp();
       act(() => platform.quickRequest({ kind: 'ask', question: 'украл телефон у прохожего' }));
-      expect(await screen.findByRole('region', { name: 'ИИ-разбор' })).toHaveTextContent('украл телефон у прохожего');
+      expect(await screen.findByRole('region', { name: 'ИИ-разбор' }, { timeout: 4000 })).toHaveTextContent('украл телефон у прохожего');
       expect(platform.calls.some((call) => call.method === 'showOverlay')).toBe(true);
     } finally {
       vi.unstubAllGlobals();

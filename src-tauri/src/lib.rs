@@ -347,16 +347,18 @@ fn laws_write(app: AppHandle, server: String, text: String) -> Result<(), String
 #[derive(Default)]
 pub(crate) struct PreviousForeground(Mutex<Option<isize>>);
 
-/// Remembers the foreground window so focus can go back to it when the overlay hides.
+/// Remembers the foreground window so focus can go back to it when the overlay hides. Never one of the app's
+/// own windows: with the quick search up, it is the bar that has the focus, and the game is what was
+/// remembered when the bar was shown (issue #21).
 #[tauri::command]
 #[allow(unused_variables)]
-fn remember_foreground(window: tauri::WebviewWindow, state: tauri::State<PreviousForeground>) {
+fn remember_foreground(app: AppHandle, state: tauri::State<PreviousForeground>) {
   #[cfg(windows)]
   {
     use windows_sys::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
     let current = unsafe { GetForegroundWindow() } as isize;
-    let own = window.hwnd().map(|hwnd| hwnd.0 as isize).unwrap_or(0);
-    if current != 0 && current != own {
+    let own = app.webview_windows().values().any(|window| window.hwnd().map(|hwnd| hwnd.0 as isize).ok() == Some(current));
+    if current != 0 && !own {
       *state.0.lock().unwrap() = Some(current);
     }
   }

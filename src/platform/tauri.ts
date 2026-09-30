@@ -237,6 +237,10 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
     await win.setAlwaysOnTop(true);
     await win.setFocus();
     visible = true;
+    // The overlay takes the quick search's place, as the bar takes the overlay's: the bar goes, and the focus
+    // stays here, so the overlay's search can be typed into at once (issue #21).
+    const quick = await WebviewWindow.getByLabel(QUICK_LABEL);
+    if (quick && (await quick.isVisible())) await invoke('quick_hide', { keepFocus: true });
     // While the overlay is open, the pinned card can be dragged and closed.
     await invoke('pin_live', { live: true });
     shownListeners.forEach((listener) => listener());
