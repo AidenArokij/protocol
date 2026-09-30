@@ -140,6 +140,11 @@ export interface PlatformAdapter {
   writeLaws(server: string, text: string): Promise<void>;
   /** Shows a notice over the game — even while the overlay is hidden — that goes by itself. */
   showToast(toast: Toast): Promise<void>;
+  /**
+   * Streamer mode: the overlay and the pinned cards stay on the screen but are left out of screen capture —
+   * OBS, Discord, screenshots. Windows' own: set again at every start. Throws when Windows refuses.
+   */
+  setCaptureHidden(hidden: boolean): Promise<void>;
 
   writeClipboard(text: string): Promise<void>;
 

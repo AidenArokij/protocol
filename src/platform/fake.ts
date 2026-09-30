@@ -21,6 +21,8 @@ export interface FakePlatform extends PlatformAdapter {
     laws: Map<string, string>;
     /** The last notice shown over the game. */
     toast: Toast | null;
+    /** Streamer mode: left out of screen capture. */
+    captureHidden: boolean;
     clipboard: string;
     /** What the releases offer: a newer version, none, or no connection. */
     update: AppUpdate | null | 'offline';
@@ -63,6 +65,7 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     remote: options.remote ?? {},
     laws: new Map(Object.entries(options.laws ?? {})),
     toast: null,
+    captureHidden: false,
     clipboard: '',
     update: options.update ?? null,
     updateInstalled: false,
@@ -195,6 +198,10 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     async showToast(toast) {
       record('showToast', toast);
       state.toast = toast;
+    },
+    async setCaptureHidden(hidden) {
+      record('setCaptureHidden', hidden);
+      state.captureHidden = hidden;
     },
 
     async writeClipboard(text) {
