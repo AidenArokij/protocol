@@ -6,7 +6,8 @@ export function NoticeBanner({ notices }: { notices: Notices }) {
   const { notice } = notices;
   if (!notice) return null;
   return (
-    <div className="update notice" role="status" aria-label="Объявление">
+    // Not «notice»: that is the first launch's reminder, a veil over the whole window.
+    <div className="update update--notice" role="status" aria-label="Объявление">
       <InfoIcon />
       <div className="update__text">
         <strong>{notice.title}</strong>

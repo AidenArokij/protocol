@@ -33,6 +33,8 @@ import { DocumentView } from './DocumentView';
 import { TrainerView } from './TrainerView';
 import { LawyerView } from './LawyerView';
 import { useLawyerCheck } from './lawyer';
+import { DetentionView } from './DetentionView';
+import { useDetentionReview } from './detention';
 import { useTrainer } from './trainer';
 import { useDocumentWriter } from './documents';
 import { HistoryView } from './HistoryView';
@@ -181,6 +183,7 @@ export function Overlay({
   const writer = useDocumentWriter(platform, pack, boostDocuments);
   const trainer = useTrainer(platform, pack, boostDocuments);
   const lawyer = useLawyerCheck(platform, pack, boostDocuments);
+  const detention = useDetentionReview(platform, pack, boostDocuments);
   /** The field is the AI's, not the search's: an article opened from the answer gives it back to the search. */
   const aiMode = aiOpen && !open;
 
@@ -568,11 +571,14 @@ export function Overlay({
     }
     // In the AI analysis Enter sends the situation; the list keys have no list to walk.
     if (aiMode) {
-      if (e.key === 'Enter' && !e.shiftKey && aiDraft.trim() && !(aiTab === 'document' ? writer.busy : aiTab === 'trainer' ? trainer.phase !== 'answering' : aiTab === 'lawyer' ? lawyer.busy : chat.busy)) {
+      const busy =
+        aiTab === 'document' ? writer.busy : aiTab === 'trainer' ? trainer.phase !== 'answering' : aiTab === 'lawyer' ? lawyer.busy : aiTab === 'detention' ? detention.busy : chat.busy;
+      if (e.key === 'Enter' && !e.shiftKey && aiDraft.trim() && !busy) {
         e.preventDefault();
         if (aiTab === 'document') void writer.write(aiDraft);
         else if (aiTab === 'trainer') void trainer.reply(aiDraft);
         else if (aiTab === 'lawyer') void lawyer.check(aiDraft);
+        else if (aiTab === 'detention') void detention.review(aiDraft);
         else void chat.send(aiDraft);
         setAiDraft('');
       }
@@ -651,6 +657,7 @@ export function Overlay({
       if (text && aiOpen && aiTab === 'document') void writer.write(text);
       else if (text && aiOpen && aiTab === 'trainer') void trainer.reply(text);
       else if (text && aiOpen && aiTab === 'lawyer') void lawyer.check(text);
+      else if (text && aiOpen && aiTab === 'detention') void detention.review(text);
       else if (text) openAi(text);
       else voiceFailed('Не расслышал вопрос. Нажмите 🎤 и говорите чуть громче или ближе к микрофону.');
     } catch (error) {
@@ -903,6 +910,8 @@ export function Overlay({
                     ? 'Ваш ответ своими словами…'
                     : aiTab === 'lawyer'
                       ? 'Что требует адвокат: свидание, копию протокола…'
+                    : aiTab === 'detention'
+                      ? 'Что вы делали при задержании, по порядку…'
                     : chat.messages.length
                   ? 'Уточните или опишите новую ситуацию…'
                   : 'Опишите ситуацию своими словами…'
@@ -1019,7 +1028,8 @@ export function Overlay({
         </button>
       </div>
 
-      <NoticeBanner notices={notices} />
+      {/* On the search only: over an article, the AI or the settings it would take their place. */}
+      {onList && <NoticeBanner notices={notices} />}
       <UpdateBanner
         updates={updates}
         onNotes={() => {
@@ -1230,6 +1240,20 @@ export function Overlay({
               searchRef.current?.focus();
             }}
           />
+        ) : aiOpen && aiTab === 'detention' ? (
+          <DetentionView
+            detention={detention}
+            backLabel={query ? 'Результаты' : scope ? 'Оглавление' : 'Поиск'}
+            onBack={() => {
+              setAiOpen(false);
+              searchRef.current?.focus();
+            }}
+            onOpen={openHit}
+            onTab={(tab) => {
+              setAiTab(tab);
+              searchRef.current?.focus();
+            }}
+          />
         ) : aiOpen && aiTab === 'trainer' ? (
           <TrainerView
             trainer={trainer}
@@ -1360,7 +1384,7 @@ export function Overlay({
         {aiMode ? (
           <>
             <span>
-              <b>Enter</b> {aiTab === 'document' ? 'составить документ' : aiTab === 'trainer' ? 'ответить' : aiTab === 'lawyer' ? 'проверить требования' : 'спросить ИИ'}
+              <b>Enter</b> {aiTab === 'document' ? 'составить документ' : aiTab === 'trainer' ? 'ответить' : aiTab === 'lawyer' ? 'проверить требования' : aiTab === 'detention' ? 'разобрать задержание' : 'спросить ИИ'}
             </span>
             <span>клик по статье — открыть</span>
             <span>

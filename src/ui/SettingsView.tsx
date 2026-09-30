@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent as Reac
 import type { Organization, ServerPack } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
 import { APP_VERSION, AUTHOR, LINKS, ORIGINAL } from './about';
-import { AI_KEY_SETTING, AI_KEY_URL, AI_PROVIDER_SETTING, type AiProvider } from './ai';
+import { AI_CUSTOM_SETTING, AI_KEY_SETTING, AI_KEY_URL, AI_PROVIDER_SETTING, type AiProvider } from './ai';
+import type { CustomAi } from '../protocol';
 import {
   BackIcon,
   BookIcon,
@@ -360,7 +361,7 @@ const FAQ: [string, string][] = [
   ],
   [
     'Как спрятать ПРОТОКОЛ со стрима или записи?',
-    'Включите «Режим стримера» в «Основном»: вам окно видно, а в OBS, Discord и на скриншотах его не будет.',
+    'Включите «Режим стримера» в «Основном»: вам окно видно, а в OBS, Discord и на скриншотах его не будет. Только учтите: пока он включён, запись Nvidia (мгновенный повтор) не работает совсем — Nvidia отключается, когда видит окно, скрытое от записи. Нужен повтор — выключите режим.',
   ],
   [
     'Откуда законы и насколько они свежие?',
@@ -373,7 +374,7 @@ const FAQ: [string, string][] = [
   ['Как обновить программу?', 'Сама: когда выйдет новая версия, ПРОТОКОЛ предложит обновиться. Проверить вручную — «Законы и обновления» → «Проверить обновления».'],
 ];
 
-/** Where the AI's answers come from: ПРОТОКОЛ's server, nothing to set up — or the player's own Gemini key. */
+/** Where the AI's answers come from: ПРОТОКОЛ's server, nothing to set up — or the player's own AI, or Gemini key. */
 function AiProviderField() {
   const platform = usePlatform();
   const [provider, setProvider] = useState<AiProvider | null>(null);
@@ -390,6 +391,7 @@ function AiProviderField() {
         {(
           [
             ['protocol', 'Сервер ПРОТОКОЛА'],
+            ['custom', 'Свой ИИ'],
             ['gemini', 'Свой ключ Gemini'],
           ] as const
         ).map(([id, label]) => (
@@ -398,7 +400,9 @@ function AiProviderField() {
           </button>
         ))}
       </div>
-      {provider === 'gemini' ? (
+      {provider === 'custom' ? (
+        <CustomAiField />
+      ) : provider === 'gemini' ? (
         <>
           <p className="set__hint">Gemini не работает из России. Если он у вас работает — ключ бесплатный, у каждого игрока свой, лимита ПРОТОКОЛА нет.</p>
           <AiKeyField />
@@ -406,6 +410,127 @@ function AiProviderField() {
       ) : (
         <p className="set__hint">Ничего настраивать не нужно: ответы идут через сервер ПРОТОКОЛА, бесплатно, с дневным лимитом вопросов на каждый компьютер. Лимит обновляется в полночь по Москве.</p>
       )}
+    </>
+  );
+}
+
+/**
+ * The player's own OpenAI-compatible AI: its address, model and key, in the settings file on this
+ * computer only. The key is shown only as a mask; an empty key field keeps the saved one.
+ */
+function CustomAiField() {
+  const platform = usePlatform();
+  const [saved, setSaved] = useState<Partial<CustomAi> | null>(null);
+  const [url, setUrl] = useState('');
+  const [model, setModel] = useState('');
+  const [key, setKey] = useState('');
+  const [note, setNote] = useState<string | null>(null);
+  useEffect(() => {
+    void platform.readSetting<Partial<CustomAi>>(AI_CUSTOM_SETTING).then((value) => {
+      setSaved(value ?? {});
+      setUrl(value?.url ?? '');
+      setModel(value?.model ?? '');
+    });
+  }, [platform]);
+  const address = url.trim();
+  const valid = /^https?:\/\/\S+$/i.test(address) && !!model.trim();
+  const save = (event: FormEvent) => {
+    event.preventDefault();
+    if (!valid) return;
+    const next: CustomAi = { url: address, model: model.trim(), key: key.trim() || (saved?.key ?? '') };
+    void platform.writeSetting(AI_CUSTOM_SETTING, next).then(() => {
+      setSaved(next);
+      setKey('');
+      setNote('Сохранено');
+    });
+  };
+  const removeKey = () => {
+    const next = { ...saved, key: '' };
+    void platform.writeSetting(AI_CUSTOM_SETTING, next).then(() => {
+      setSaved(next);
+      setNote('Ключ удалён');
+    });
+  };
+  if (saved === null) return null;
+  const edited = () => setNote(null);
+  const escape = (value: string, clear: () => void) => (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape' && value) {
+      e.stopPropagation();
+      clear();
+    }
+  };
+  return (
+    <>
+      <p className="set__hint">
+        Любой ИИ с API как у OpenAI: OpenRouter, свой сервер, модель на своём компьютере. Вопросы идут к нему напрямую с этого компьютера, с вашим
+        ключом; лимиты и оплата — его. Голос по-прежнему распознаётся на компьютере.
+      </p>
+      <form className="custom-ai" onSubmit={save}>
+        <label className="custom-ai__field">
+          <span className="set__label">Адрес API</span>
+          <input
+            className="presets__input"
+            type="url"
+            placeholder="https://openrouter.ai/api/v1"
+            autoComplete="off"
+            spellCheck={false}
+            value={url}
+            onChange={(e) => {
+              setUrl(e.target.value);
+              edited();
+            }}
+            onKeyDown={escape(url, () => setUrl(''))}
+          />
+        </label>
+        <label className="custom-ai__field">
+          <span className="set__label">Модель</span>
+          <input
+            className="presets__input"
+            type="text"
+            placeholder="например, openai/gpt-4o-mini"
+            autoComplete="off"
+            spellCheck={false}
+            value={model}
+            onChange={(e) => {
+              setModel(e.target.value);
+              edited();
+            }}
+            onKeyDown={escape(model, () => setModel(''))}
+          />
+        </label>
+        <label className="custom-ai__field">
+          <span className="set__label">Ключ API {saved.key ? '(сохранён)' : '(если нужен)'}</span>
+          <input
+            className="presets__input"
+            type="password"
+            placeholder={saved.key ? 'Вставьте новый ключ, чтобы заменить' : 'sk-…'}
+            autoComplete="off"
+            spellCheck={false}
+            value={key}
+            onChange={(e) => {
+              setKey(e.target.value);
+              edited();
+            }}
+            onKeyDown={escape(key, () => setKey(''))}
+          />
+        </label>
+        <div className="set__row">
+          <button className="settings__button" type="submit" disabled={!valid}>
+            Сохранить
+          </button>
+          {saved.key && (
+            <button className="settings__button" type="button" onClick={removeKey}>
+              Удалить ключ
+            </button>
+          )}
+        </div>
+      </form>
+      {note && (
+        <span className="settings__note" role="status">
+          {note}
+        </span>
+      )}
+      <p className="set__hint">Адрес, модель и ключ хранятся только на этом компьютере и не уходят ни на сервер ПРОТОКОЛА.</p>
     </>
   );
 }
@@ -630,7 +755,7 @@ export function SettingsView({
         <AutostartSwitch />
         <Switch
           label="Режим стримера"
-          hint="Окно ПРОТОКОЛА и закреплённые карточки видно вам, но не видно в OBS, Discord и на записи экрана."
+          hint="Окно ПРОТОКОЛА и закреплённые карточки видно вам, но не видно в OBS, Discord и на записи экрана. Внимание: пока режим включён, Nvidia (мгновенный повтор, ShadowPlay) не записывает вообще ничего — так устроена сама Nvidia."
           on={streamer}
           onChange={onStreamer}
         />

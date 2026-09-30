@@ -3665,3 +3665,8 @@ select option {
 .fact--changed { color: var(--was-text); }
 
 .clarify { display: flex; flex-direction: column; gap: 6px; }
+
+/* The player's own AI: address, model, key — one field a line. */
+.custom-ai { display: flex; flex-direction: column; gap: 8px; }
+.custom-ai__field { display: flex; flex-direction: column; gap: 4px; }
+.custom-ai__field .presets__input { width: 100%; }

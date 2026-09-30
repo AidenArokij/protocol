@@ -8,11 +8,13 @@ import {
   calculateCharges,
   geminiProvider,
   lawTerms as findLawTerms,
+  openaiProvider,
   serverProvider,
   validateAnswer,
   type AiProvider as AiService,
   type Analysis,
   type CaseState,
+  type CustomAi,
   type Depth,
   type LegalAnswer,
   type Perspective,
@@ -44,20 +46,34 @@ export type GeminiTurn = Turn;
 
 /**
  * The AI a player talks to: ПРОТОКОЛ's own server, which holds the key and needs nothing from the player —
- * or Gemini with the player's own key, for those it works for (it does not in Russia).
+ * or their own OpenAI-compatible service with their key — or Gemini with their own key, for those it works for
+ * (it does not in Russia).
  */
-export type AiProvider = 'protocol' | 'gemini';
+export type AiProvider = 'protocol' | 'custom' | 'gemini';
 export const AI_PROVIDER_SETTING = 'ai.provider';
+/** The player's own service: `{ url, key, model }`, in the settings file on this computer only. */
+export const AI_CUSTOM_SETTING = 'ai.custom';
+export const NO_CUSTOM = 'Сначала укажите адрес и модель своего ИИ в настройках (⚙ → «Ответы ИИ»).';
 /** A different server for ПРОТОКОЛ's AI, to try one out; normally unset. */
 export const AI_SERVER_SETTING = 'ai.server';
 /** A random id of this computer: the server's daily limits are counted by it. */
 export const DEVICE_SETTING = 'device.id';
 
-export type AiConnection = { provider: 'protocol'; server: string; device: string } | { provider: 'gemini'; key: string };
+export type AiConnection =
+  | { provider: 'protocol'; server: string; device: string }
+  | ({ provider: 'custom' } & CustomAi)
+  | { provider: 'gemini'; key: string };
 
-/** How to reach the AI now, from the settings; a missing Gemini key is said at once. */
+/** How to reach the AI now, from the settings; a missing key or address is said at once. */
 export async function connect(platform: PlatformAdapter): Promise<AiConnection> {
   const provider = (await platform.readSetting<AiProvider>(AI_PROVIDER_SETTING)) ?? 'protocol';
+  if (provider === 'custom') {
+    const custom = await platform.readSetting<Partial<CustomAi>>(AI_CUSTOM_SETTING);
+    const url = custom?.url?.trim() ?? '';
+    const model = custom?.model?.trim() ?? '';
+    if (!url || !model) throw new AiError(NO_CUSTOM, 'key');
+    return { provider, url, key: custom?.key?.trim() ?? '', model };
+  }
   if (provider === 'gemini') {
     const key = (await platform.readSetting<string>(AI_KEY_SETTING))?.trim();
     if (!key) throw new AiError(NO_KEY, 'key');
@@ -74,7 +90,11 @@ export async function connect(platform: PlatformAdapter): Promise<AiConnection> 
 
 /** The service behind a connection. */
 export const serviceFor = (connection: AiConnection): AiService =>
-  connection.provider === 'protocol' ? serverProvider(connection.server, connection.device) : geminiProvider(connection.key);
+  connection.provider === 'protocol'
+    ? serverProvider(connection.server, connection.device)
+    : connection.provider === 'custom'
+      ? openaiProvider(connection)
+      : geminiProvider(connection.key);
 
 /**
  * Asks the AI. Through ПРОТОКОЛ's server, `counts` says whether this is a question of the player's daily
@@ -377,7 +397,8 @@ export const heard = (text: string) => (PHANTOMS.test(text) ? '' : text);
  */
 export async function transcribe(platform: PlatformAdapter, audio: RecordedAudio, onDownload?: () => void): Promise<string> {
   const key = await connect(platform);
-  if (key.provider === 'protocol') {
+  // With the player's own service too: speech is recognised here and never goes to it.
+  if (key.provider !== 'gemini') {
     try {
       return heard(await recognize(audio.chunks, audio.sampleRate, onDownload));
     } catch (error) {

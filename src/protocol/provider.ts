@@ -1,5 +1,6 @@
 // Where a question goes: one interface over the AI services, so a model can be replaced without touching the
-// analysis. Two exist — ПРОТОКОЛ's server (OpenAI-compatible, the key on the server) and Gemini with the player's key.
+// analysis. Three exist — ПРОТОКОЛ's server (OpenAI-compatible, the key on the server), the
+// player's own OpenAI-compatible service with their key, and Gemini with their key.
 
 export interface Turn {
   role: 'user' | 'model';
@@ -84,6 +85,55 @@ const asMessages = (turns: Turn[]) =>
     role: turn.role === 'model' ? 'assistant' : 'user',
     content: turn.parts.map((part) => ('text' in part ? part.text : '')).join('\n'),
   }));
+
+/** An AI service of the player's own that speaks OpenAI's API (OpenRouter, a local model…): its address, key and model. */
+export interface CustomAi {
+  /** The API's base address, up to `/v1`: `https://openrouter.ai/api/v1`. */
+  url: string;
+  /** Empty for a service that needs none (a local model). */
+  key: string;
+  model: string;
+}
+
+/** The player's own OpenAI-compatible service, asked straight from this computer with their key. */
+export function openaiProvider({ url, key, model }: CustomAi): AiProvider {
+  const base = url.trim().replace(/\/+$/, '').replace(/\/chat\/completions$/, '');
+  const send = (request: AiRequest, json: boolean) =>
+    post(
+      `${base}/chat/completions`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(key ? { Authorization: `Bearer ${key}` } : {}) },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'system', content: request.system }, ...asMessages(request.turns)],
+          ...(json ? { response_format: { type: 'json_object' } } : {}),
+        }),
+      },
+      request.think ? 150 : 90,
+      'Нет связи с вашим ИИ — проверьте адрес в настройках и интернет. Некоторые сервисы не принимают запросы из программ на компьютере.',
+    );
+  return {
+    async complete(request) {
+      let response = await send(request, !!request.json);
+      // Not every service knows the JSON mode; the prompt asks for JSON anyway.
+      if (response.status === 400 && request.json) response = await send(request, false);
+      const body = (await response.json().catch(() => null)) as {
+        choices?: { message?: { content?: string } }[];
+        error?: { message?: string } | string;
+      } | null;
+      if (!response.ok || body?.error) {
+        const message = (typeof body?.error === 'string' ? body.error : body?.error?.message) ?? `код ${response.status}`;
+        if (response.status === 401 || response.status === 403) throw new AiError(`Ваш ИИ не принял ключ: ${message}. Проверьте его в настройках.`, 'key');
+        if (response.status === 404) throw new AiError(`Ваш ИИ не нашёл адрес или модель: ${message}. Проверьте их в настройках.`, 'failed');
+        throw new AiError(`Ваш ИИ вернул ошибку: ${message}`, response.status === 429 || response.status >= 500 ? 'busy' : 'failed');
+      }
+      const text = body?.choices?.[0]?.message?.content ?? '';
+      if (!text.trim()) throw new AiError('Ваш ИИ прислал пустой ответ — попробуйте ещё раз.', 'empty');
+      return text;
+    },
+  };
+}
 
 /** If the first model is overloaded, the next one is asked, without troubling the player. */
 const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash'];

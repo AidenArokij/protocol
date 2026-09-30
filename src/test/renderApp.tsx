@@ -5,6 +5,7 @@ import { PlatformProvider } from '../platform/PlatformContext';
 import { App } from '../ui/App';
 import { DEFAULT_HOTKEY } from '../ui/overlaySettings';
 import { APP_VERSION } from '../ui/about';
+import { FAREWELL_DISMISSED_KEY } from '../ui/notice';
 import { PROFILE_KEY, type Profile } from '../ui/profile';
 import { SEEN_VERSION_KEY } from '../ui/whatsNew';
 
@@ -26,6 +27,8 @@ export async function renderApp(options: RenderOptions = {}) {
   if (profile) platform.settings.set(PROFILE_KEY, profile);
   // A copy that has run this version before: «Что нового» after an update is its own test's to show.
   platform.settings.set(SEEN_VERSION_KEY, APP_VERSION);
+  // The farewell just closed: it is its own test's to show, and would talk over the others' messages.
+  platform.settings.set(FAREWELL_DISMISSED_KEY, Date.now());
   for (const [key, value] of Object.entries(options.settings ?? {})) platform.settings.set(key, value);
 
   render(

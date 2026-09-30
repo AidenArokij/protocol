@@ -1,6 +1,6 @@
 // A notice to every installed copy, without a new version: a small file on the main branch of the repository,
-// read with the laws. Empty, it says nothing. Written to tell players what they need to know — the move of
-// ПРОТОКОЛ into РО Хелпер first of all.
+// read with the laws. Empty, it says nothing. Without one, the built-in farewell: ПРОТОКОЛ 3.0 is the last version,
+// everything new is in Кремлёвский Ассистент.
 import { useCallback, useEffect, useState } from 'react';
 import { usePlatform } from '../platform/PlatformContext';
 import { AUTO_KEY, CHECK_EVERY_MS } from './updates';
@@ -32,6 +32,20 @@ export function readNotice(raw: string): Notice | null {
   }
 }
 
+/**
+ * ПРОТОКОЛ 3.0 is the last version: everything new is in Кремлёвский Ассистент. Built in, so it is said with the
+ * checks off and offline too; a notice from GitHub, when there is one, is shown instead of it.
+ */
+export const FAREWELL: Notice = {
+  id: 'farewell',
+  title: 'ПРОТОКОЛ больше не обновляется — всё новое в «Кремлёвском Ассистенте»',
+  text: 'Тот же поиск по законам, калькулятор и ИИ-разбор — и дальше они развиваются только там. ПРОТОКОЛ продолжит работать, но новых версий не будет.',
+  link: { label: 'Скачать Кремлёвский Ассистент', url: 'https://github.com/skyyyzeee/ro-helper/releases/latest' },
+};
+/** When the farewell was closed: it comes back after a few days, until the player moves. */
+export const FAREWELL_DISMISSED_KEY = 'farewell.dismissedAt';
+export const FAREWELL_AGAIN_MS = 3 * 24 * 60 * 60 * 1000;
+
 export interface Notices {
   notice: Notice | null;
   dismiss: () => void;
@@ -41,20 +55,32 @@ export interface Notices {
 /** The notice on GitHub: read at start and every few hours, like the laws — and not at all with the checks off. */
 export function useNotice(): Notices {
   const platform = usePlatform();
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [remote, setRemote] = useState<Notice | null>(null);
+  const [farewell, setFarewell] = useState(false);
+  const notice = remote ?? (farewell ? FAREWELL : null);
 
   useEffect(() => {
     let stopped = false;
+    /** Told over the game once, for those who seldom open the overlay. */
+    const toast = async (told: Notice) => {
+      if ((await platform.readSetting<string>(NOTICE_TOASTED_KEY)) === told.id) return;
+      await platform.writeSetting(NOTICE_TOASTED_KEY, told.id);
+      void platform.showToast({ id: `notice-${told.id}`, title: told.title, ...(told.text ? { text: told.text } : {}) });
+    };
     const check = async () => {
-      if ((await platform.readSetting<boolean>(AUTO_KEY)) === false) return;
-      const found = readNotice(await platform.download(NOTICE_URL).catch(() => ''));
+      const closed = (await platform.readSetting<number>(FAREWELL_DISMISSED_KEY)) ?? 0;
+      const again = Date.now() - closed >= FAREWELL_AGAIN_MS;
       if (stopped) return;
-      if (!found || (await platform.readSetting<string>(NOTICE_DISMISSED_KEY)) === found.id) return setNotice(null);
-      setNotice(found);
-      // Told over the game once, for those who seldom open the overlay.
-      if ((await platform.readSetting<string>(NOTICE_TOASTED_KEY)) !== found.id) {
-        await platform.writeSetting(NOTICE_TOASTED_KEY, found.id);
-        void platform.showToast({ id: `notice-${found.id}`, title: found.title, ...(found.text ? { text: found.text } : {}) });
+      setFarewell(again);
+      const auto = (await platform.readSetting<boolean>(AUTO_KEY)) !== false;
+      const found = auto ? readNotice(await platform.download(NOTICE_URL).catch(() => '')) : null;
+      if (stopped) return;
+      if (found && (await platform.readSetting<string>(NOTICE_DISMISSED_KEY)) !== found.id) {
+        setRemote(found);
+        await toast(found);
+      } else {
+        setRemote(null);
+        if (again) await toast(FAREWELL);
       }
     };
     const first = setTimeout(() => void check(), 0);
@@ -67,10 +93,14 @@ export function useNotice(): Notices {
   }, [platform]);
 
   const dismiss = useCallback(() => {
-    if (!notice) return;
-    void platform.writeSetting(NOTICE_DISMISSED_KEY, notice.id);
-    setNotice(null);
-  }, [notice, platform]);
+    if (remote) {
+      void platform.writeSetting(NOTICE_DISMISSED_KEY, remote.id);
+      setRemote(null);
+    } else if (farewell) {
+      void platform.writeSetting(FAREWELL_DISMISSED_KEY, Date.now());
+      setFarewell(false);
+    }
+  }, [remote, farewell, platform]);
 
   const open = useCallback((url: string) => void platform.openExternal(url), [platform]);
   return { notice, dismiss, open };
