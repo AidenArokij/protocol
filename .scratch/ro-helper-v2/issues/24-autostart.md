@@ -6,4 +6,4 @@
 
 **Blocked by:** —
 
-**Status:** ready-for-agent
+**Status:** done — AidenArokij, PR #18 (вышло в Release 2.5.1)
