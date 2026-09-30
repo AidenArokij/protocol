@@ -140,7 +140,7 @@ fn pin_set(app: AppHandle, state: tauri::State<Pin>, groups: Vec<Value>) -> Resu
       }
     } else {
       // Set again on every show: the window library may still rewrite the styles while the window is being built.
-      pin_window::set_click_through(hwnd, !*state.live.lock().unwrap());
+      pin_window::set_click_through(hwnd, false);
       pin_window::show(hwnd);
     }
   }
@@ -182,21 +182,22 @@ fn pin_state(state: tauri::State<Pin>) -> Value {
   serde_json::json!({ "groups": *state.groups.lock().unwrap(), "live": *state.live.lock().unwrap(), "toast": *state.toast.lock().unwrap() })
 }
 
-/// The overlay was shown or hidden. While it is shown the cards take the mouse, so they can be dragged,
-/// joined and closed, and come back on top of the overlay; while it is hidden, clicks go through to the game.
+/// The overlay was shown or hidden. The cards take the mouse either way — the window is only where they are, so
+/// they can be moved and closed over the game with the cursor it gives on «ё» (issue #22) — and, the overlay
+/// shown, come back on top of it and can be resized and paged too.
 #[tauri::command]
 fn pin_live(app: AppHandle, state: tauri::State<Pin>, live: bool) -> Result<(), String> {
   let window = pin_window(&app)?;
   *state.live.lock().unwrap() = live;
   #[cfg(windows)]
   if let Some(hwnd) = pin_window::hwnd(&window) {
-    pin_window::set_click_through(hwnd, !live);
+    pin_window::set_click_through(hwnd, false);
     if live && !state.groups.lock().unwrap().is_empty() {
       unsafe { pin_window::raise(hwnd) };
     }
   }
   #[cfg(not(windows))]
-  window.set_ignore_cursor_events(!live).map_err(|e| e.to_string())?;
+  window.set_ignore_cursor_events(false).map_err(|e| e.to_string())?;
   app.emit_to(PIN_LABEL, PIN_LIVE_EVENT, live).map_err(|e| e.to_string())
 }
 
@@ -217,7 +218,7 @@ fn pin_toast(app: AppHandle, state: tauri::State<Pin>, toast: Value) -> Result<(
   app.emit_to(PIN_LABEL, PIN_TOAST_EVENT, &shown).map_err(|e| e.to_string())?;
   #[cfg(windows)]
   if let Some(hwnd) = pin_window::hwnd(&window) {
-    pin_window::set_click_through(hwnd, !*state.live.lock().unwrap());
+    pin_window::set_click_through(hwnd, false);
     pin_window::show(hwnd);
   }
   #[cfg(not(windows))]

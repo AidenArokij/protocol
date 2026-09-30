@@ -265,16 +265,22 @@ async function drag(from: HTMLElement, at: [number, number], to: [number, number
 const head = (group: HTMLElement) => group.querySelector('.pin__head') as HTMLElement;
 
 describe('the cards over the game', () => {
-  it('shows the cross and the drag only while the overlay is open', () => {
+  it('is moved and closed over the game too — with the cursor of «ё» — but resized and outlined only while the overlay is open (issue #22)', async () => {
+    layOut();
     const groups = [block('a', 40, 300, card('a', 'УК ст. 104. Оскорбление'))];
-    const { rerender } = render(<PinSurface groups={groups} live={false} onChange={() => {}} />);
-    expect(screen.queryByRole('button', { name: 'Открепить' })).not.toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Закреплено' })).not.toHaveClass('pin--live');
-
     const onChange = vi.fn();
-    rerender(<PinSurface groups={groups} live onChange={onChange} />);
+    const { rerender } = render(<PinSurface groups={groups} live={false} onChange={onChange} />);
+    expect(screen.getByRole('region', { name: 'Закреплено' })).not.toHaveClass('pin--live');
+    expect(screen.queryByRole('button', { name: 'Изменить размер' })).not.toBeInTheDocument();
+    await drag(head(screen.getByRole('region', { name: 'Закреплено' })), [60, 310], [560, 410]);
+    expect(onChange).toHaveBeenLastCalledWith([expect.objectContaining({ id: 'a', x: 540, y: 400 })]);
     screen.getByRole('button', { name: 'Открепить' }).click();
-    expect(onChange).toHaveBeenCalledWith([]);
+    expect(onChange).toHaveBeenLastCalledWith([]);
+
+    rerender(<PinSurface groups={[...groups]} live onChange={onChange} />);
+    expect(screen.getByRole('region', { name: 'Закреплено' })).toHaveClass('pin--live');
+    expect(screen.getByRole('button', { name: 'Изменить размер' })).toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 
   it('moves a block to where it was dragged', async () => {

@@ -77,10 +77,27 @@ export function updateCard(groups: PinGroup[], card: PinCard): PinGroup[] {
   return groups.map((g) => ({ ...g, cards: g.cards.map((c) => (c.id === card.id ? card : c)) }));
 }
 
-/** Pins a card in a block of its own, or refreshes it where it already is. */
-export function pinCard(groups: PinGroup[], card: PinCard, surface: Surface): PinGroup[] {
+/** Where a block stood and how big it was made: a card that comes back comes back there (issue #22). */
+export interface Place {
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+}
+
+/** Where the block of this card stands, while the card is alone in it. */
+export function placeOf(groups: PinGroup[], id: string): Place | undefined {
+  const group = groups.find((g) => g.cards.length === 1 && g.cards[0].id === id);
+  if (!group) return undefined;
+  return { x: group.x, y: group.y, ...(group.width ? { width: group.width } : {}), ...(group.height ? { height: group.height } : {}) };
+}
+
+/** Pins a card in a block of its own — where it stood before, if given — or refreshes it where it already is. */
+export function pinCard(groups: PinGroup[], card: PinCard, surface: Surface, place?: Place): PinGroup[] {
   if (hasCard(groups, card.id)) return updateCard(groups, card);
-  return [...groups, { id: freeId(groups, card.id), ...nextPlace(groups, surface), cards: [card] }];
+  const at = place ? clampTo(place.x, place.y, surface, { width: place.width ?? CARD_WIDTH, height: place.height ?? CARD_HEIGHT }) : nextPlace(groups, surface);
+  const size = place ? { ...(place.width ? { width: place.width } : {}), ...(place.height ? { height: place.height } : {}) } : {};
+  return [...groups, { id: freeId(groups, card.id), ...at, ...size, cards: [card] }];
 }
 
 /** Unpins one card; a block left without cards goes with it. */

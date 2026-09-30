@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PinCard, PinGroup } from '../platform/types';
-import { CALCULATOR_ID, MIN_HEIGHT, MIN_WIDTH, detachCard, hasCard, joinGroups, keepableGroups, moveGroup, nextPlace, pinCard, resizeGroup, unpinCard, unpinGroup, updateCard } from './pinLayout';
+import { CALCULATOR_ID, CARD_WIDTH, MIN_HEIGHT, MIN_WIDTH, detachCard, hasCard, joinGroups, keepableGroups, moveGroup, nextPlace, pinCard, placeOf, resizeGroup, unpinCard, unpinGroup, updateCard } from './pinLayout';
 
 const SURFACE = { width: 1920, height: 1080 };
 const card = (id: string, heading = id): PinCard => ({ id, kind: 'article', heading, lines: [] });
@@ -25,6 +25,16 @@ describe('what is pinned', () => {
     const groups = pinCard([], card('a'), SURFACE);
     expect(updateCard(groups, total)).toBe(groups);
     expect(hasCard(updateCard(pinCard(groups, total, SURFACE), { ...total, heading: '40 мес' }), CALCULATOR_ID)).toBe(true);
+  });
+
+  it('pins a card back where its block last stood, as big as it was made, and on the screen (issue #22)', () => {
+    const moved = resizeGroup(moveGroup(pinCard([], total, SURFACE), CALCULATOR_ID, 900, 120, SURFACE), CALCULATOR_ID, 420, 260, SURFACE);
+    const place = placeOf(moved, CALCULATOR_ID);
+    expect(place).toEqual({ x: 900, y: 120, width: 420, height: 260 });
+    expect(pinCard([], total, SURFACE, place)[0]).toMatchObject({ x: 900, y: 120, width: 420, height: 260 });
+    expect(pinCard([], total, { width: 800, height: 600 }, { x: 1500, y: 900 })[0]).toMatchObject({ x: 800 - CARD_WIDTH, y: 450 });
+    // Joined with others, the card has no place of its own.
+    expect(placeOf(joinGroups(pinCard(moved, card('a'), SURFACE), 'a', CALCULATOR_ID), CALCULATOR_ID)).toBeUndefined();
   });
 
   it('unpins a card, and the block it leaves empty with it', () => {

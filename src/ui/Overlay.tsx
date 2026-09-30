@@ -49,7 +49,7 @@ import { PinSurface } from './PinSurface';
 import { PrivacyView } from './PrivacyView';
 import { ReleaseNotesView } from './ReleaseNotesView';
 import { aiPinCard, articlePinCard, calculatorPinCard } from './pinCards';
-import { CALCULATOR_ID, hasCard, keepableGroups, pinCard, restoreGroups, surfaceNow, unpinCard, updateCard } from './pinLayout';
+import { CALCULATOR_ID, hasCard, keepableGroups, pinCard, placeOf, restoreGroups, surfaceNow, unpinCard, updateCard, type Place } from './pinLayout';
 import { applyPreset, cardCount, deletePreset, nextPresetName, presetsKey, readPresets, savePreset, type PinPreset } from './pinPresets';
 import { formatDate } from './lawBits';
 import { ResizeEdges } from './ResizeEdges';
@@ -92,6 +92,8 @@ const LIST_DAYS = 60;
 
 /** What is pinned over the game, per server: blocks of cards where the user put them. */
 const pinsKey = (server: string) => `pins:${server}`;
+/** Where the calculator's card was last left over the game, and how big it was made (issue #22). */
+const CALCULATOR_PLACE_KEY = 'pins.calculator';
 
 /** Width of the calculator panel plus the gap to the overlay, in CSS pixels. */
 const CALCULATOR_WIDTH = 400 + 12;
@@ -613,8 +615,23 @@ export function Overlay({
 
   const pinnedArticle = open ? hasCard(groups, hitKey(open)) : false;
   const pinnedCalculator = hasCard(groups, CALCULATOR_ID);
+  // The calculator comes back where it was last left, even after a restart.
+  const calculatorPlace = useRef<Place | undefined>(undefined);
+  useEffect(() => {
+    void platform.readSetting<Place>(CALCULATOR_PLACE_KEY).then((place) => {
+      if (place && Number.isFinite(place.x) && Number.isFinite(place.y)) calculatorPlace.current ??= place;
+    });
+  }, [platform]);
+  const calculatorAt = JSON.stringify(placeOf(groups, CALCULATOR_ID) ?? null);
+  useEffect(() => {
+    const place = JSON.parse(calculatorAt) as Place | null;
+    if (!place) return;
+    calculatorPlace.current = place;
+    void platform.writeSetting(CALCULATOR_PLACE_KEY, place);
+  }, [platform, calculatorAt]);
+  const placeFor = (card: PinCard) => (card.id === CALCULATOR_ID ? calculatorPlace.current : undefined);
   const togglePin = (card: PinCard) =>
-    setGroups((list) => (hasCard(list, card.id) ? unpinCard(list, card.id) : pinCard(list, card, surface())));
+    setGroups((list) => (hasCard(list, card.id) ? unpinCard(list, card.id) : pinCard(list, card, surface(), placeFor(card))));
 
   // The pinned total follows the calculator, and goes when the charges do.
   const calculatorCard = useMemo(
@@ -628,7 +645,7 @@ export function Overlay({
   useEffect(() => {
     if (!pinFromQuick || !calculatorCard) return;
     setPinFromQuick(false);
-    setGroups((list) => (hasCard(list, CALCULATOR_ID) ? list : pinCard(list, calculatorCard, surface())));
+    setGroups((list) => (hasCard(list, CALCULATOR_ID) ? list : pinCard(list, calculatorCard, surface(), calculatorPlace.current)));
   }, [pinFromQuick, calculatorCard]);
 
   const [copyState, setCopyState] = useState<CopyState>('idle');

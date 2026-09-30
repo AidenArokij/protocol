@@ -65,7 +65,10 @@ interface Drag {
 
 export interface PinSurfaceProps {
   groups: PinGroup[];
-  /** The overlay is open: the blocks can be dragged, joined and closed. Otherwise they only show. */
+  /**
+   * The overlay is open: the blocks are outlined and can be resized, made compact and paged. Moved, joined and
+   * closed they can be always — over the game too, with the cursor the game gives on «ё» (issue #22).
+   */
   live: boolean;
   onChange: (groups: PinGroup[]) => void;
   /** Where the blocks are now, in physical pixels, for the window that lets the mouse through elsewhere. */
@@ -164,7 +167,7 @@ export function PinSurface({ groups: incoming, live, onChange, onAreas, toast, o
   };
 
   const startDrag = (event: ReactPointerEvent, groupId: string, cardId?: string) => {
-    if (!live || event.button !== 0) return;
+    if (event.button !== 0) return;
     event.preventDefault();
     const element = boxes.current.get(cardId ? cardKey(groupId, cardId) : groupId);
     const rect = element?.getBoundingClientRect();
@@ -384,11 +387,9 @@ export function PinSurface({ groups: incoming, live, onChange, onAreas, toast, o
                     <PagesIcon size={14} />
                   </button>
                 )}
-                {live && (
-                  <button className="x" type="button" aria-label="Открепить всё" title="Открепить всё" onClick={() => commit(unpinGroup(groups, group.id))}>
-                    <CloseIcon size={14} />
-                  </button>
-                )}
+                <button className="x" type="button" aria-label="Открепить всё" title="Открепить всё" onClick={() => commit(unpinGroup(groups, group.id))}>
+                  <CloseIcon size={14} />
+                </button>
               </div>
             )}
             <div className={group.flow === 'row' && !paged ? 'pin__cards pin__cards--row' : 'pin__cards'}>
@@ -414,17 +415,15 @@ export function PinSurface({ groups: incoming, live, onChange, onAreas, toast, o
                         <CompactIcon size={14} />
                       </button>
                     )}
-                    {live && (
-                      <button
-                        className="x"
-                        type="button"
-                        aria-label={stacked ? `Открепить: ${card.heading}` : 'Открепить'}
-                        title="Открепить"
-                        onClick={() => commit(unpinCard(groups, card.id))}
-                      >
-                        <CloseIcon size={14} />
-                      </button>
-                    )}
+                    <button
+                      className="x"
+                      type="button"
+                      aria-label={stacked ? `Открепить: ${card.heading}` : 'Открепить'}
+                      title="Открепить"
+                      onClick={() => commit(unpinCard(groups, card.id))}
+                    >
+                      <CloseIcon size={14} />
+                    </button>
                   </div>
                   <PinCardBody card={card} compact={!!group.compact} />
                 </div>

@@ -127,6 +127,21 @@ describe('the overlay, for the quick search', () => {
     await vi.waitFor(() => expect(platform.state.quickState?.charges).toEqual(['uk-65#1']), { timeout: 4000 });
   });
 
+  it('pins the calculator back where the player last left it (issue #22)', async () => {
+    const { platform } = await renderApp();
+    const calculator = () => platform.state.pins.find((group) => group.cards.some((card) => card.id === 'calculator'));
+    act(() => platform.quickRequest({ kind: 'charge', key: 'uk-65#1' }));
+    await vi.waitFor(() => expect(calculator()).toBeDefined(), { timeout: 4000 });
+    // Dragged over the game, then closed there.
+    act(() => platform.changePins(platform.state.pins.map((group) => (group === calculator() ? { ...group, x: 300, y: 90 } : group))));
+    await vi.waitFor(() => expect(platform.settings.get('pins.calculator')).toEqual({ x: 300, y: 90 }));
+    act(() => platform.changePins(platform.state.pins.filter((group) => group !== calculator())));
+    await vi.waitFor(() => expect(calculator()).toBeUndefined());
+
+    act(() => platform.quickRequest({ kind: 'charge', key: 'uk-66#1' }));
+    await vi.waitFor(() => expect(calculator()).toMatchObject({ x: 300, y: 90 }), { timeout: 4000 });
+  });
+
   it('keeps the recent articles the bar opened, and clears them when it asks', async () => {
     const { platform } = await renderApp();
     act(() => platform.quickRequest({ kind: 'remember', key: 'uk-66#1' }));

@@ -1240,7 +1240,7 @@ input {
   inset: 0;
   z-index: 10;
   overflow: hidden;
-  /* Only the blocks themselves take the mouse, and only while the overlay is open. */
+  /* Only the blocks themselves take the mouse. */
   pointer-events: none;
 }
 
@@ -1256,6 +1256,8 @@ input {
   text-shadow: var(--pin-text-shadow);
   user-select: none;
   cursor: default;
+  /* Over the game too, with the cursor the game gives on «ё», a block is moved by its head and closed (issue #22). */
+  pointer-events: auto;
   animation: panel-in 0.18s ease-out;
   transition:
     box-shadow 0.14s ease,
@@ -1263,12 +1265,11 @@ input {
 }
 
 .pin--live {
-  pointer-events: auto;
   box-shadow: 0 0 0 2px oklch(0.78 0.1 var(--accent-hue) / 0.55);
 }
 
-.pin--live .pin__head,
-.pin--live .pin__bar {
+.pin__head,
+.pin__bar {
   cursor: move;
 }
 
@@ -1450,7 +1451,7 @@ input {
   transition: opacity 0.14s ease;
 }
 
-.pin--live .pin__card--stacked:hover .pin__head {
+.pin__card--stacked:hover .pin__head {
   opacity: 1;
 }
 
