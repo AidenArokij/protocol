@@ -12,7 +12,7 @@ import { AI_CUSTOM_SETTING, AI_KEY_SETTING, AI_KEY_URL, AI_PROVIDER_SETTING, AI_
 import type { CustomAi } from '../protocol';
 import { AdminIcon, BookIcon, CloseIcon, DiscordIcon, GitHubIcon, HelpIcon, InfoIcon, KeyboardIcon, PaletteIcon, PinIcon, SparkIcon, TuneIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
-import { DEFAULT_VOICE_HOTKEY, MAX_OPACITY, MIN_OPACITY, STREAMER_KEY } from './overlaySettings';
+import { DEFAULT_QUICK_HOTKEY, DEFAULT_VOICE_HOTKEY, MAX_OPACITY, MIN_OPACITY, STREAMER_KEY } from './overlaySettings';
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
 import type { Laws, LawsStatus } from './laws';
 import type { Updates } from './updates';
@@ -622,6 +622,9 @@ export interface SettingsViewProps {
   /** The push-to-talk key for a question over the game; empty when off. */
   voiceHotkey: string;
   onVoiceHotkey: (accelerator: string) => void;
+  /** The quick search's key; empty when off. */
+  quickHotkey: string;
+  onQuickHotkey: (accelerator: string) => void;
   opacity: number;
   onOpacity: (value: number) => void;
   /** The theme and the accent; without it (a bare overlay in tests) the choice is not shown. */
@@ -659,6 +662,8 @@ export function SettingsView({
   onCapturing,
   voiceHotkey,
   onVoiceHotkey,
+  quickHotkey,
+  onQuickHotkey,
   opacity,
   onOpacity,
   appearance,
@@ -905,6 +910,22 @@ export function SettingsView({
       <div className="settings__part" id={sectionId('keys')}>
       <Block title="Горячая клавиша">
         <HotkeyField hotkey={hotkey} onHotkey={onHotkey} onCapturing={onCapturing} />
+      </Block>
+
+      <Block title="Быстрый поиск">
+        <Switch
+          label="Быстрый поиск поверх игры"
+          hint="Своя клавиша открывает сверху экрана только строку поиска: статьи сразу под ней, → — открыть статью, Enter — в калькулятор, Tab — спросить ИИ. Весь ассистент не нужен."
+          on={!!quickHotkey}
+          onChange={(on) => onQuickHotkey(on ? DEFAULT_QUICK_HOTKEY : '')}
+        />
+        {quickHotkey && <HotkeyField label="Открыть быстрый поиск" hotkey={quickHotkey} onHotkey={onQuickHotkey} onCapturing={onCapturing} />}
+        {quickHotkey && (quickHotkey === hotkey || quickHotkey === voiceHotkey) && (
+          <div className="warn" role="alert">
+            <WarnIcon />
+            <span>Эта клавиша уже занята — выберите другую, иначе быстрый поиск не откроется.</span>
+          </div>
+        )}
       </Block>
       </div>
 

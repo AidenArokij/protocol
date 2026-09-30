@@ -80,6 +80,22 @@ export interface UpdateProgress {
 /** Edge or corner of the frameless overlay window being dragged to resize it. */
 export type ResizeEdge = 'East' | 'North' | 'NorthEast' | 'NorthWest' | 'South' | 'SouthEast' | 'SouthWest' | 'West';
 
+/** The quick search asks the overlay to put an article (by its key, `uk-65#1`) into the calculator, or to ask the AI. */
+export type QuickRequest = { kind: 'charge'; key: string } | { kind: 'ask'; question: string };
+
+/** What the bar needs of the app: settings and laws to read, being shown and hidden, and asking the assistant. */
+export interface QuickBridge {
+  readSetting<T>(key: string): Promise<T | undefined>;
+  readLaws(server: string): Promise<string | undefined>;
+  /** Called each time the bar is shown by its key. */
+  onShown(listener: () => void): () => void;
+  hide(): Promise<void>;
+  /** The assistant does it: an article into its calculator, a question to its AI. */
+  request(request: QuickRequest): Promise<void>;
+  /** The window's height to what the bar shows, in CSS pixels: no invisible window over the game below it. */
+  fit?(height: number): void;
+}
+
 /** How the pinned cards look: a theme id («glass», «dense», «minimal») and the accent hue. */
 export interface PinLook {
   theme: string;
@@ -98,6 +114,11 @@ export interface PlatformAdapter {
    */
   registerVoiceHotkey(accelerator: string, onDown: () => void, onUp: () => void): Promise<void>;
   unregisterVoiceHotkey(): Promise<void>;
+  /** The quick search's own key (ticket 27): pressed, the bar shows at the top of the screen. Replaces any previous one. */
+  registerQuickHotkey(accelerator: string): Promise<void>;
+  unregisterQuickHotkey(): Promise<void>;
+  /** What the quick search asks of the overlay: an article into the calculator, a question to the AI. Returns unsubscribe. */
+  onQuickRequest(listener: (request: QuickRequest) => void): () => void;
 
   /** Shows the overlay and gives it focus. */
   showOverlay(): Promise<void>;

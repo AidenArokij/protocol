@@ -26,5 +26,9 @@ export function applyOpacity(value: number): void {
 export const VOICE_HOTKEY_KEY = 'voice.hotkey';
 export const DEFAULT_VOICE_HOTKEY = 'Alt+W';
 
+/** The quick search's own key (ticket 27): the bar at the top of the screen; an empty setting turns it off. */
+export const QUICK_HOTKEY_KEY = 'quick.hotkey';
+export const DEFAULT_QUICK_HOTKEY = 'Alt+S';
+
 /** Streamer mode: the app is left out of screen capture (OBS, Discord, screenshots). Windows' own, set at every start. */
 export const STREAMER_KEY = 'overlay.streamer';

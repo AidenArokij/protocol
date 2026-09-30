@@ -1,4 +1,4 @@
-import type { AppUpdate, PinGroup, PlatformAdapter, ResizeEdge, Toast, WindowBounds } from './types';
+import type { AppUpdate, PinGroup, PlatformAdapter, QuickRequest, ResizeEdge, Toast, WindowBounds } from './types';
 
 export interface FakeCall {
   method: keyof PlatformAdapter;
@@ -13,6 +13,7 @@ export interface FakePlatform extends PlatformAdapter {
     overlayVisible: boolean;
     hotkey: string | null;
     voiceHotkey: string | null;
+    quickHotkey: string | null;
     /** What is pinned over the game, block by block. */
     pins: PinGroup[];
     /** Files on the internet by URL; «offline» for no connection at all. */
@@ -34,6 +35,8 @@ export interface FakePlatform extends PlatformAdapter {
   pressHotkey(): void;
   /** Simulates what the user does on the pinned cards themselves: closing, moving, joining. */
   changePins(groups: PinGroup[]): void;
+  /** Simulates the quick search asking the overlay for something. */
+  quickRequest(request: QuickRequest): void;
   /** Simulates the push-to-talk key: held down, then let go. */
   holdVoiceHotkey(): void;
   releaseVoiceHotkey(): void;
@@ -59,10 +62,12 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
   const settings = new Map<string, unknown>();
   const shownListeners = new Set<() => void>();
   const pinListeners = new Set<(groups: PinGroup[]) => void>();
+  const quickListeners = new Set<(request: QuickRequest) => void>();
   const state: FakePlatform['state'] = {
     overlayVisible: true,
     hotkey: null,
     voiceHotkey: null,
+    quickHotkey: null,
     pins: [],
     remote: options.remote ?? {},
     laws: new Map(Object.entries(options.laws ?? {})),
@@ -96,6 +101,21 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     },
     releaseVoiceHotkey() {
       onVoice?.up();
+    },
+    quickRequest(request) {
+      quickListeners.forEach((listener) => listener(request));
+    },
+    async registerQuickHotkey(accelerator) {
+      record('registerQuickHotkey', accelerator);
+      state.quickHotkey = accelerator;
+    },
+    async unregisterQuickHotkey() {
+      record('unregisterQuickHotkey');
+      state.quickHotkey = null;
+    },
+    onQuickRequest(listener) {
+      quickListeners.add(listener);
+      return () => quickListeners.delete(listener);
     },
     changePins(groups) {
       state.pins = groups;

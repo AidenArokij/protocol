@@ -1,3 +1,4 @@
+mod quick;
 mod sign_in;
 
 use serde_json::Value;
@@ -344,7 +345,7 @@ fn laws_write(app: AppHandle, server: String, text: String) -> Result<(), String
 
 /// The window that had focus before the overlay was shown — normally the game — as a raw HWND.
 #[derive(Default)]
-struct PreviousForeground(Mutex<Option<isize>>);
+pub(crate) struct PreviousForeground(Mutex<Option<isize>>);
 
 /// Remembers the foreground window so focus can go back to it when the overlay hides.
 #[tauri::command]
@@ -363,8 +364,13 @@ fn remember_foreground(window: tauri::WebviewWindow, state: tauri::State<Previou
 
 /// Gives focus back to the window that had it before the overlay was shown.
 #[tauri::command]
-#[allow(unused_variables)]
 fn restore_foreground(state: tauri::State<PreviousForeground>) {
+  give_focus_back(&state);
+}
+
+/// The overlay and the quick search, hidden, hand the focus back to the game this way.
+#[allow(unused_variables)]
+pub(crate) fn give_focus_back(state: &PreviousForeground) {
   #[cfg(windows)]
   if let Some(hwnd) = *state.0.lock().unwrap() {
     use windows_sys::Win32::UI::WindowsAndMessaging::SetForegroundWindow;
@@ -412,7 +418,10 @@ pub fn run() {
       launched_at_startup,
       set_capture_hidden,
       sign_in::sign_in_listen,
-      sign_in::sign_in_cancel
+      sign_in::sign_in_cancel,
+      quick::quick_show,
+      quick::quick_hide,
+      quick::quick_fit
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {
@@ -424,8 +433,9 @@ pub fn run() {
       }
 
       create_pin_window(app.handle())?;
+      quick::create_quick_window(app.handle())?;
       #[cfg(windows)]
-      for label in ["main", PIN_LABEL] {
+      for label in ["main", PIN_LABEL, quick::QUICK_LABEL] {
         if let Some(window) = app.get_webview_window(label) {
           no_system_frame(&window);
         }

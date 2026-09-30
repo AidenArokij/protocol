@@ -21,6 +21,7 @@ import {
 import { packFor } from '../data';
 import type { PinCard, PinGroup, Toast } from '../platform/types';
 import { usePlatform } from '../platform/PlatformContext';
+import type { QuickRequest } from '../platform/types';
 import type { AppearanceControl } from './appearance';
 import { ArticleView } from './ArticleView';
 import { CalculatorPanel, type ChargeFields, type ChargePatch, type CopyState } from './CalculatorPanel';
@@ -41,7 +42,7 @@ import { HistoryView } from './HistoryView';
 import { BackIcon, CalculatorIcon, ChevronDownIcon, CloseIcon, DocumentsIcon, NewsIcon, HistoryIcon, MemoIcon, MicIcon, OrganizationIcon, PinIcon, ProfileIcon, SearchIcon, ServerIcon, SettingsIcon, SparkIcon } from './icons';
 import { SideRail } from './SideRail';
 import { canRecord, startRecording, type Recording } from './voice';
-import { DEFAULT_OPACITY, DEFAULT_VOICE_HOTKEY, OPACITY_KEY, VOICE_HOTKEY_KEY, applyOpacity, clampOpacity } from './overlaySettings';
+import { DEFAULT_OPACITY, DEFAULT_QUICK_HOTKEY, DEFAULT_VOICE_HOTKEY, OPACITY_KEY, QUICK_HOTKEY_KEY, VOICE_HOTKEY_KEY, applyOpacity, clampOpacity } from './overlaySettings';
 import { formatHotkey, type Profile } from './profile';
 import { OrganizationChoice } from './OrganizationChoice';
 import { PinSurface } from './PinSurface';
@@ -546,6 +547,34 @@ export function Overlay({
     return () => void platform.unregisterVoiceHotkey();
   }, [platform, voiceHotkey, capturing, profile.hotkey]);
   useEffect(() => () => talk.current.recording?.cancel(), []);
+
+  // The quick search (ticket 27): its own key shows its bar over the game; what the bar asks — an article
+  // into the calculator, a question to the AI — is done here, where the calculator and the AI are.
+  const [quickHotkey, setQuickHotkey] = useState(DEFAULT_QUICK_HOTKEY);
+  useEffect(() => {
+    void platform.readSetting<string>(QUICK_HOTKEY_KEY).then((saved) => setQuickHotkey(saved ?? DEFAULT_QUICK_HOTKEY));
+  }, [platform]);
+  const changeQuickHotkey = (accelerator: string) => {
+    setQuickHotkey(accelerator);
+    void platform.writeSetting(QUICK_HOTKEY_KEY, accelerator);
+  };
+  // Not while a key is being recorded, and never on a key the overlay or the voice already use.
+  useEffect(() => {
+    if (capturing || !quickHotkey || quickHotkey === profile.hotkey || quickHotkey === voiceHotkey) return;
+    void platform.registerQuickHotkey(quickHotkey);
+    return () => void platform.unregisterQuickHotkey();
+  }, [platform, quickHotkey, capturing, profile.hotkey, voiceHotkey]);
+  const onQuick = useRef<(request: QuickRequest) => void>(() => {});
+  onQuick.current = (request) => {
+    if (request.kind === 'charge') {
+      const hit = lookup(request.key);
+      if (hit && !inCalculator(hit)) toggleCharge(hit);
+      return;
+    }
+    void platform.showOverlay();
+    openAi(request.question);
+  };
+  useEffect(() => platform.onQuickRequest((request) => onQuick.current(request)), [platform]);
 
   const pinnedArticle = open ? hasCard(groups, hitKey(open)) : false;
   const pinnedCalculator = hasCard(groups, CALCULATOR_ID);
@@ -1230,6 +1259,8 @@ export function Overlay({
             onCapturing={onCapturing}
             voiceHotkey={voiceHotkey}
             onVoiceHotkey={changeVoiceHotkey}
+            quickHotkey={quickHotkey}
+            onQuickHotkey={changeQuickHotkey}
             opacity={opacity}
             onOpacity={changeOpacity}
             appearance={appearance}

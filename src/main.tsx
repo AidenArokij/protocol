@@ -14,12 +14,35 @@ import { SYNC_RULES } from './ui/syncedSettings';
 import { RolesProvider } from './ui/roles';
 import { createBrowserPlatform } from './platform/browser';
 import { PlatformProvider } from './platform/PlatformContext';
-import { createPinBridge, createTauriPlatform, isPinWindow, isTauri } from './platform/tauri';
+import { createPinBridge, createQuickBridge, createTauriPlatform, isPinWindow, isQuickWindow, isTauri } from './platform/tauri';
 import { PinWindow } from './ui/PinSurface';
+import { QuickSearch } from './ui/QuickSearch';
 
 async function start() {
   const root = createRoot(document.getElementById('root')!);
-  // The app has two windows on the same page: the overlay, and what is pinned over the game.
+  // The app has three windows on the same page: the overlay, what is pinned over the game, and the quick search.
+  // In the preview, «?quick» shows the quick search's bar on its own, on the preview's settings.
+  if (isQuickWindow() || (!isTauri() && new URLSearchParams(location.search).has('quick'))) {
+    const preview = createBrowserPlatform();
+    root.render(
+      <StrictMode>
+        <QuickSearch
+          bridge={
+            isTauri()
+              ? createQuickBridge()
+              : {
+                  readSetting: preview.readSetting,
+                  readLaws: async () => undefined,
+                  onShown: () => () => {},
+                  hide: async () => console.info('quick search: hidden'),
+                  request: async (request) => console.info('quick search asks', request),
+                }
+          }
+        />
+      </StrictMode>,
+    );
+    return;
+  }
   if (isPinWindow()) {
     root.render(
       <StrictMode>

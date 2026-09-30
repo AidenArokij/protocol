@@ -2,7 +2,7 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "What the overlay and the pinned card windows may do",
-  "windows": ["main", "pin"],
+  "windows": ["main", "pin", "quick"],
   "permissions": [
     "core:default",
     "core:window:allow-show",

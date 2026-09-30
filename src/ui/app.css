@@ -4391,3 +4391,124 @@ input {
   align-items: flex-start;
   gap: 3px;
 }
+
+/* The quick search (ticket 27): a bar of its own at the top of the screen, the window as tall as it. */
+.quick {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 640px;
+  overflow: hidden;
+  border-radius: 16px;
+}
+
+.quick__bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 16px;
+  color: var(--text-muted);
+}
+
+.quick__input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 17px;
+}
+
+.quick__input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.quick__mode {
+  flex: none;
+}
+
+.quick__body {
+  overflow-y: auto;
+  padding: 0 6px 6px;
+  border-top: 1px solid var(--line);
+}
+
+.quick__body .list {
+  padding-top: 6px;
+}
+
+.quick__hint {
+  margin: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.quick__article {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px;
+}
+
+.quick__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 16px;
+}
+
+.quick__part {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.quick__part--focus {
+  box-shadow: inset 0 0 0 1.5px oklch(0.78 0.1 var(--accent-hue) / 0.6);
+}
+
+.quick__text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.quick__pen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--penalty-text);
+}
+
+.quick__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 8px 16px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.quick__foot kbd {
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.quick__sent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  color: var(--accent-text);
+}

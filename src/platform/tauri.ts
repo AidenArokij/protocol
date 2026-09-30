@@ -7,7 +7,7 @@ import { isRegistered, register, unregister } from '@tauri-apps/plugin-global-sh
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { load } from '@tauri-apps/plugin-store';
 import { check, type Update } from '@tauri-apps/plugin-updater';
-import type { PinArea, PinGroup, PinLook, PlatformAdapter, Toast, WindowBounds } from './types';
+import type { PinArea, PinGroup, PinLook, PlatformAdapter, QuickBridge, QuickRequest, Toast, WindowBounds } from './types';
 
 /** True inside the Tauri app, false in a plain browser. */
 export function isTauri(): boolean {
@@ -38,6 +38,45 @@ const SIGN_IN_EVENT = 'sign-in-back';
 interface SignInBack {
   generation: number;
   query: string | null;
+}
+
+/** The quick search's window (ticket 27), and what it asks of the overlay. */
+const QUICK_LABEL = 'quick';
+const QUICK_SHOWN_EVENT = 'quick-shown';
+const QUICK_REQUEST_EVENT = 'quick-request';
+
+/** True in the quick search's window, which renders the bar instead of the overlay. */
+export function isQuickWindow(): boolean {
+  return isTauri() && getCurrentWindow().label === QUICK_LABEL;
+}
+
+/**
+ * What the quick search's window needs: the settings and the laws kept by the overlay, being shown by its key
+ * and hidden (by Esc, or when the player clicks away — the game gets the focus back), its height following
+ * what it shows, and asking the overlay.
+ */
+export function createQuickBridge(): QuickBridge {
+  const store = load('settings.json', { defaults: {}, autoSave: 300 });
+  const hide = () => invoke<void>('quick_hide');
+  void getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+    if (!focused) void hide();
+  });
+  return {
+    readSetting: async <T,>(key: string) => (await store).get<T>(key),
+    readLaws: async (server) => (await invoke<string | null>('laws_read', { server })) ?? undefined,
+    onShown(listener) {
+      let stop: (() => void) | undefined;
+      let stopped = false;
+      void listen(QUICK_SHOWN_EVENT, () => listener()).then((unlisten) => (stopped ? unlisten() : (stop = unlisten)));
+      return () => {
+        stopped = true;
+        stop?.();
+      };
+    },
+    hide,
+    request: (request) => emitTo('main', QUICK_REQUEST_EVENT, request),
+    fit: (height) => void invoke('quick_fit', { height }),
+  };
 }
 
 /** True in the window of the pinned cards, which renders them instead of the overlay. */
@@ -97,6 +136,7 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
   let visible = false;
   let hotkey: string | null = null;
   let voiceHotkey: string | null = null;
+  let quickHotkey: string | null = null;
 
   /**
    * A landscape window at the right of the work area (screen minus taskbar), centred top to bottom, in
@@ -199,6 +239,14 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
   const queueHotkey = (task: () => Promise<void>) => (hotkeyQueue = hotkeyQueue.then(task, task));
 
   await listen(TOGGLE_EVENT, () => void toggleOverlay());
+  const quickListeners = new Set<(request: QuickRequest) => void>();
+  await listen<QuickRequest>(QUICK_REQUEST_EVENT, (event) => quickListeners.forEach((listener) => listener(event.payload)));
+  /** The quick search's key: the overlay, if open, gives way to the bar; the game's focus is kept to go back to. */
+  const showQuick = async () => {
+    if (visible) await hideOverlay();
+    await invoke('remember_foreground');
+    await invoke('quick_show');
+  };
   const pinListeners = new Set<(groups: PinGroup[]) => void>();
   await listen<PinGroup[]>(PIN_LAYOUT_EVENT, (event) => pinListeners.forEach((listener) => listener(event.payload)));
 
@@ -226,6 +274,24 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
         await register(accelerator, (event) => (event.state === 'Pressed' ? onDown() : onUp()));
         voiceHotkey = accelerator;
       }),
+    registerQuickHotkey: (accelerator) =>
+      queueHotkey(async () => {
+        if (quickHotkey) await unregister(quickHotkey);
+        if (await isRegistered(accelerator)) await unregister(accelerator);
+        await register(accelerator, (event) => {
+          if (event.state === 'Pressed') void showQuick();
+        });
+        quickHotkey = accelerator;
+      }),
+    unregisterQuickHotkey: () =>
+      queueHotkey(async () => {
+        if (quickHotkey) await unregister(quickHotkey);
+        quickHotkey = null;
+      }),
+    onQuickRequest(listener) {
+      quickListeners.add(listener);
+      return () => quickListeners.delete(listener);
+    },
     unregisterVoiceHotkey: () =>
       queueHotkey(async () => {
         if (voiceHotkey) await unregister(voiceHotkey);

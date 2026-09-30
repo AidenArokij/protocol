@@ -78,7 +78,7 @@ the bot, README and PRIVACY; «хелпер» in players' texts became «асс�
 
 ## Commands
 
-- `npm run tauri dev` — the real overlay app (Tauri 2): frameless always-on-top window, hotkey Alt+Q by default, tray icon with «Выход»; uses port 1420, so stop the browser preview first. On the owner's PC Windows Smart App Control blocks the debug `ro-helper.exe` (and `cargo test`'s exe): check native changes with `cargo check`, the Rust tests run in CI, and the owner tries the installer from the draft release
+- `npm run tauri dev` — the real overlay app (Tauri 2): frameless always-on-top window, hotkey Alt+Q by default (the quick search: Alt+S — its own window `quick`, `src/ui/QuickSearch.tsx`, `src-tauri/src/quick.rs`; in the preview at `?quick`), tray icon with «Выход»; uses port 1420, so stop the browser preview first. On the owner's PC Windows Smart App Control blocks the debug `ro-helper.exe` (and `cargo test`'s exe): check native changes with `cargo check`, the Rust tests run in CI, and the owner tries the installer from the draft release
 - `npm run dev` — the app in a browser at http://127.0.0.1:1420, with a fake platform adapter and a stand-in game scene
 - `npm test` — Vitest (law core, importer, UI with React Testing Library)
 - `npm run typecheck` — TypeScript, no emit
