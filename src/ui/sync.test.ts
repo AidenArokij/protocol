@@ -137,6 +137,29 @@ describe('the settings, synced with the account', () => {
     expect(cloud.table.get('appearance.theme')?.value).toBe('minimal');
   });
 
+  it('does not start the UI again for its own change coming back with the fields reordered (issue #9)', async () => {
+    // Postgres keeps `value` as jsonb: an object comes back with its keys shorter first, then in byte order.
+    const jsonb = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(jsonb);
+      if (!value || typeof value !== 'object') return value;
+      const keys = Object.keys(value).sort((a, b) => a.length - b.length || (a < b ? -1 : a > b ? 1 : 0));
+      return Object.fromEntries(keys.map((key) => [key, jsonb((value as Record<string, unknown>)[key])]));
+    };
+    const cloud = account();
+    const push = cloud.backend.push;
+    cloud.backend.push = (settings) => push(settings.map((row) => ({ ...row, value: jsonb(row.value) })));
+    const home = computer(HOME, cloud.backend);
+    await home.sync.start('user-1');
+    home.onRemote.mockClear();
+
+    // A search counted: what the player typed must stay in the field.
+    const stats = { opened: 0, searches: 1, calculations: 0, articles: { 'uk-65#1': 2, 'koap-8.6#1': 1 } };
+    await home.change('stats:pc-1', stats);
+    await home.sync.sync();
+    expect(home.onRemote).not.toHaveBeenCalled();
+    expect(home.get('stats:pc-1')).toEqual(stats);
+  });
+
   it('does nothing while signed out', async () => {
     const cloud = account();
     const home = computer(HOME, cloud.backend);
