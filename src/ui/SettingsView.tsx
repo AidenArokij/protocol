@@ -479,6 +479,44 @@ function Switch({ label, hint, on, disabled, onChange }: { label: string; hint?:
 }
 
 /** «Запускать вместе с Windows»: asked of Windows itself, so it shows what really happens at logon. */
+function AutostartSwitch() {
+  const platform = usePlatform();
+  const [on, setOn] = useState<boolean | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    void platform.getAutostart().then(setOn, () => setOn(false));
+  }, [platform]);
+  const available = platform.kind !== 'browser';
+  return (
+    <>
+      <Switch
+        label="Запускать вместе с Windows"
+        hint={
+          available
+            ? 'Ассистент запустится при входе в Windows и будет ждать в трее — откройте его горячей клавишей.'
+            : 'Работает только в установленной программе.'
+        }
+        on={!!on}
+        disabled={on === null || !available}
+        onChange={(next) => {
+          setFailed(false);
+          setOn(next);
+          platform.setAutostart(next).catch(() => {
+            setOn(!next);
+            setFailed(true);
+          });
+        }}
+      />
+      {failed && (
+        <div className="warn" role="alert">
+          <WarnIcon />
+          <span>Windows не дал изменить автозапуск. Попробуйте ещё раз.</span>
+        </div>
+      )}
+    </>
+  );
+}
+
 /** Where the AI's answers come from, when an AI server is known; without one, the player's own Gemini key. */
 function AiProviderField() {
   const platform = usePlatform();
@@ -688,6 +726,10 @@ export function SettingsView({
           <b>«Отключение звука при потере фокуса» — «Выкл»</b> (GTA V → «Аудио»): иначе, пока открыт ассистент, игра глушит
           звук.
         </p>
+      </Block>
+
+      <Block title="Запуск">
+        <AutostartSwitch />
       </Block>
       </div>
 

@@ -338,6 +338,14 @@ fn restore_foreground(state: tauri::State<PreviousForeground>) {
   }
 }
 
+/// Windows started the app at logon (the autostart entry passes this flag): it waits in the tray for the hotkey.
+const AUTOSTART_FLAG: &str = "--autostart";
+
+#[tauri::command]
+fn launched_at_startup() -> bool {
+  std::env::args().any(|arg| arg == AUTOSTART_FLAG)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -351,6 +359,8 @@ pub fn run() {
     .plugin(tauri_plugin_opener::init())
     // New versions come from the GitHub releases, signed with the project's key (endpoint and key in tauri.conf.json).
     .plugin(tauri_plugin_updater::Builder::new().build())
+    // «Запускать вместе с Windows»: the entry Windows starts at logon carries AUTOSTART_FLAG.
+    .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, Some(vec![AUTOSTART_FLAG])))
     .manage(PreviousForeground::default())
     .manage(Pin::default())
     .invoke_handler(tauri::generate_handler![
@@ -365,6 +375,7 @@ pub fn run() {
       pin_live,
       pin_toast,
       pin_toast_done,
+      launched_at_startup,
       sign_in::sign_in_listen,
       sign_in::sign_in_cancel
     ])

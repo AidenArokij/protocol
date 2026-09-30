@@ -140,6 +140,9 @@ export interface PlatformAdapter {
   writeLaws(server: string, text: string): Promise<void>;
   /** Shows a notice over the game — even while the overlay is hidden — that goes by itself. */
   showToast(toast: Toast): Promise<void>;
+  /** «Запускать вместе с Windows»: asked of Windows itself, so it shows what really happens at logon. */
+  getAutostart(): Promise<boolean>;
+  setAutostart(on: boolean): Promise<void>;
 
   writeClipboard(text: string): Promise<void>;
 
