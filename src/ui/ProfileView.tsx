@@ -3,6 +3,8 @@ import { usePlatform } from '../platform/PlatformContext';
 import { GAME_NAME_MAX, POSITION_MAX, usePlayerCard } from './player';
 import type { Organization, ServerPack } from '../core';
 import { EMPTY_STATS, topArticles, totalStats, type Stats } from './stats';
+import { LeaderRequestRow } from './LeaderRequest';
+import { useRoles } from './roles';
 import { useAccount } from '../account/AccountContext';
 import { useSyncStatus } from '../account/SyncContext';
 import type { SyncStatus } from '../account/sync';
@@ -204,6 +206,8 @@ export function AccountSection({ pack, organization }: { pack: ServerPack; organ
   const { status, signIn, linkTelegram, cancelSignIn, signOut } = useAccount();
   const sync = useSyncStatus();
   const [card, saveCard] = usePlayerCard(usePlatform());
+  const { mine, publish } = useRoles();
+  const here = mine?.roles.find((role) => role.server === server.id && role.organization === organization?.id);
   const faction = organization && organization.id !== 'none' ? organization.name : 'Без организации';
 
   if (status.kind === 'signed-in') {
@@ -218,6 +222,7 @@ export function AccountSection({ pack, organization }: { pack: ServerPack; organ
               <ServerIcon id={server.id} size={14} />
               {server.name} · {faction}
               {card.position && ` · ${card.position}`}
+              {here && <span className="role">{here.role === 'deputy' ? 'Заместитель' : 'Лидер'}</span>}
             </div>
             {card.gameName && <div className="pcard__meta">В игре: {card.gameName}</div>}
           </div>
@@ -227,8 +232,17 @@ export function AccountSection({ pack, organization }: { pack: ServerPack; organ
           </span>
         </div>
         <StatsBlock pack={pack} />
-        <CardField label="Игровой ник" value={card.gameName ?? ''} placeholder="Например, Ivan_Petrov — по желанию" max={GAME_NAME_MAX} onSave={(gameName) => saveCard({ ...card, gameName })} />
-        <CardField label="Должность" value={card.position ?? ''} placeholder="Например, сержант ППС — по желанию" max={POSITION_MAX} onSave={(position) => saveCard({ ...card, position })} />
+        <CardField label="Игровой ник" value={card.gameName ?? ''} placeholder="Например, Ivan_Petrov — по желанию" max={GAME_NAME_MAX} onSave={(gameName) => {
+            saveCard({ ...card, gameName });
+            void publish();
+          }}
+        />
+        <CardField label="Должность" value={card.position ?? ''} placeholder="Например, сержант ППС — по желанию" max={POSITION_MAX} onSave={(position) => {
+            saveCard({ ...card, position });
+            void publish();
+          }}
+        />
+        <LeaderRequestRow server={server.id} organization={organization} />
         {/* Telegram joins a Discord account, so either signs in to it. */}
         {account.via !== 'telegram' && (
           <div className="set__row">

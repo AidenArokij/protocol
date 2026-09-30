@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AccountProvider } from '../account/AccountContext';
-import { createFakeAccounts } from '../account/fake';
+import { createFakeAccounts, type FakeAccounts } from '../account/fake';
 import { SyncProvider } from '../account/SyncContext';
 import { SYNC_RULES } from '../ui/syncedSettings';
+import { RolesProvider } from '../ui/roles';
 import type { Account } from '../account/types';
 import { createFakePlatform, type FakeOptions, type FakePlatform } from '../platform/fake';
 import { PlatformProvider } from '../platform/PlatformContext';
@@ -21,6 +22,8 @@ export interface RenderOptions {
   profile?: Partial<Profile> | null;
   /** The player signed in with Discord; nobody by default. */
   account?: Account;
+  /** What the server holds before the app starts: admins, players' cards, roles, requests. */
+  server?: (server: FakeAccounts['server']) => void;
 }
 
 /** Every card pinned over the game, block by block, in the order they were pinned. */
@@ -36,11 +39,14 @@ export async function renderApp(options: RenderOptions = {}) {
   for (const [key, value] of Object.entries(options.settings ?? {})) platform.settings.set(key, value);
 
   const accounts = createFakeAccounts(options.account);
+  options.server?.(accounts.server);
   render(
     <PlatformProvider platform={platform}>
       <AccountProvider accounts={accounts}>
         <SyncProvider accounts={accounts} rules={SYNC_RULES}>
-          <App />
+          <RolesProvider accounts={accounts}>
+            <App />
+          </RolesProvider>
         </SyncProvider>
       </AccountProvider>
     </PlatformProvider>,

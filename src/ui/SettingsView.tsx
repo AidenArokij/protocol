@@ -3,11 +3,13 @@ import type { Organization, ServerPack } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
 import { USAGE_SHARE_KEY } from '../account/usage';
 import { AccountCard, AccountSection } from './ProfileView';
+import { AdminSection } from './AdminView';
+import { useRoles } from './roles';
 import { ACCENT_HUES, THEMES, organizationHue, type AppearanceControl } from './appearance';
 import { AI_SERVER, APP_VERSION, AUTHOR, LINKS } from './about';
 import { AI_CUSTOM_SETTING, AI_KEY_SETTING, AI_KEY_URL, AI_PROVIDER_SETTING, AI_SERVER_SETTING, type AiProvider } from './ai';
 import type { CustomAi } from '../protocol';
-import { BookIcon, CloseIcon, DiscordIcon, GitHubIcon, InfoIcon, KeyboardIcon, PaletteIcon, PinIcon, SparkIcon, TuneIcon, WarnIcon } from './icons';
+import { AdminIcon, BookIcon, CloseIcon, DiscordIcon, GitHubIcon, InfoIcon, KeyboardIcon, PaletteIcon, PinIcon, SparkIcon, TuneIcon, WarnIcon } from './icons';
 import { formatDate } from './lawBits';
 import { DEFAULT_VOICE_HOTKEY, MAX_OPACITY, MIN_OPACITY } from './overlaySettings';
 import { captureHotkey, hasModifier, hotkeyKeys } from './profile';
@@ -50,7 +52,7 @@ function lawsNote(status: LawsStatus): string | null {
 }
 
 /** The parts of the settings, in the column on their left: the account on top, then these. */
-export type SettingsSection = 'account' | 'main' | 'ai' | 'look' | 'pinned' | 'laws' | 'keys' | 'about';
+export type SettingsSection = 'account' | 'main' | 'ai' | 'look' | 'pinned' | 'laws' | 'keys' | 'about' | 'admin';
 const SECTIONS: { id: SettingsSection; label: string; icon: ReactNode }[] = [
   { id: 'main', label: 'Основное', icon: <TuneIcon /> },
   { id: 'ai', label: 'ИИ', icon: <SparkIcon size={18} /> },
@@ -60,6 +62,8 @@ const SECTIONS: { id: SettingsSection; label: string; icon: ReactNode }[] = [
   { id: 'keys', label: 'Клавиши', icon: <KeyboardIcon /> },
   { id: 'about', label: 'О программе', icon: <InfoIcon /> },
 ];
+/** The admin's part, after the rest — shown to the admin only. */
+const ADMIN_SECTION = { id: 'admin' as const, label: 'Администратор', icon: <AdminIcon /> };
 const sectionId = (id: SettingsSection) => `settings-${id}`;
 
 /** One block of the settings, with its heading. */
@@ -604,6 +608,11 @@ export function SettingsView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus?.at]);
 
+  const { mine } = useRoles();
+  const sections = mine?.admin ? [...SECTIONS, ADMIN_SECTION] : SECTIONS;
+  const sectionsNow = useRef(sections);
+  sectionsNow.current = sections;
+
   // The column marks the part being read: the last one whose top has come up to the top.
   useEffect(() => {
     const scroller = root.current?.closest('.overlay__content');
@@ -612,11 +621,11 @@ export function SettingsView({
       if (Date.now() - picked.current < 800) return;
       const top = scroller.getBoundingClientRect().top + 48;
       let current: SettingsSection = 'account';
-      for (const id of SECTIONS.map((section) => section.id)) {
+      for (const id of sectionsNow.current.map((section) => section.id)) {
         const element = document.getElementById(sectionId(id));
         if (element && element.getBoundingClientRect().top <= top) current = id;
       }
-      if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) current = SECTIONS[SECTIONS.length - 1].id;
+      if (scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2) current = sectionsNow.current[sectionsNow.current.length - 1].id;
       setActive(current);
     };
     scroller.addEventListener('scroll', onScroll, { passive: true });
@@ -634,7 +643,7 @@ export function SettingsView({
     <div className="settings" role="group" aria-label="Настройки" ref={root}>
       <nav className="setnav" aria-label="Разделы настроек">
         <AccountCard current={active === 'account'} onSelect={() => show('account', true)} />
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <button
             key={section.id}
             className="setnav__item"
@@ -850,6 +859,14 @@ export function SettingsView({
         </div>
       </Block>
       </div>
+
+      {mine?.admin && (
+        <div className="settings__part" id={sectionId('admin')}>
+          <Block title="Администратор">
+            <AdminSection />
+          </Block>
+        </div>
+      )}
       </div>
     </div>
   );

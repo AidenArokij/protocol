@@ -1,5 +1,6 @@
 import { createClient, type SupportedStorage, type User } from '@supabase/supabase-js';
 import type { PlatformAdapter } from '../platform/types';
+import type { LeaderRequest, PlayerRecord, RoleName, RolesApi } from './roles';
 import { ACCOUNT_KEY, SignInError, type Account, type Accounts, type Provider } from './types';
 
 /** The helper's Supabase project. The publishable key is meant for the app itself: the database's rules guard the data. */
@@ -123,7 +124,122 @@ export function createSupabaseAccounts(platform: PlatformAdapter, options: Supab
     return remember(accountOf(verified.data.user, 'telegram'));
   };
 
+  /** The signed-in player's id, from the session kept here. */
+  const me = async () => {
+    const { data } = await client.auth.getSession();
+    const user = data.session?.user.id;
+    if (!user) throw new Error('signed out');
+    return user;
+  };
+  const fail = (error: { message: string } | null) => {
+    if (error) throw new Error(error.message);
+  };
+  type RoleRow = { user_id: string; server: string; organization: string; role: RoleName };
+  type ProfileRow = { user_id: string; name: string; game_name: string | null; position: string | null; server: string | null; organization: string | null };
+  type RequestRow = { id: number; user_id: string; server: string; organization: string; note: string | null; status: LeaderRequest['status']; created_at: string };
+  const requestOf = (row: RequestRow): LeaderRequest => ({
+    id: row.id,
+    server: row.server,
+    organization: row.organization,
+    status: row.status,
+    createdAt: row.created_at,
+    ...(row.note ? { note: row.note } : {}),
+  });
+  /** Players by id, with their roles: the admin's view of them. */
+  const records = async (ids: string[]): Promise<Map<string, PlayerRecord>> => {
+    const found = new Map<string, PlayerRecord>();
+    if (!ids.length) return found;
+    const [profiles, roles] = await Promise.all([
+      client.from('profiles').select('user_id,name,game_name,position,server,organization').in('user_id', ids),
+      client.from('roles').select('user_id,server,organization,role').in('user_id', ids),
+    ]);
+    fail(profiles.error);
+    fail(roles.error);
+    for (const id of ids) found.set(id, { userId: id, name: '', roles: [] });
+    for (const row of (profiles.data ?? []) as ProfileRow[]) {
+      found.set(row.user_id, {
+        userId: row.user_id,
+        name: row.name,
+        roles: [],
+        ...(row.game_name ? { gameName: row.game_name } : {}),
+        ...(row.position ? { position: row.position } : {}),
+        ...(row.server ? { server: row.server } : {}),
+        ...(row.organization ? { organization: row.organization } : {}),
+      });
+    }
+    for (const row of (roles.data ?? []) as RoleRow[]) found.get(row.user_id)?.roles.push({ server: row.server, organization: row.organization, role: row.role });
+    return found;
+  };
+
+  const roles: RolesApi = {
+    async publish(card) {
+      const { error } = await client.from('profiles').upsert({
+        user_id: await me(),
+        name: card.name.slice(0, 80),
+        game_name: card.gameName ?? null,
+        position: card.position ?? null,
+        server: card.server ?? null,
+        organization: card.organization ?? null,
+        updated_at: new Date().toISOString(),
+      });
+      fail(error);
+    },
+    async mine() {
+      const user = await me();
+      const [mine, admin, request] = await Promise.all([
+        client.from('roles').select('user_id,server,organization,role').eq('user_id', user),
+        client.rpc('is_admin'),
+        client.from('leader_requests').select('*').eq('user_id', user).order('created_at', { ascending: false }).limit(1),
+      ]);
+      fail(mine.error);
+      fail(admin.error);
+      fail(request.error);
+      return {
+        roles: ((mine.data ?? []) as RoleRow[]).map(({ server, organization, role }) => ({ server, organization, role })),
+        admin: admin.data === true,
+        request: request.data?.[0] ? requestOf(request.data[0] as RequestRow) : null,
+      };
+    },
+    async requestLeader(server, organization, note) {
+      const { error } = await client.from('leader_requests').insert({ user_id: await me(), server, organization, note: note.trim().slice(0, 300) || null });
+      fail(error);
+    },
+    admin: {
+      async requests() {
+        const { data, error } = await client.from('leader_requests').select('*').eq('status', 'pending').order('created_at');
+        fail(error);
+        const rows = (data ?? []) as RequestRow[];
+        const players = await records([...new Set(rows.map((row) => row.user_id))]);
+        return rows.map((row) => ({ ...requestOf(row), player: players.get(row.user_id)! }));
+      },
+      async decide(id, approve) {
+        const { error } = await client.rpc('decide_leader_request', { request_id: id, approve });
+        fail(error);
+      },
+      async search(query) {
+        // What PostgREST's filter syntax would read as its own is left out of the words searched for.
+        const words = query.replace(/[,()*%\\"]/g, ' ').trim();
+        if (!words) return [];
+        const { data, error } = await client.from('profiles').select('user_id').or(`name.ilike.*${words}*,game_name.ilike.*${words}*`).limit(20);
+        fail(error);
+        const found = await records(((data ?? []) as { user_id: string }[]).map((row) => row.user_id));
+        return [...found.values()];
+      },
+      async grant(userId, role) {
+        const { error } = await client
+          .from('roles')
+          .upsert({ user_id: userId, server: role.server, organization: role.organization, role: role.role, granted_by: await me(), granted_at: new Date().toISOString() });
+        fail(error);
+      },
+      async revoke(userId, server, organization) {
+        const { error } = await client.from('roles').delete().eq('user_id', userId).eq('server', server).eq('organization', organization);
+        fail(error);
+      },
+    },
+  };
+
   return {
+    roles,
     settings: {
       async pull(since) {
         let query = client.from('user_settings').select('key,value,updated_at');

@@ -1,3 +1,4 @@
+import type { RolesApi } from './roles';
 import type { SyncBackend } from './sync';
 
 /** How a player signs in. */
@@ -51,6 +52,8 @@ export interface Accounts {
   readonly settings: SyncBackend;
   /** Adds anonymous counts to the author's (signed in or not). Throws when offline. */
   sendUsage(counts: UsageCount[]): Promise<void>;
+  /** Roles, leader requests and the admin's tools, for the signed-in player. */
+  readonly roles: RolesApi;
 }
 
 /** A count for the author: a day, a server, what was done, how many times. Nothing of the player. */
