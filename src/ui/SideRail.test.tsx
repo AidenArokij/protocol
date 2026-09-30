@@ -40,9 +40,9 @@ describe('the side column', () => {
     expect(screen.getByRole('region', { name: 'Сервер и организация' })).toBeInTheDocument();
   });
 
-  it('shows the memos as coming, and the calculator only once it has charges', async () => {
+  it('shows the calculator only once it has charges; the memos are there', async () => {
     await renderApp();
-    for (const name of ['Памятки', 'Калькулятор']) expect(within(rail()).getByRole('button', { name })).toBeDisabled();
-    for (const name of ['Закреплённое', 'Профиль']) expect(within(rail()).getByRole('button', { name })).toBeEnabled();
+    expect(within(rail()).getByRole('button', { name: 'Калькулятор' })).toBeDisabled();
+    for (const name of ['Закреплённое', 'Памятки', 'Профиль']) expect(within(rail()).getByRole('button', { name })).toBeEnabled();
   });
 });

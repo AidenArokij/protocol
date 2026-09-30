@@ -1,4 +1,4 @@
-import type { LeaderRequest, PlayerRecord, PublicCard, Role, RolesApi } from './roles';
+import type { LeaderRequest, Memo, PlayerRecord, PublicCard, Role, RolesApi } from './roles';
 import type { RemoteSetting } from './sync';
 import { SignInError, type Account, type Accounts, type UsageCount } from './types';
 
@@ -17,6 +17,7 @@ export interface FakeAccounts extends Accounts {
     cards: Map<string, PublicCard>;
     roles: Map<string, Role[]>;
     requests: (LeaderRequest & { userId: string })[];
+    memos: Memo[];
   };
 }
 
@@ -27,7 +28,7 @@ export function createFakeAccounts(signedIn: Account | null = null): FakeAccount
   const calls: string[] = [];
   const table = new Map<string, RemoteSetting>();
   const usage: UsageCount[][] = [];
-  const server: FakeAccounts['server'] = { admins: new Set(), cards: new Map(), roles: new Map(), requests: [] };
+  const server: FakeAccounts['server'] = { admins: new Set(), cards: new Map(), roles: new Map(), requests: [], memos: [] };
   const me = () => {
     if (!account) throw new Error('signed out');
     return account.id;
@@ -38,7 +39,45 @@ export function createFakeAccounts(signedIn: Account | null = null): FakeAccount
   const record = (userId: string): PlayerRecord => ({ userId, name: '', ...server.cards.get(userId), roles: [...(server.roles.get(userId) ?? [])] });
   const give = (userId: string, role: Role) =>
     server.roles.set(userId, [...(server.roles.get(userId) ?? []).filter((r) => r.server !== role.server || r.organization !== role.organization), role]);
+  /** As the database's rules say: the leader of a faction, anyone with a role in it, one of its players by their card. */
+  const leads = (at: string, organization: string) => (server.roles.get(me()) ?? []).some((r) => r.server === at && r.organization === organization && r.role === 'leader');
+  const writes = (at: string, organization: string) => (server.roles.get(me()) ?? []).some((r) => r.server === at && r.organization === organization);
+  const member = (at: string, organization: string) => {
+    const card = server.cards.get(me());
+    return card?.server === at && card.organization === organization;
+  };
+  let memoId = 0;
   const roles: RolesApi = {
+    faction: {
+      members: async (at, organization) => {
+        if (!leads(at, organization)) return [];
+        return [...server.cards.entries()].filter(([, card]) => card.server === at && card.organization === organization).map(([userId]) => record(userId));
+      },
+      setDeputy: async (userId, deputy) => {
+        const card = server.cards.get(userId);
+        if (!card?.server || !card.organization || !leads(card.server, card.organization)) throw new Error("not the leader of this player's faction");
+        const place = { server: card.server, organization: card.organization };
+        const own = server.roles.get(userId) ?? [];
+        const there = own.find((r) => r.server === place.server && r.organization === place.organization);
+        if (deputy && !there) give(userId, { ...place, role: 'deputy' });
+        if (!deputy && there?.role === 'deputy') server.roles.set(userId, own.filter((r) => r !== there));
+      },
+    },
+    memos: {
+      list: async (at, organization) =>
+        member(at, organization) || writes(at, organization)
+          ? server.memos.filter((m) => m.server === at && m.organization === organization).sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+          : [],
+      post: async (memo) => {
+        if (!writes(memo.server, memo.organization)) throw new Error('not allowed');
+        server.memos.push({ ...memo, id: ++memoId, authorId: me(), createdAt: new Date().toISOString() });
+      },
+      remove: async (id) => {
+        const memo = server.memos.find((m) => m.id === id);
+        if (!memo || (memo.authorId !== me() && !leads(memo.server, memo.organization))) throw new Error('not allowed');
+        server.memos = server.memos.filter((m) => m !== memo);
+      },
+    },
     publish: async (card) => {
       server.cards.set(me(), card);
     },

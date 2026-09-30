@@ -204,6 +204,58 @@ export function createSupabaseAccounts(platform: PlatformAdapter, options: Supab
       const { error } = await client.from('leader_requests').insert({ user_id: await me(), server, organization, note: note.trim().slice(0, 300) || null });
       fail(error);
     },
+    faction: {
+      async members(server, organization) {
+        const { data, error } = await client.from('profiles').select('user_id').eq('server', server).eq('organization', organization).limit(500);
+        fail(error);
+        const found = await records(((data ?? []) as { user_id: string }[]).map((row) => row.user_id));
+        return [...found.values()];
+      },
+      async setDeputy(userId, deputy) {
+        const { error } = await client.rpc('set_deputy', { player: userId, deputy });
+        fail(error);
+      },
+    },
+    memos: {
+      async list(server, organization) {
+        const since = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+        const { data, error } = await client
+          .from('memos')
+          .select('*')
+          .eq('server', server)
+          .eq('organization', organization)
+          .gt('until', since)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        fail(error);
+        type MemoRow = { id: number; server: string; organization: string; author: string; author_name: string; text: string; created_at: string; until: string };
+        return ((data ?? []) as MemoRow[]).map((row) => ({
+          id: row.id,
+          server: row.server,
+          organization: row.organization,
+          authorId: row.author,
+          authorName: row.author_name,
+          text: row.text,
+          createdAt: row.created_at,
+          until: row.until,
+        }));
+      },
+      async post(memo) {
+        const { error } = await client.from('memos').insert({
+          server: memo.server,
+          organization: memo.organization,
+          author: await me(),
+          author_name: memo.authorName.slice(0, 80),
+          text: memo.text.trim().slice(0, 1000),
+          until: memo.until,
+        });
+        fail(error);
+      },
+      async remove(id) {
+        const { error } = await client.from('memos').delete().eq('id', id);
+        fail(error);
+      },
+    },
     admin: {
       async requests() {
         const { data, error } = await client.from('leader_requests').select('*').eq('status', 'pending').order('created_at');

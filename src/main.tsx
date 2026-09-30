@@ -12,6 +12,7 @@ import { createSupabaseAccounts } from './account/supabase';
 import { SyncProvider } from './account/SyncContext';
 import { SYNC_RULES } from './ui/syncedSettings';
 import { RolesProvider } from './ui/roles';
+import { MemosProvider } from './ui/memos';
 import { createBrowserPlatform } from './platform/browser';
 import { PlatformProvider } from './platform/PlatformContext';
 import { createPinBridge, createQuickBridge, createTauriPlatform, isPinWindow, isQuickWindow, isTauri } from './platform/tauri';
@@ -60,7 +61,9 @@ async function start() {
         <AccountProvider accounts={accounts}>
           <SyncProvider accounts={accounts} rules={SYNC_RULES}>
             <RolesProvider accounts={accounts}>
-              <App />
+              <MemosProvider>
+                <App />
+              </MemosProvider>
             </RolesProvider>
           </SyncProvider>
         </AccountProvider>

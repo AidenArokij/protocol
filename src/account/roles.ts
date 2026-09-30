@@ -32,6 +32,19 @@ export interface PlayerRecord extends PublicCard {
   roles: Role[];
 }
 
+/** A memo of a faction (ticket 17): written by its leader or a deputy, read by its players until it runs out. */
+export interface Memo {
+  id: number;
+  server: string;
+  organization: string;
+  authorId: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+  /** When it runs out and goes to the archive. */
+  until: string;
+}
+
 /** Where the signed-in player stands. */
 export interface MyRoles {
   roles: Role[];
@@ -45,6 +58,18 @@ export interface RolesApi {
   publish(card: PublicCard): Promise<void>;
   mine(): Promise<MyRoles>;
   requestLeader(server: string, organization: string, note: string): Promise<void>;
+  /** The leader's (ticket 16): the players of their faction, and deputies made of them or not. */
+  faction: {
+    members(server: string, organization: string): Promise<PlayerRecord[]>;
+    setDeputy(userId: string, deputy: boolean): Promise<void>;
+  };
+  /** A faction's memos (ticket 17): read by its players, written by its leader and deputies. */
+  memos: {
+    /** The ones still running and those run out in the last 30 days, newest first. */
+    list(server: string, organization: string): Promise<Memo[]>;
+    post(memo: { server: string; organization: string; authorName: string; text: string; until: string }): Promise<void>;
+    remove(id: number): Promise<void>;
+  };
   /** The admin's; the server refuses anyone else. */
   admin: {
     requests(): Promise<(LeaderRequest & { player: PlayerRecord })[]>;

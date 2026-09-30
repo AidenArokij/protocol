@@ -59,6 +59,9 @@ import { ServerChoice } from './ServerChoice';
 import { SettingsView, type SettingsSection } from './SettingsView';
 import { useStats } from './stats';
 import { useAnnouncements } from './announcements';
+import { useMemos } from './memos';
+import { MemosView, memoDay } from './MemosView';
+import { factionName } from './AdminView';
 import { Avatar } from './ProfileView';
 import { useAccount } from '../account/AccountContext';
 import type { Laws } from './laws';
@@ -153,6 +156,9 @@ export function Overlay({
   const [open, setOpen] = useState<SearchHit | null>(null);
   const [selected, setSelected] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /** The faction's memos (ticket 17): a page of their own, from the side column. */
+  const [memosOpen, setMemosOpen] = useState(false);
+  const memos = useMemos();
   /** The part of the settings the side column asked for: the account from the profile, what is pinned from the pin. */
   const [settingsFocus, setSettingsFocus] = useState<{ section: SettingsSection; at: number }>();
   const { status: accountStatus } = useAccount();
@@ -643,7 +649,7 @@ export function Overlay({
       return;
     }
     // «Что изменилось» and «было → стало» are read with the mouse; the list keys would move a hidden selection.
-    if (whatsNew || settingsOpen || switchOpen || organizationOpen || serverOpen || notesFor || privacyOpen || diff || (changesView && !open)) return;
+    if (whatsNew || settingsOpen || memosOpen || switchOpen || organizationOpen || serverOpen || notesFor || privacyOpen || diff || (changesView && !open)) return;
     if (open) {
       // Enter in an open article puts its part into the calculator, or takes it out.
       if (e.key === 'Enter' && addable(open)) {
@@ -765,6 +771,7 @@ export function Overlay({
     else if (diff) setDiff(null);
     else if (changesView && settingsOpen) setChangesView(null);
     else if (settingsOpen) setSettingsOpen(false);
+    else if (memosOpen) setMemosOpen(false);
     else if (open) setOpen(null);
     else if (historyOpen) setHistoryOpen(false);
     else if (aiOpen) setAiOpen(false);
@@ -805,7 +812,7 @@ export function Overlay({
   const contentRef = useRef<HTMLDivElement>(null);
   const listScroll = useRef(0);
   /** The side menu's sections: each closes what is on screen and opens its own. */
-  const openSection = (section: 'search' | 'documents' | 'switch' | 'pinned' | 'settings' | 'profile') => {
+  const openSection = (section: 'search' | 'documents' | 'switch' | 'pinned' | 'settings' | 'profile' | 'memos') => {
     setWhatsNew(null);
     setOrganizationOpen(false);
     setServerOpen(false);
@@ -816,19 +823,20 @@ export function Overlay({
     setMenuOpen(section === 'documents');
     setSwitchOpen(section === 'switch');
     setSettingsOpen(section === 'pinned' || section === 'settings' || section === 'profile');
+    setMemosOpen(section === 'memos');
     // The profile is the account at the top of the settings; the pin, what is pinned in them.
     setSettingsFocus(section === 'profile' ? { section: 'account', at: Date.now() } : section === 'pinned' ? { section: 'pinned', at: Date.now() } : undefined);
     searchRef.current?.focus();
   };
 
   /** The settings are a page of their own (direction C): their name in the header, no search. */
-  const inner = settingsOpen ? 'Настройки' : null;
+  const inner = settingsOpen ? 'Настройки' : memosOpen ? 'Памятки' : null;
   // Back from them the search is there again, with the focus.
   useEffect(() => {
     if (!inner) searchRef.current?.focus();
   }, [inner]);
 
-  const onList = !whatsNew && !settingsOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView && !aiOpen && !historyOpen;
+  const onList = !whatsNew && !settingsOpen && !memosOpen && !switchOpen && !organizationOpen && !serverOpen && !notesFor && !privacyOpen && !diff && !open && !changesView && !aiOpen && !historyOpen;
   const wasOnList = useRef(onList);
   useLayoutEffect(() => {
     const content = contentRef.current;
@@ -928,7 +936,7 @@ export function Overlay({
             <ServerIcon id={pack.server.id} size={24} />
           </button>
         }
-        current={settingsOpen ? 'settings' : menuOpen ? 'documents' : switchOpen ? undefined : historyOpen ? 'history' : aiOpen ? 'ai' : 'search'}
+        current={settingsOpen ? 'settings' : memosOpen ? 'memos' : menuOpen ? 'documents' : switchOpen ? undefined : historyOpen ? 'history' : aiOpen ? 'ai' : 'search'}
         items={[
           { id: 'search', label: 'Поиск', icon: <SearchIcon />, shortcut: 1, onSelect: () => openSection('search') },
           {
@@ -969,7 +977,13 @@ export function Overlay({
               setHistoryOpen(show);
             },
           },
-          { id: 'memos', label: 'Памятки', icon: <MemoIcon />, disabled: true, hint: 'Памятки фракции — скоро', onSelect: () => {} },
+          {
+            id: 'memos',
+            label: 'Памятки',
+            icon: <MemoIcon />,
+            expanded: memosOpen,
+            onSelect: () => openSection(memosOpen ? 'search' : 'memos'),
+          },
           {
             id: 'settings',
             label: 'Настройки',
@@ -1247,6 +1261,10 @@ export function Overlay({
                 : undefined
             }
           />
+        ) : memosOpen ? (
+          <div className="settings settings--single">
+            <MemosView signedIn={!!account} />
+          </div>
         ) : settingsOpen && !changesView ? (
           <SettingsView
             pack={pack}
@@ -1261,6 +1279,7 @@ export function Overlay({
             onVoiceHotkey={changeVoiceHotkey}
             quickHotkey={quickHotkey}
             onQuickHotkey={changeQuickHotkey}
+            onMemos={() => openSection('memos')}
             opacity={opacity}
             onOpacity={changeOpacity}
             appearance={appearance}
@@ -1424,6 +1443,14 @@ export function Overlay({
           />
         ) : home ? (
           <>
+            {memos.active[0] && (
+              <button className="memo home__memo" type="button" aria-label="Памятка фракции" onClick={() => openSection('memos')}>
+                <b>
+                  Памятка лидера {memos.place ? factionName(memos.place.server, memos.place.organization) : ''} · {memoDay(memos.active[0].createdAt)}
+                </b>
+                <span className="memo__text">{memos.active[0].text}</span>
+              </button>
+            )}
             {announcements.current && (
               <section className="home__news" aria-label="Объявление">
                 <NewsIcon />

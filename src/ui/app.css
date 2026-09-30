@@ -4504,3 +4504,150 @@ input {
   margin-left: auto;
   color: var(--accent-text);
 }
+
+/* A faction's memo, as in the mockup (.memo): amber, the author and the day in bold, the text under it. */
+.memo {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+  background: oklch(0.85 0.12 80 / 0.1);
+  border: 1px solid oklch(0.85 0.12 80 / 0.35);
+}
+
+.memo b {
+  color: var(--favorite);
+}
+
+.memo__head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.memo__until {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.memo__text {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* On the home screen: the latest running memo, a click away from all of them. */
+.home__memo {
+  width: calc(100% - 20px);
+  margin: 2px 10px 10px;
+  cursor: pointer;
+}
+
+.home__memo .memo__text {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* A page of the side column without the settings' left column: «Памятки». */
+.settings--single {
+  display: flex;
+  flex-direction: column;
+}
+
+.memos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.memos__new {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.memos__input {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: rgb(255 255 255 / calc(0.08 * var(--tint-scale)));
+  color: var(--text);
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.45;
+  outline: none;
+}
+
+.memos__input:focus {
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.memos__empty {
+  padding: 4px 2px;
+}
+
+.memos__archive > summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.memos__archive .memo {
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+/* The leader's tiles, as in the mockup (.tiles, .tile). */
+.faction {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.tile:hover,
+.tile[aria-expanded='true'] {
+  background: var(--surface-hover);
+}
+
+.tile .t {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tile .s {
+  font-size: 12px;
+  color: var(--text-muted);
+}

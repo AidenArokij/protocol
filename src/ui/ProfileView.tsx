@@ -4,6 +4,7 @@ import { GAME_NAME_MAX, POSITION_MAX, usePlayerCard } from './player';
 import type { Organization, ServerPack } from '../core';
 import { EMPTY_STATS, topArticles, totalStats, type Stats } from './stats';
 import { LeaderRequestRow } from './LeaderRequest';
+import { FactionPanel } from './FactionPanel';
 import { useRoles } from './roles';
 import { useAccount } from '../account/AccountContext';
 import { useSyncStatus } from '../account/SyncContext';
@@ -201,7 +202,7 @@ const WAITING: Record<Provider, string> = {
  * server · faction, how they signed in), joining Telegram to a Discord account, and signing out. Signed
  * out: signing in with Discord or Telegram, optional for now.
  */
-export function AccountSection({ pack, organization }: { pack: ServerPack; organization?: Organization }) {
+export function AccountSection({ pack, organization, onMemos }: { pack: ServerPack; organization?: Organization; onMemos?: () => void }) {
   const { server } = pack;
   const { status, signIn, linkTelegram, cancelSignIn, signOut } = useAccount();
   const sync = useSyncStatus();
@@ -243,6 +244,7 @@ export function AccountSection({ pack, organization }: { pack: ServerPack; organ
           }}
         />
         <LeaderRequestRow server={server.id} organization={organization} />
+        {here?.role === 'leader' && organization && onMemos && <FactionPanel server={server.id} organization={organization.id} onMemos={onMemos} />}
         {/* Telegram joins a Discord account, so either signs in to it. */}
         {account.via !== 'telegram' && (
           <div className="set__row">

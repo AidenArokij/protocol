@@ -5,6 +5,7 @@ import { createFakeAccounts, type FakeAccounts } from '../account/fake';
 import { SyncProvider } from '../account/SyncContext';
 import { SYNC_RULES } from '../ui/syncedSettings';
 import { RolesProvider } from '../ui/roles';
+import { MemosProvider } from '../ui/memos';
 import type { Account } from '../account/types';
 import { createFakePlatform, type FakeOptions, type FakePlatform } from '../platform/fake';
 import { PlatformProvider } from '../platform/PlatformContext';
@@ -45,7 +46,9 @@ export async function renderApp(options: RenderOptions = {}) {
       <AccountProvider accounts={accounts}>
         <SyncProvider accounts={accounts} rules={SYNC_RULES}>
           <RolesProvider accounts={accounts}>
-            <App />
+            <MemosProvider>
+              <App />
+            </MemosProvider>
           </RolesProvider>
         </SyncProvider>
       </AccountProvider>

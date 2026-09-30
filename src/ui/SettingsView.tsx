@@ -622,6 +622,8 @@ export interface SettingsViewProps {
   /** The push-to-talk key for a question over the game; empty when off. */
   voiceHotkey: string;
   onVoiceHotkey: (accelerator: string) => void;
+  /** Opens the faction's memos, from the leader's part of the account. */
+  onMemos: () => void;
   /** The quick search's key; empty when off. */
   quickHotkey: string;
   onQuickHotkey: (accelerator: string) => void;
@@ -664,6 +666,7 @@ export function SettingsView({
   onVoiceHotkey,
   quickHotkey,
   onQuickHotkey,
+  onMemos,
   opacity,
   onOpacity,
   appearance,
@@ -750,7 +753,7 @@ export function SettingsView({
       <div className="settings__body">
       <div className="settings__part" id={sectionId('account')}>
         <Block title="Аккаунт">
-          <AccountSection pack={pack} organization={organization} />
+          <AccountSection pack={pack} organization={organization} onMemos={onMemos} />
         </Block>
       </div>
 
