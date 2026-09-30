@@ -1,13 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import { PhysicalPosition, PhysicalSize, availableMonitors, currentMonitor, getCurrentWindow, primaryMonitor } from '@tauri-apps/api/window';
+import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { disable as disableAutostart, enable as enableAutostart, isEnabled as autostartEnabled } from '@tauri-apps/plugin-autostart';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { isRegistered, register, unregister } from '@tauri-apps/plugin-global-shortcut';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import { load } from '@tauri-apps/plugin-store';
 import { check, type Update } from '@tauri-apps/plugin-updater';
-import type { PinArea, PinGroup, PinLook, PlatformAdapter, QuickBridge, QuickRequest, Toast, WindowBounds } from './types';
+import type { PinArea, PinGroup, PinLook, PlatformAdapter, QuickBridge, QuickRequest, QuickState, Toast, WindowBounds } from './types';
 
 /** True inside the Tauri app, false in a plain browser. */
 export function isTauri(): boolean {
@@ -44,6 +45,10 @@ interface SignInBack {
 const QUICK_LABEL = 'quick';
 const QUICK_SHOWN_EVENT = 'quick-shown';
 const QUICK_REQUEST_EVENT = 'quick-request';
+/** What the overlay tells the bar: its calculator and the recent articles. */
+const QUICK_STATE_EVENT = 'quick-state';
+/** Where the player last dragged the bar to, in physical pixels. */
+const QUICK_POSITION_KEY = 'quick.position';
 
 /** True in the quick search's window, which renders the bar instead of the overlay. */
 export function isQuickWindow(): boolean {
@@ -52,14 +57,16 @@ export function isQuickWindow(): boolean {
 
 /**
  * What the quick search's window needs: the settings and the laws kept by the overlay, being shown by its key
- * and hidden (by Esc, or when the player clicks away — the game gets the focus back), its height following
- * what it shows, and asking the overlay.
+ * and hidden (by Esc, its cross or the key again — the game gets the focus back; a click elsewhere leaves it,
+ * issue #20), its place where it was dragged to, its height following what it shows, and the overlay.
  */
 export function createQuickBridge(): QuickBridge {
   const store = load('settings.json', { defaults: {}, autoSave: 300 });
   const hide = () => invoke<void>('quick_hide');
-  void getCurrentWindow().onFocusChanged(({ payload: focused }) => {
-    if (!focused) void hide();
+  let saveTimer: number | undefined;
+  void getCurrentWindow().onMoved(({ payload }) => {
+    window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(async () => (await store).set(QUICK_POSITION_KEY, { x: payload.x, y: payload.y }), 400);
   });
   return {
     readSetting: async <T,>(key: string) => (await store).get<T>(key),
@@ -75,6 +82,15 @@ export function createQuickBridge(): QuickBridge {
     },
     hide,
     request: (request) => emitTo('main', QUICK_REQUEST_EVENT, request),
+    onState(listener) {
+      let stop: (() => void) | undefined;
+      let stopped = false;
+      void listen<QuickState>(QUICK_STATE_EVENT, (event) => listener(event.payload)).then((unlisten) => (stopped ? unlisten() : (stop = unlisten)));
+      return () => {
+        stopped = true;
+        stop?.();
+      };
+    },
     fit: (height) => void invoke('quick_fit', { height }),
   };
 }
@@ -241,11 +257,16 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
   await listen(TOGGLE_EVENT, () => void toggleOverlay());
   const quickListeners = new Set<(request: QuickRequest) => void>();
   await listen<QuickRequest>(QUICK_REQUEST_EVENT, (event) => quickListeners.forEach((listener) => listener(event.payload)));
-  /** The quick search's key: the overlay, if open, gives way to the bar; the game's focus is kept to go back to. */
+  /**
+   * The quick search's key shows the bar, or hides it when it is up. The overlay, if open, gives way to it; the
+   * game's focus is kept to go back to; the bar comes where it was last dragged to.
+   */
   const showQuick = async () => {
+    const quick = await WebviewWindow.getByLabel(QUICK_LABEL);
+    if (quick && (await quick.isVisible())) return invoke('quick_hide');
     if (visible) await hideOverlay();
     await invoke('remember_foreground');
-    await invoke('quick_show');
+    await invoke('quick_show', { position: (await store.get(QUICK_POSITION_KEY)) ?? null });
   };
   const pinListeners = new Set<(groups: PinGroup[]) => void>();
   await listen<PinGroup[]>(PIN_LAYOUT_EVENT, (event) => pinListeners.forEach((listener) => listener(event.payload)));
@@ -288,6 +309,7 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
         if (quickHotkey) await unregister(quickHotkey);
         quickHotkey = null;
       }),
+    sendQuickState: (state) => emitTo(QUICK_LABEL, QUICK_STATE_EVENT, state),
     onQuickRequest(listener) {
       quickListeners.add(listener);
       return () => quickListeners.delete(listener);

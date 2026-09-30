@@ -29,15 +29,33 @@ pub fn create_quick_window(app: &AppHandle) -> tauri::Result<()> {
   Ok(())
 }
 
-/// Shows the bar at the top centre of the screen the overlay is on, and gives it the focus.
+/// Where the player last dragged the bar to, in physical pixels (issue #20).
+#[derive(serde::Deserialize)]
+pub struct QuickPosition {
+  x: i32,
+  y: i32,
+}
+
+/// Shows the bar where the player last dragged it — if that is still on a screen — or else at the top centre of
+/// the screen the overlay is on, and gives it the focus.
 #[tauri::command]
-pub fn quick_show(app: AppHandle) -> Result<(), String> {
+pub fn quick_show(app: AppHandle, position: Option<QuickPosition>) -> Result<(), String> {
   let window = app.get_webview_window(QUICK_LABEL).ok_or("no quick window")?;
-  let monitor = app
+  let on_screen = position.filter(|at| {
+    app.available_monitors().unwrap_or_default().iter().any(|m| {
+      at.x >= m.position().x - 40
+        && at.y >= m.position().y - 10
+        && at.x < m.position().x + m.size().width as i32 - 80
+        && at.y < m.position().y + m.size().height as i32 - 40
+    })
+  });
+  if let Some(at) = on_screen {
+    window.set_position(PhysicalPosition::new(at.x, at.y)).map_err(|e| e.to_string())?;
+  } else if let Some(monitor) = app
     .get_webview_window("main")
     .and_then(|main| main.current_monitor().ok().flatten())
-    .or_else(|| app.primary_monitor().ok().flatten());
-  if let Some(monitor) = monitor {
+    .or_else(|| app.primary_monitor().ok().flatten())
+  {
     let width = (WIDTH * monitor.scale_factor()) as i32;
     let x = monitor.position().x + (monitor.size().width as i32 - width) / 2;
     let y = monitor.position().y + (monitor.size().height as f64 * TOP) as i32;

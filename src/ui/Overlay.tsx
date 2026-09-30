@@ -570,17 +570,46 @@ export function Overlay({
     void platform.registerQuickHotkey(quickHotkey);
     return () => void platform.unregisterQuickHotkey();
   }, [platform, quickHotkey, capturing, profile.hotkey, voiceHotkey]);
+  /** An article came into the calculator from the bar: the calculator is pinned over the game, to see it there (issue #20). */
+  const [pinFromQuick, setPinFromQuick] = useState(false);
   const onQuick = useRef<(request: QuickRequest) => void>(() => {});
   onQuick.current = (request) => {
-    if (request.kind === 'charge') {
-      const hit = lookup(request.key);
-      if (hit && !inCalculator(hit)) toggleCharge(hit);
-      return;
+    switch (request.kind) {
+      case 'charge': {
+        const hit = lookup(request.key);
+        if (hit && !inCalculator(hit)) {
+          toggleCharge(hit);
+          setPinFromQuick(true);
+        }
+        return;
+      }
+      case 'remember': {
+        const hit = lookup(request.key);
+        if (hit) remember(hit);
+        return;
+      }
+      case 'clear-recent':
+        updateRecent(() => []);
+        return;
+      case 'open-calculator':
+        void platform.showOverlay();
+        window.setTimeout(() => document.querySelector<HTMLElement>('.calc button, .calc input')?.focus(), 100);
+        return;
+      case 'ask':
+        void platform.showOverlay();
+        openAi(request.question);
+        return;
+      case 'hello':
+        void platform.sendQuickState({ charges: charges.map((c) => c.key), recent: recentKeys });
+        return;
     }
-    void platform.showOverlay();
-    openAi(request.question);
   };
   useEffect(() => platform.onQuickRequest((request) => onQuick.current(request)), [platform]);
+  // The bar is told what is in the calculator and the recent articles whenever they change.
+  const quickState = JSON.stringify({ charges: charges.map((c) => c.key), recent: recentKeys });
+  useEffect(() => {
+    void platform.sendQuickState(JSON.parse(quickState));
+  }, [platform, quickState]);
 
   const pinnedArticle = open ? hasCard(groups, hitKey(open)) : false;
   const pinnedCalculator = hasCard(groups, CALCULATOR_ID);
@@ -595,6 +624,12 @@ export function Overlay({
   useEffect(() => {
     setGroups((list) => (calculatorCard ? updateCard(list, calculatorCard) : unpinCard(list, CALCULATOR_ID)));
   }, [calculatorCard]);
+  // From the quick search, the calculator comes over the game at once, where the player is.
+  useEffect(() => {
+    if (!pinFromQuick || !calculatorCard) return;
+    setPinFromQuick(false);
+    setGroups((list) => (hasCard(list, CALCULATOR_ID) ? list : pinCard(list, calculatorCard, surface())));
+  }, [pinFromQuick, calculatorCard]);
 
   const [copyState, setCopyState] = useState<CopyState>('idle');
   const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);

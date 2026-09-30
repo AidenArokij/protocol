@@ -37,6 +37,13 @@ async function start() {
                   onShown: () => () => {},
                   hide: async () => console.info('quick search: hidden'),
                   request: async (request) => console.info('quick search asks', request),
+                  // The preview's own recent articles, to see the list.
+                  onState(listener) {
+                    void preview.readSetting<{ server: string }>('profile').then(async (profile) =>
+                      listener({ charges: [], recent: (await preview.readSetting<string[]>(`recent:${profile?.server ?? 'tverskoi'}`)) ?? [] }),
+                    );
+                    return () => {};
+                  },
                 }
           }
         />

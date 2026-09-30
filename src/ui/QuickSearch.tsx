@@ -1,21 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { articleHeading, formatPunishment, searchArticles, type SearchHit, type ServerPack } from '../core';
 import { packFor } from '../data';
-import type { PinLook, QuickBridge } from '../platform/types';
+import type { PinLook, QuickBridge, QuickState } from '../platform/types';
 import { applyAppearance, isTheme } from './appearance';
-import { BackIcon, CheckIcon, CloseIcon, SearchIcon, SparkIcon } from './icons';
+import { BackIcon, CalculatorIcon, CheckIcon, CloseIcon, GripIcon, SearchIcon, SparkIcon } from './icons';
 import { isNewer, readPack } from './laws';
 import { DocBadge, Stars } from './lawBits';
 import { PROFILE_KEY, type Profile } from './profile';
 import { ResultRow } from './ResultRow';
-import { entryPart, hitKey } from './saved';
+import { entryPart, hitKey, useHitLookup } from './saved';
 
 /** How many results the bar shows under the field. */
 const SHOWN = 8;
 /** The theme and accent of the overlay, as the pinned cards get them. */
 const LOOK_KEY = 'pin.look';
 
-type Mode = 'laws' | 'ai';
+type Mode = 'laws' | 'recent' | 'ai';
+const MODES: { id: Mode; label: string }[] = [
+  { id: 'laws', label: 'Законы' },
+  { id: 'recent', label: 'Недавние' },
+  { id: 'ai', label: 'ИИ' },
+];
 
 /** An article opened in the bar: its heading, then each part with its punishment and its «+». */
 function QuickArticle({ hit, added, onCharge, onBack }: { hit: SearchHit; added: (key: string) => boolean; onCharge: (hit: SearchHit) => void; onBack: () => void }) {
@@ -24,7 +29,7 @@ function QuickArticle({ hit, added, onCharge, onBack }: { hit: SearchHit; added:
     <article className="quick__article" aria-label={articleHeading(article, document.unit)}>
       <button className="back" type="button" onClick={onBack}>
         <BackIcon />
-        <span>Результаты</span>
+        <span>Назад</span>
       </button>
       <h2 className="quick__title">
         <DocBadge document={document} /> {articleHeading(article, document.unit)}
@@ -56,10 +61,12 @@ function QuickArticle({ hit, added, onCharge, onBack }: { hit: SearchHit; added:
 }
 
 /**
- * The quick search (ticket 27): a bar of its own at the top centre of the screen, opened by its own key over
- * the game. The laws of the player's server, results under the field; → opens an article in the bar, Enter
- * puts it into the assistant's calculator; Tab turns the field to the AI, whose question the assistant answers.
- * Esc steps back, then hides the bar.
+ * The quick search (ticket 27; issue #20): a bar of its own over the game, opened by its own key, where the
+ * player last dragged it. The laws of the player's server, results under the field; → opens an article in the
+ * bar, Enter puts it into the assistant's calculator — pinned over the game at once; «Недавние» lists the recent
+ * articles; Tab turns the field to the AI, whose question the assistant answers. What is in the calculator and
+ * the recent articles are the assistant's, told to the bar, so nothing is lost when it hides. Esc steps back, then
+ * hides the bar; its field keeps what was typed for the next time.
  */
 export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
   const [organization, setOrganization] = useState<string | undefined>();
@@ -68,10 +75,10 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(0);
   const [open, setOpen] = useState<SearchHit | null>(null);
-  /** What went into the calculator since the bar was shown. */
-  const [sent, setSent] = useState<string[]>([]);
+  const [state, setState] = useState<QuickState>({ charges: [], recent: [] });
   const input = useRef<HTMLInputElement>(null);
   const root = useRef<HTMLDivElement>(null);
+  const lookup = useHitLookup(pack);
 
   // The window as tall as the bar and what it shows under it.
   useEffect(() => {
@@ -82,7 +89,11 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
     return () => observer.disconnect();
   }, [bridge]);
 
-  // Each time it is shown: the player's server and faction and the look as they are now, an empty field.
+  // What is in the calculator and the recent articles: the assistant's, told on every change and asked for at start.
+  useEffect(() => bridge.onState(setState), [bridge]);
+
+  // Each time it is shown: the player's server and faction and the look as they are now, the assistant asked what
+  // it has; the field keeps its text, selected, so typing replaces it.
   const load = useCallback(async () => {
     const [profile, look] = await Promise.all([bridge.readSetting<Profile>(PROFILE_KEY), bridge.readSetting<PinLook>(LOOK_KEY)]);
     if (look) applyAppearance(isTheme(look.theme) ? look.theme : 'glass', look.hue);
@@ -93,38 +104,46 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
     setPack(kept && isNewer(kept, bundled) ? kept : bundled);
   }, [bridge]);
   useEffect(() => {
-    const reset = () => {
-      setMode('laws');
-      setQuery('');
-      setSelected(0);
-      setOpen(null);
-      setSent([]);
+    const shown = () => {
       input.current?.focus();
+      input.current?.select();
       void load();
+      void bridge.request({ kind: 'hello' });
     };
-    reset();
-    return bridge.onShown(reset);
+    shown();
+    return bridge.onShown(shown);
   }, [bridge, load]);
 
   const boostDocuments = pack.organizations.find((o) => o.id === organization)?.documents;
-  const hits = useMemo(
-    () => (mode === 'laws' && query.trim() ? searchArticles(pack, query, { boostDocuments }).slice(0, SHOWN) : []),
-    [pack, query, mode, boostDocuments],
-  );
+  const hits = useMemo(() => {
+    if (mode === 'recent') return state.recent.map(lookup).filter((hit) => hit !== undefined);
+    return mode === 'laws' && query.trim() ? searchArticles(pack, query, { boostDocuments }).slice(0, SHOWN) : [];
+  }, [pack, query, mode, boostDocuments, state.recent, lookup]);
   const current = Math.min(selected, hits.length - 1);
   const punished = (hit: SearchHit) => !!entryPart(hit.article, hit.part)?.punishment;
+  const chargeKey = (hit: SearchHit) => hitKey({ ...hit, part: entryPart(hit.article, hit.part) });
+  const added = (key: string) => state.charges.includes(key);
 
   const charge = (hit: SearchHit) => {
-    const key = hitKey({ ...hit, part: entryPart(hit.article, hit.part) });
-    if (sent.includes(key)) return;
-    setSent((list) => [...list, key]);
-    void bridge.request({ kind: 'charge', key });
+    const key = chargeKey(hit);
+    if (!added(key)) void bridge.request({ kind: 'charge', key });
+    input.current?.focus();
+  };
+  const openHit = (hit: SearchHit) => {
+    setOpen(hit);
+    void bridge.request({ kind: 'remember', key: hitKey(hit) });
     input.current?.focus();
   };
   const ask = () => {
     const question = query.trim();
     if (!question) return;
     void bridge.request({ kind: 'ask', question }).then(() => bridge.hide());
+  };
+  const switchTo = (next: Mode) => {
+    setMode(next);
+    setOpen(null);
+    setSelected(0);
+    input.current?.focus();
   };
 
   // Esc on the window, not the field: a button just clicked has the focus. It steps back, then hides the bar.
@@ -147,8 +166,7 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      setMode((m) => (m === 'laws' ? 'ai' : 'laws'));
-      setOpen(null);
+      switchTo(mode === 'ai' ? 'laws' : 'ai');
       return;
     }
     if (mode === 'ai') {
@@ -177,16 +195,35 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
       e.preventDefault();
       const hit = hits[current];
       if (punished(hit)) charge(hit);
-      else setOpen(hit);
+      else openHit(hit);
     } else if (e.key === 'ArrowRight' && e.currentTarget.selectionStart === e.currentTarget.value.length) {
       e.preventDefault();
-      setOpen(hits[current]);
+      openHit(hits[current]);
     }
   };
 
+  const list = (
+    <div className="list" role="list" aria-label={mode === 'recent' ? 'Недавние' : 'Результаты быстрого поиска'}>
+      {hits.map((hit, i) => (
+        <div role="listitem" key={hitKey(hit)}>
+          <ResultRow
+            hit={hit}
+            selected={i === current}
+            onOpen={() => openHit(hit)}
+            calculator={punished(hit) ? { added: added(chargeKey(hit)), onToggle: () => charge(hit) } : undefined}
+          />
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="quick glass" role="dialog" aria-label="Быстрый поиск" ref={root}>
-      <div className="quick__bar">
+      {/* Dragged by its edges — the grip, around the field — to wherever the player wants it. */}
+      <div className="quick__bar" data-tauri-drag-region>
+        <span className="quick__grip" title="Перетащите, чтобы передвинуть" data-tauri-drag-region>
+          <GripIcon size={16} />
+        </span>
         {mode === 'ai' ? <SparkIcon size={20} /> : <SearchIcon />}
         <input
           ref={input}
@@ -201,23 +238,14 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
             setQuery(e.target.value);
             setSelected(0);
             setOpen(null);
+            if (mode === 'recent') setMode('laws');
           }}
           onKeyDown={onKey}
         />
-        <div className="seg seg--sm quick__mode" role="radiogroup" aria-label="Где искать">
-          {(['laws', 'ai'] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              role="radio"
-              aria-checked={mode === m}
-              onClick={() => {
-                setMode(m);
-                setOpen(null);
-                input.current?.focus();
-              }}
-            >
-              {m === 'laws' ? 'Законы' : 'ИИ'}
+        <div className="seg seg--sm quick__mode" role="radiogroup" aria-label="Что показать">
+          {MODES.map((m) => (
+            <button key={m.id} type="button" role="radio" aria-checked={mode === m.id} onClick={() => switchTo(m.id)}>
+              {m.label}
             </button>
           ))}
         </div>
@@ -230,7 +258,7 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
         <div className="quick__body">
           <QuickArticle
             hit={open}
-            added={(key) => sent.includes(key)}
+            added={added}
             onCharge={charge}
             onBack={() => {
               setOpen(null);
@@ -242,31 +270,26 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
         <p className="quick__hint">
           Enter — вопрос уйдёт ИИ, ответ откроется в ассистенте. <kbd>Tab</kbd> — обратно к законам.
         </p>
-      ) : hits.length > 0 ? (
+      ) : mode === 'recent' ? (
         <div className="quick__body">
-          <div className="list" role="list" aria-label="Результаты быстрого поиска">
-            {hits.map((hit, i) => (
-              <div role="listitem" key={hitKey(hit)}>
-                <ResultRow
-                  hit={hit}
-                  selected={i === current}
-                  onOpen={() => setOpen(hit)}
-                  calculator={
-                    punished(hit)
-                      ? { added: sent.includes(hitKey({ ...hit, part: entryPart(hit.article, hit.part) })), onToggle: () => charge(hit) }
-                      : undefined
-                  }
-                />
-              </div>
-            ))}
+          <div className="quick__head">
+            <span className="sec-t">Недавние</span>
+            {hits.length > 0 && (
+              <button className="link-btn" type="button" aria-label="Очистить недавние" onClick={() => void bridge.request({ kind: 'clear-recent' })}>
+                Очистить
+              </button>
+            )}
           </div>
+          {hits.length > 0 ? list : <p className="quick__hint quick__hint--in">Здесь появятся статьи, которые вы открывали.</p>}
         </div>
+      ) : hits.length > 0 ? (
+        <div className="quick__body">{list}</div>
       ) : (
         query.trim() && <p className="quick__hint">Ничего не нашлось. <kbd>Tab</kbd> — спросить ИИ.</p>
       )}
 
-      <div className="quick__foot">
-        {mode === 'laws' && !open && (
+      <div className="quick__foot" data-tauri-drag-region>
+        {mode !== 'ai' && !open && (
           <>
             <span>
               <kbd>↑</kbd>
@@ -286,10 +309,10 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
         <span>
           <kbd>Esc</kbd> {open ? 'назад' : 'закрыть'}
         </span>
-        {sent.length > 0 && (
-          <span className="quick__sent">
-            <CheckIcon size={14} /> В калькуляторе: {sent.length} — откройте ассистент
-          </span>
+        {state.charges.length > 0 && (
+          <button className="quick__sent" type="button" onClick={() => void bridge.request({ kind: 'open-calculator' })}>
+            <CheckIcon size={14} /> В калькуляторе: {state.charges.length} · <CalculatorIcon size={14} /> Открыть
+          </button>
         )}
       </div>
     </div>

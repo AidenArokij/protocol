@@ -80,8 +80,24 @@ export interface UpdateProgress {
 /** Edge or corner of the frameless overlay window being dragged to resize it. */
 export type ResizeEdge = 'East' | 'North' | 'NorthEast' | 'NorthWest' | 'South' | 'SouthEast' | 'SouthWest' | 'West';
 
-/** The quick search asks the overlay to put an article (by its key, `uk-65#1`) into the calculator, or to ask the AI. */
-export type QuickRequest = { kind: 'charge'; key: string } | { kind: 'ask'; question: string };
+/**
+ * What the quick search asks of the overlay, where the calculator, the recent articles and the AI are: an article
+ * (by its key, `uk-65#1`) into the calculator, one opened to the recent ones, the recent ones cleared, the
+ * calculator or the AI shown, and — when the bar starts — what it should show.
+ */
+export type QuickRequest =
+  | { kind: 'charge'; key: string }
+  | { kind: 'remember'; key: string }
+  | { kind: 'clear-recent' }
+  | { kind: 'open-calculator' }
+  | { kind: 'ask'; question: string }
+  | { kind: 'hello' };
+
+/** What the overlay tells the quick search: what is in its calculator and the recent articles, by key. */
+export interface QuickState {
+  charges: string[];
+  recent: string[];
+}
 
 /** What the bar needs of the app: settings and laws to read, being shown and hidden, and asking the assistant. */
 export interface QuickBridge {
@@ -90,8 +106,10 @@ export interface QuickBridge {
   /** Called each time the bar is shown by its key. */
   onShown(listener: () => void): () => void;
   hide(): Promise<void>;
-  /** The assistant does it: an article into its calculator, a question to its AI. */
+  /** The assistant does it: an article into its calculator, a question to its AI… */
   request(request: QuickRequest): Promise<void>;
+  /** What the assistant has: its calculator and the recent articles, told on every change. */
+  onState(listener: (state: QuickState) => void): () => void;
   /** The window's height to what the bar shows, in CSS pixels: no invisible window over the game below it. */
   fit?(height: number): void;
 }
@@ -119,6 +137,8 @@ export interface PlatformAdapter {
   unregisterQuickHotkey(): Promise<void>;
   /** What the quick search asks of the overlay: an article into the calculator, a question to the AI. Returns unsubscribe. */
   onQuickRequest(listener: (request: QuickRequest) => void): () => void;
+  /** Tells the quick search what is in the calculator and the recent articles. */
+  sendQuickState(state: QuickState): Promise<void>;
 
   /** Shows the overlay and gives it focus. */
   showOverlay(): Promise<void>;

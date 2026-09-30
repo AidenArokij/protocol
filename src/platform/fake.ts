@@ -1,4 +1,4 @@
-import type { AppUpdate, PinGroup, PlatformAdapter, QuickRequest, ResizeEdge, Toast, WindowBounds } from './types';
+import type { AppUpdate, PinGroup, PlatformAdapter, QuickRequest, QuickState, ResizeEdge, Toast, WindowBounds } from './types';
 
 export interface FakeCall {
   method: keyof PlatformAdapter;
@@ -14,6 +14,8 @@ export interface FakePlatform extends PlatformAdapter {
     hotkey: string | null;
     voiceHotkey: string | null;
     quickHotkey: string | null;
+    /** What the overlay last told the quick search. */
+    quickState: QuickState | null;
     /** What is pinned over the game, block by block. */
     pins: PinGroup[];
     /** Files on the internet by URL; «offline» for no connection at all. */
@@ -68,6 +70,7 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     hotkey: null,
     voiceHotkey: null,
     quickHotkey: null,
+    quickState: null,
     pins: [],
     remote: options.remote ?? {},
     laws: new Map(Object.entries(options.laws ?? {})),
@@ -112,6 +115,9 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     async unregisterQuickHotkey() {
       record('unregisterQuickHotkey');
       state.quickHotkey = null;
+    },
+    async sendQuickState(quickState) {
+      state.quickState = quickState;
     },
     onQuickRequest(listener) {
       quickListeners.add(listener);

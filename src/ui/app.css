@@ -4399,8 +4399,31 @@ input {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 10px 10px 16px;
+  padding: 10px 10px 10px 8px;
   color: var(--text-muted);
+  cursor: grab;
+}
+
+/* Where the bar is taken to drag it (issue #20); the field and the buttons keep their own cursors. */
+.quick__grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 28px;
+  color: var(--text-faint);
+  cursor: grab;
+}
+
+.quick__grip svg {
+  pointer-events: none;
+}
+
+.quick__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 0;
 }
 
 .quick__input {
@@ -4420,6 +4443,11 @@ input {
 
 .quick__mode {
   flex: none;
+  grid-template-columns: repeat(3, auto);
+}
+
+.quick__mode button {
+  padding: 0 10px;
 }
 
 .quick__body {
@@ -4438,6 +4466,11 @@ input {
   border-top: 1px solid var(--line);
   font-size: 13px;
   color: var(--text-muted);
+}
+
+.quick__hint--in {
+  border-top: 0;
+  padding: 8px 10px 10px;
 }
 
 .quick__article {
@@ -4489,6 +4522,7 @@ input {
   border-top: 1px solid var(--line);
   font-size: 11.5px;
   color: var(--text-faint);
+  cursor: grab;
 }
 
 .quick__foot kbd {
@@ -4502,7 +4536,17 @@ input {
   align-items: center;
   gap: 4px;
   margin-left: auto;
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
   color: var(--accent-text);
+  cursor: pointer;
+}
+
+.quick__sent:hover {
+  background: var(--surface);
 }
 
 /* A faction's memo, as in the mockup (.memo): amber, the author and the day in bold, the text under it. */
