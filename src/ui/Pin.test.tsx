@@ -283,6 +283,16 @@ describe('the cards over the game', () => {
     vi.restoreAllMocks();
   });
 
+  it('offers «Очистить» on the calculator’s card, over the game too (issue #23)', () => {
+    const onClear = vi.fn();
+    const calculator = { id: 'calculator', kind: 'calculator' as const, heading: '40 мес', lines: ['ст. 88 ч. 1 УК'] };
+    render(<PinSurface groups={[block('c', 40, 300, calculator), block('a', 40, 600, card('a', 'Кража'))]} live={false} onChange={() => {}} onClearCalculator={onClear} />);
+    const buttons = screen.getAllByRole('button', { name: 'Очистить калькулятор' });
+    expect(buttons).toHaveLength(1);
+    buttons[0].click();
+    expect(onClear).toHaveBeenCalledOnce();
+  });
+
   it('moves a block to where it was dragged', async () => {
     layOut();
     const onChange = vi.fn();
@@ -388,6 +398,7 @@ describe('the cards over the game', () => {
       onLive: (listener) => ((sendLive = listener), () => {}),
       layout: vi.fn(async () => {}),
       areas: vi.fn(async () => {}),
+      clearCalculator: vi.fn(async () => {}),
       onToast: () => () => {},
       toastDone: vi.fn(async () => {}),
       look: async () => undefined,

@@ -58,6 +58,9 @@ describe('the quick search', () => {
     expect(screen.getByRole('button', { name: /В калькуляторе: 1/ })).toBeInTheDocument();
     await user.keyboard('{Enter}');
     expect(requests).toHaveLength(1);
+    // Emptied from the bar, without opening the assistant (issue #23).
+    await user.click(screen.getByRole('button', { name: 'Очистить калькулятор' }));
+    expect(requests.at(-1)).toEqual({ kind: 'clear-charges' });
   });
 
   it('opens an article in the bar with →, adding it to the recent ones; Esc steps back, then hides the bar', async () => {
@@ -125,6 +128,18 @@ describe('the overlay, for the quick search', () => {
     expect(await screen.findByRole('complementary', { name: 'Калькулятор' }, { timeout: 4000 })).toHaveTextContent('ст. 65 ч. 1');
     await vi.waitFor(() => expect(platform.state.pins.flatMap((group) => group.cards).map((card) => card.id)).toContain('calculator'));
     await vi.waitFor(() => expect(platform.state.quickState?.charges).toEqual(['uk-65#1']), { timeout: 4000 });
+  });
+
+  it('empties the calculator when the bar or its card over the game asks, and the card goes (issue #23)', async () => {
+    const { platform } = await renderApp();
+    const pinned = () => platform.state.pins.some((group) => group.cards.some((card) => card.id === 'calculator'));
+    for (const clear of [() => platform.quickRequest({ kind: 'clear-charges' }), () => platform.clearCalculatorFromPin()]) {
+      act(() => platform.quickRequest({ kind: 'charge', key: 'uk-65#1' }));
+      await vi.waitFor(() => expect(pinned()).toBe(true), { timeout: 4000 });
+      act(clear);
+      await vi.waitFor(() => expect(platform.state.quickState?.charges).toEqual([]), { timeout: 4000 });
+      await vi.waitFor(() => expect(pinned()).toBe(false));
+    }
   });
 
   it('pins the calculator back where the player last left it (issue #22)', async () => {

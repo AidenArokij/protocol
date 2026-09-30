@@ -1436,6 +1436,24 @@ input {
   background: rgb(255 255 255 / calc(0.12 * var(--tint-scale)));
 }
 
+/* «Очистить» on the calculator's card, in the head beside its cross (issue #23). */
+.pin__clear {
+  padding: 2px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+}
+
+.pin__clear:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
 .pin__head {
   display: flex;
   align-items: center;
@@ -4548,6 +4566,21 @@ input {
 
 .quick__sent:hover {
   background: var(--surface);
+}
+
+.quick__clear {
+  padding: 3px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.quick__clear:hover {
+  background: var(--surface);
+  color: var(--text);
 }
 
 /* A faction's memo, as in the mockup (.memo): amber, the author and the day in bold, the text under it. */

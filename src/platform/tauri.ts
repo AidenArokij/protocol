@@ -26,6 +26,8 @@ const PIN_GROUPS_EVENT = 'pin-groups';
 const PIN_LIVE_EVENT = 'pin-live';
 /** What the user did on the cards themselves: moved, joined or closed one. */
 const PIN_LAYOUT_EVENT = 'pin-layout';
+/** «Очистить» on the calculator's card, told by the pin window to the overlay, which keeps the charges. */
+const PIN_CLEAR_EVENT = 'pin-clear-calculator';
 /** A notice to show over the game. */
 const PIN_TOAST_EVENT = 'pin-toast';
 /** The theme and accent of the cards: sent by the overlay, and kept in the settings for the window's next start. */
@@ -115,6 +117,8 @@ export interface PinBridge {
   layout(groups: PinGroup[]): Promise<void>;
   /** Where the cards are, in physical pixels: everywhere else the window lets the mouse through. */
   areas(areas: PinArea[]): Promise<void>;
+  /** Asks the overlay to empty its calculator. */
+  clearCalculator(): Promise<void>;
   onToast(listener: (toast: ShownToast) => void): () => void;
   /** The notice has gone: the window may hide again when nothing is pinned. */
   toastDone(): Promise<void>;
@@ -134,6 +138,7 @@ export function createPinBridge(): PinBridge {
     onLive: (listener) => subscribe(PIN_LIVE_EVENT, listener),
     layout: (groups) => invoke('pin_layout', { groups }),
     areas: (areas) => invoke('pin_areas', { areas }),
+    clearCalculator: () => emitTo('main', PIN_CLEAR_EVENT),
     onToast: (listener) => subscribe(PIN_TOAST_EVENT, listener),
     toastDone: () => invoke('pin_toast_done'),
     look: async () => (await load('settings.json', { defaults: {}, autoSave: 300 })).get<PinLook>(PIN_LOOK_KEY),
@@ -274,6 +279,8 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
   };
   const pinListeners = new Set<(groups: PinGroup[]) => void>();
   await listen<PinGroup[]>(PIN_LAYOUT_EVENT, (event) => pinListeners.forEach((listener) => listener(event.payload)));
+  const clearListeners = new Set<() => void>();
+  await listen(PIN_CLEAR_EVENT, () => clearListeners.forEach((listener) => listener()));
 
   /** The update the last check found, to install. */
   let found: Update | null = null;
@@ -374,6 +381,10 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
     onPinsChanged(listener) {
       pinListeners.add(listener);
       return () => pinListeners.delete(listener);
+    },
+    onCalculatorCleared(listener) {
+      clearListeners.add(listener);
+      return () => clearListeners.delete(listener);
     },
 
     writeClipboard: (text) => writeText(text),

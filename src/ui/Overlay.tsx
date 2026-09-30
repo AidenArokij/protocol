@@ -593,6 +593,9 @@ export function Overlay({
       case 'clear-recent':
         updateRecent(() => []);
         return;
+      case 'clear-charges':
+        setCharges([]);
+        return;
       case 'open-calculator':
         void platform.showOverlay();
         window.setTimeout(() => document.querySelector<HTMLElement>('.calc button, .calc input')?.focus(), 100);
@@ -607,6 +610,8 @@ export function Overlay({
     }
   };
   useEffect(() => platform.onQuickRequest((request) => onQuick.current(request)), [platform]);
+  // «Очистить» on the calculator's card over the game empties the calculator, and the card goes with it (issue #23).
+  useEffect(() => platform.onCalculatorCleared(() => setCharges([])), [platform]);
   // The bar is told what is in the calculator and the recent articles whenever they change.
   const quickState = JSON.stringify({ charges: charges.map((c) => c.key), recent: recentKeys });
   useEffect(() => {
@@ -952,7 +957,7 @@ export function Overlay({
     <>
     {/* In the browser there is no second window: the stand-in game scene shows the cards itself. */}
     {platform.kind === 'browser' && (
-      <PinSurface groups={groups} live onChange={setGroups} toast={previewToast} onToastEnd={() => setPreviewToast(null)} />
+      <PinSurface groups={groups} live onChange={setGroups} onClearCalculator={() => setCharges([])} toast={previewToast} onToastEnd={() => setPreviewToast(null)} />
     )}
     <div className={`shell shell--${side}`}>
       {platform.kind === 'tauri' && <ResizeEdges />}

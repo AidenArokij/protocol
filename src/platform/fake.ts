@@ -37,6 +37,8 @@ export interface FakePlatform extends PlatformAdapter {
   pressHotkey(): void;
   /** Simulates what the user does on the pinned cards themselves: closing, moving, joining. */
   changePins(groups: PinGroup[]): void;
+  /** Simulates «Очистить» pressed on the calculator's card over the game. */
+  clearCalculatorFromPin(): void;
   /** Simulates the quick search asking the overlay for something. */
   quickRequest(request: QuickRequest): void;
   /** Simulates the push-to-talk key: held down, then let go. */
@@ -64,6 +66,7 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
   const settings = new Map<string, unknown>();
   const shownListeners = new Set<() => void>();
   const pinListeners = new Set<(groups: PinGroup[]) => void>();
+  const clearListeners = new Set<() => void>();
   const quickListeners = new Set<(request: QuickRequest) => void>();
   const state: FakePlatform['state'] = {
     overlayVisible: true,
@@ -122,6 +125,9 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     onQuickRequest(listener) {
       quickListeners.add(listener);
       return () => quickListeners.delete(listener);
+    },
+    clearCalculatorFromPin() {
+      clearListeners.forEach((listener) => listener());
     },
     changePins(groups) {
       state.pins = groups;
@@ -205,6 +211,10 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     onPinsChanged(listener) {
       pinListeners.add(listener);
       return () => pinListeners.delete(listener);
+    },
+    onCalculatorCleared(listener) {
+      clearListeners.add(listener);
+      return () => clearListeners.delete(listener);
     },
     async setPinLook(look) {
       record('setPinLook', look);

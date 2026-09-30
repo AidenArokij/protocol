@@ -89,6 +89,7 @@ export type QuickRequest =
   | { kind: 'charge'; key: string }
   | { kind: 'remember'; key: string }
   | { kind: 'clear-recent' }
+  | { kind: 'clear-charges' }
   | { kind: 'open-calculator' }
   | { kind: 'ask'; question: string }
   | { kind: 'hello' };
@@ -172,6 +173,8 @@ export interface PlatformAdapter {
   setPins(groups: PinGroup[]): Promise<void>;
   /** Called when the user moves, joins or closes something there. Returns an unsubscribe function. */
   onPinsChanged(listener: (groups: PinGroup[]) => void): () => void;
+  /** Called when «Очистить» is pressed on the calculator's card over the game (issue #23). */
+  onCalculatorCleared(listener: () => void): () => void;
   /** The theme and the accent hue the pinned cards are drawn in: the overlay's own, kept for the next start too. */
   setPinLook(look: PinLook): Promise<void>;
   /** Downloads a text file (the laws on GitHub). Throws when offline or when the file is not there. */

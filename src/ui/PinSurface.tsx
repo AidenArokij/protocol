@@ -71,6 +71,8 @@ export interface PinSurfaceProps {
    */
   live: boolean;
   onChange: (groups: PinGroup[]) => void;
+  /** «Очистить» on the calculator's card: the calculator is emptied, and its card goes (issue #23). */
+  onClearCalculator?: () => void;
   /** Where the blocks are now, in physical pixels, for the window that lets the mouse through elsewhere. */
   onAreas?: (areas: PinArea[]) => void;
   /** A notice at the top right — a new version is out — and what to do when it has gone. */
@@ -109,7 +111,7 @@ const cardKey = (groupId: string, cardId: string) => `${groupId} :: ${cardId}`;
  * Everything pinned over the game: blocks of cards, each where the user dropped it. A block is dragged
  * by its head; dropped onto another it joins it, and a card dragged out of a block becomes one of its own.
  */
-export function PinSurface({ groups: incoming, live, onChange, onAreas, toast, onToastEnd }: PinSurfaceProps) {
+export function PinSurface({ groups: incoming, live, onChange, onClearCalculator, onAreas, toast, onToastEnd }: PinSurfaceProps) {
   const [groups, setGroups] = useState(incoming);
   const [drag, setDrag] = useState<Drag | null>(null);
   /** Which card of a paged block is on show, by block. */
@@ -403,6 +405,11 @@ export function PinSurface({ groups: incoming, live, onChange, onAreas, toast, o
                     {stacked ? <GripIcon size={14} /> : <PinIcon size={14} />}
                     <span>{stacked ? 'Отделить' : 'Закреплено'}</span>
                     <span className="sp" />
+                    {card.kind === 'calculator' && onClearCalculator && (
+                      <button className="pin__clear" type="button" aria-label="Очистить калькулятор" title="Убрать все статьи из калькулятора" onClick={onClearCalculator}>
+                        Очистить
+                      </button>
+                    )}
                     {live && !stacked && (
                       <button
                         className={group.compact ? 'x x--on' : 'x'}
@@ -490,5 +497,7 @@ export function PinWindow({ bridge }: { bridge: PinBridge }) {
     void bridge.toastDone();
   }, [bridge]);
 
-  return <PinSurface groups={groups} live={live} onChange={change} onAreas={areas} toast={toast} onToastEnd={endToast} />;
+  const clearCalculator = useCallback(() => void bridge.clearCalculator(), [bridge]);
+
+  return <PinSurface groups={groups} live={live} onChange={change} onClearCalculator={clearCalculator} onAreas={areas} toast={toast} onToastEnd={endToast} />;
 }

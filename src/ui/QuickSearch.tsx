@@ -310,9 +310,15 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
           <kbd>Esc</kbd> {open ? 'назад' : 'закрыть'}
         </span>
         {state.charges.length > 0 && (
-          <button className="quick__sent" type="button" onClick={() => void bridge.request({ kind: 'open-calculator' })}>
-            <CheckIcon size={14} /> В калькуляторе: {state.charges.length} · <CalculatorIcon size={14} /> Открыть
-          </button>
+          <>
+            <button className="quick__sent" type="button" onClick={() => void bridge.request({ kind: 'open-calculator' })}>
+              <CheckIcon size={14} /> В калькуляторе: {state.charges.length} · <CalculatorIcon size={14} /> Открыть
+            </button>
+            {/* Emptied from here, without opening the assistant (issue #23). */}
+            <button className="quick__clear" type="button" aria-label="Очистить калькулятор" title="Убрать все статьи из калькулятора" onClick={() => void bridge.request({ kind: 'clear-charges' })}>
+              Очистить
+            </button>
+          </>
         )}
       </div>
     </div>
