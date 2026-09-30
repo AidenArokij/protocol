@@ -54,6 +54,8 @@ export function DocumentsMenu({ pack, organization, current, onPick, onClose }: 
     return result;
   }, [pack, organization, filter, tag]);
   const rows = groups.flatMap((g) => g.documents);
+  // Nothing of this kind by that name: how many there are among all kinds (roadmap 1В).
+  const elsewhere = rows.length || tag === 'all' ? 0 : pack.documents.filter((d) => normalize(`${d.short} ${d.title}`).includes(normalize(filter.trim()))).length;
   const active = Math.min(selected ?? Math.max(rows.findIndex((d) => d.id === current), 0), rows.length - 1);
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -144,7 +146,29 @@ export function DocumentsMenu({ pack, organization, current, onPick, onClose }: 
               })}
             </div>
           ))}
-          {rows.length === 0 && <div className="empty">Ничего не найдено</div>}
+          {rows.length === 0 && (
+            <div className="why" role="status" aria-label="Ничего не найдено">
+              <div className="why__title">
+                Нет документа «{filter.trim()}»{tag !== 'all' && ` среди «${CATEGORIES[tag].tag}»`}
+              </div>
+              {elsewhere > 0 && (
+                <div className="why__tries" role="group" aria-label="Попробуйте">
+                  <span className="why__label">Попробуйте:</span>
+                  <button
+                    className="tag"
+                    type="button"
+                    onClick={() => {
+                      setTag('all');
+                      setSelected(null);
+                      filterRef.current?.focus();
+                    }}
+                  >
+                    во всех видах · {elsewhere}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </>

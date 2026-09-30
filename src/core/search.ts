@@ -51,11 +51,11 @@ const SCORE = { number: 1000, numberPriority: 1500, title: 30, synonymInTitle: 2
 
 const SKIP = new Set(['ст', 'ст.', 'статья']);
 const NUMBER = /^\d+(?:\.\d+)*\.?$/;
-const PART_WORD = /^(?:ч|ч\.|часть)$/;
+export const PART_WORD = /^(?:ч|ч\.|часть)$/;
 /** «ч1», «ч.1» typed without a space. */
-const PART_GLUED = /^ч\.?(\d+)$/;
+export const PART_GLUED = /^ч\.?(\d+)$/;
 
-interface Query {
+export interface Query {
   scope?: LawDocument;
   number?: string;
   part?: string;
@@ -64,7 +64,7 @@ interface Query {
   typing: boolean;
 }
 
-function parseQuery(pack: ServerPack, raw: string): Query {
+export function parseQuery(pack: ServerPack, raw: string): Query {
   const tokens = raw.toLowerCase().replace(/ё/g, 'е').split(/\s+/).filter((t) => t && !SKIP.has(t));
   const query: Query = { words: [], typing: !/\s$/.test(raw) };
   let expectPart = false;

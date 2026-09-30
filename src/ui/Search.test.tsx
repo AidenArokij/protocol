@@ -102,6 +102,17 @@ describe('finding an article by number', () => {
   it('says so when nothing matches', async () => {
     const { user } = await renderApp();
     await user.type(search(), '999');
-    expect(screen.getByText('Ничего не найдено')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: 'Ничего не найдено' })).toHaveTextContent(/^Ничего не найдено в \d+ документах/);
+  });
+
+  it('tells what it looked through and by what, and offers what does find something (roadmap 1В)', async () => {
+    const { user } = await renderApp();
+    await user.type(search(), 'кража пылесоса');
+    const why = screen.getByRole('status', { name: 'Ничего не найдено' });
+    expect(why).toHaveTextContent('Искали: кража, пылесоса · слова «пылесоса» нет в законах');
+    await user.click(within(why).getByRole('button', { name: 'без «пылесоса»' }));
+    expect(search()).toHaveValue('кража');
+    expect(search()).toHaveFocus();
+    expect(results().length).toBeGreaterThan(0);
   });
 });

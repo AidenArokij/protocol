@@ -4,7 +4,7 @@ import {
   changedArticles,
   changesSince,
   chapterHeading,
-  documentContents,
+  documentContents, explainEmpty,
   leadPart,
   recentChanges,
   searchArticles,
@@ -57,6 +57,8 @@ import { ResultRow } from './ResultRow';
 import { RECENT_LIMIT, entryPart, favoritesKey, hitKey, recentKey, useHitLookup, useStoredKeys } from './saved';
 import { ServerChoice } from './ServerChoice';
 import { SettingsView, type SettingsSection } from './SettingsView';
+import { NoResults } from './NoResults';
+import { isFaction } from '../account/capabilities';
 import { useStats } from './stats';
 import { useAnnouncements } from './announcements';
 import { useMemos } from './memos';
@@ -183,10 +185,15 @@ export function Overlay({
     () => searchArticles(pack, query, { boostDocuments, document: scope?.id }),
     [pack, query, boostDocuments, scope],
   );
+  // Found nothing: where it looked and what to try (roadmap 1В), only then worked out.
+  const noResults = useMemo(
+    () => (hits.length ? null : explainEmpty(pack, query, { boostDocuments, document: scope?.id })),
+    [hits, pack, query, boostDocuments, scope],
+  );
   const contents = useMemo(() => (scope ? documentContents(scope) : []), [scope]);
   /** Where each chapter's rows start in the list ↑↓ walk through. */
   const chapterStarts = contents.map((_, g) => contents.slice(0, g).reduce((n, group) => n + group.hits.length, 0));
-  const summary = [pack.server.name, organization && organization.id !== 'none' ? organization.name : null].filter(Boolean).join(' · ');
+  const summary = [pack.server.name, isFaction(organization) ? organization.name : null].filter(Boolean).join(' · ');
 
   // The AI analysis: while it is open, the search field takes the situation instead of a query.
   const [aiOpen, setAiOpen] = useState(false);
@@ -1630,7 +1637,17 @@ export function Overlay({
             <div className="list" role="list" aria-label="Результаты поиска">
               {hits.map((hit, i) => rowFor(hit, i))}
             </div>
-            {hits.length === 0 && <div className="empty">Ничего не найдено</div>}
+            {hits.length === 0 && noResults && (
+              <NoResults
+                empty={noResults}
+                onTry={(to) => {
+                  if (to.everywhere) setScopeId(null);
+                  setQuery(to.query);
+                  setSelected(0);
+                  searchRef.current?.focus();
+                }}
+              />
+            )}
             {/* A situation typed into the search finds nothing whole: the AI takes it word by word. */}
             <button className="ai-offer" type="button" onClick={() => openAi(query)}>
               <SparkIcon size={18} />

@@ -104,7 +104,7 @@ export function wordIndex(pack: ServerPack): WordIndex {
 }
 
 /** Optimal string alignment distance, giving up once it exceeds `limit`. */
-function distance(a: string, b: string, limit: number): number {
+export function distance(a: string, b: string, limit: number): number {
   if (Math.abs(a.length - b.length) > limit) return limit + 1;
   let prev2: number[] = [];
   let prev = Array.from({ length: b.length + 1 }, (_, j) => j);

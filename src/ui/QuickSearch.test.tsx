@@ -86,6 +86,16 @@ describe('the quick search', () => {
     expect(requests.at(-1)).toEqual({ kind: 'charge', key: 'uk-65#2' });
   });
 
+  it('tells over the game where it looked, and offers what does find something (roadmap 1В)', async () => {
+    const { user } = renderBar();
+    await user.type(field(), 'кража пылесоса');
+    const why = screen.getByRole('status', { name: 'Ничего не найдено' });
+    expect(why).toHaveTextContent(/^Ничего не найдено в \d+ документах/);
+    await user.click(within(why).getByRole('button', { name: 'без «пылесоса»' }));
+    expect(field()).toHaveValue('кража');
+    expect(within(results()).getAllByRole('listitem').length).toBeGreaterThan(0);
+  });
+
   it('turns to the AI with Tab: Enter asks the assistant, and the bar goes', async () => {
     const { requests, hidden, user } = renderBar();
     await user.type(field(), 'украл телефон у прохожего');

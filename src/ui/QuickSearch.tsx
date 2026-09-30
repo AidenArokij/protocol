@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
-import { articleHeading, formatPunishment, searchArticles, type SearchHit, type ServerPack } from '../core';
+import { articleHeading, explainEmpty, formatPunishment, searchArticles, type SearchHit, type ServerPack } from '../core';
 import { packFor } from '../data';
 import type { PinLook, QuickBridge, QuickState } from '../platform/types';
 import { applyAppearance, isTheme } from './appearance';
@@ -7,6 +7,7 @@ import { BackIcon, CalculatorIcon, CheckIcon, CloseIcon, GripIcon, SearchIcon, S
 import { isNewer, readPack } from './laws';
 import { DocBadge, Stars } from './lawBits';
 import { PROFILE_KEY, type Profile } from './profile';
+import { NoResults } from './NoResults';
 import { ResultRow } from './ResultRow';
 import { entryPart, hitKey, useHitLookup } from './saved';
 
@@ -119,6 +120,11 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
     if (mode === 'recent') return state.recent.map(lookup).filter((hit) => hit !== undefined);
     return mode === 'laws' && query.trim() ? searchArticles(pack, query, { boostDocuments }).slice(0, SHOWN) : [];
   }, [pack, query, mode, boostDocuments, state.recent, lookup]);
+  // Found nothing: where it looked and what to try (roadmap 1В).
+  const noResults = useMemo(
+    () => (mode === 'laws' && !hits.length ? explainEmpty(pack, query, { boostDocuments }) : null),
+    [mode, hits, pack, query, boostDocuments],
+  );
   const current = Math.min(selected, hits.length - 1);
   const punished = (hit: SearchHit) => !!entryPart(hit.article, hit.part)?.punishment;
   const chargeKey = (hit: SearchHit) => hitKey({ ...hit, part: entryPart(hit.article, hit.part) });
@@ -285,7 +291,24 @@ export function QuickSearch({ bridge }: { bridge: QuickBridge }) {
       ) : hits.length > 0 ? (
         <div className="quick__body">{list}</div>
       ) : (
-        query.trim() && <p className="quick__hint">Ничего не нашлось. <kbd>Tab</kbd> — спросить ИИ.</p>
+        query.trim() && (
+          <div className="quick__hint">
+            {noResults && (
+              <NoResults
+                compact
+                empty={noResults}
+                onTry={(to) => {
+                  setQuery(to.query);
+                  setSelected(0);
+                  input.current?.focus();
+                }}
+              />
+            )}
+            <p className="quick__ask">
+              <kbd>Tab</kbd> — спросить ИИ.
+            </p>
+          </div>
+        )
       )}
 
       <div className="quick__foot" data-tauri-drag-region>

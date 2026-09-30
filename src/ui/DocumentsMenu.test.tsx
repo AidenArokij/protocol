@@ -132,7 +132,18 @@ describe('documents menu', () => {
     expect(documentRows().map((row) => row.textContent)).toEqual(['РегламентВнутренний регламент сотрудников ФСО47']);
     await user.clear(filter());
     await user.type(filter(), 'кулинария');
-    expect(within(menu()).getByText('Ничего не найдено')).toBeInTheDocument();
+    expect(within(menu()).getByRole('status', { name: 'Ничего не найдено' })).toHaveTextContent('Нет документа «кулинария»');
+  });
+
+  it('offers every kind when none of the kind picked has that name (roadmap 1В)', async () => {
+    const { user } = await renderApp();
+    await openMenu(user);
+    await user.click(within(within(menu()).getByRole('group', { name: 'Виды документов' })).getByRole('button', { name: 'Уставы' }));
+    await user.type(filter(), '6-фз');
+    const why = within(menu()).getByRole('status', { name: 'Ничего не найдено' });
+    expect(why).toHaveTextContent('Нет документа «6-фз» среди «Уставы»');
+    await user.click(within(why).getByRole('button', { name: 'во всех видах · 3' }));
+    expect(documentRows()).toHaveLength(3);
   });
 
   it('closes with Esc, the cross or the dimmed background, handing the cursor back to the search', async () => {
