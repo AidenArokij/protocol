@@ -271,6 +271,7 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
     showToast: (toast) => invoke('pin_toast', { toast }),
     getAutostart: () => autostartEnabled(),
     setAutostart: (on) => (on ? enableAutostart() : disableAutostart()),
+    setCaptureHidden: (hidden) => invoke('set_capture_hidden', { hidden }),
     async download(url) {
       const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) throw new Error(`${response.status} ${url}`);

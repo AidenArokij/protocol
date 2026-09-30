@@ -1,6 +1,7 @@
 mod sign_in;
 
 use serde_json::Value;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use tauri::{
   menu::{Menu, MenuItem},
@@ -272,6 +273,39 @@ fn create_pin_window(app: &AppHandle) -> tauri::Result<()> {
   if let Some(hwnd) = pin_window::hwnd(&window) {
     pin_window::set_areas(hwnd, &[]);
   }
+  // Made after streamer mode was turned on: out of the capture from the start, like the overlay.
+  if CAPTURE_HIDDEN.load(Ordering::Relaxed) {
+    let _ = capture_hidden(&window, true);
+  }
+  Ok(())
+}
+
+/// Streamer mode, as last set: the pin window is made later, when a first card is pinned, and hides itself too.
+static CAPTURE_HIDDEN: AtomicBool = AtomicBool::new(false);
+
+/// One window in or out of screen capture. Win32 directly, not the window library: the pin window's flags
+/// must not be touched through it (see `pin_window`).
+#[allow(unused_variables)]
+fn capture_hidden(window: &WebviewWindow, hidden: bool) -> Result<(), String> {
+  #[cfg(windows)]
+  {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{SetWindowDisplayAffinity, WDA_EXCLUDEFROMCAPTURE, WDA_NONE};
+    let hwnd = window.hwnd().map_err(|e| e.to_string())?.0 as windows_sys::Win32::Foundation::HWND;
+    if unsafe { SetWindowDisplayAffinity(hwnd, if hidden { WDA_EXCLUDEFROMCAPTURE } else { WDA_NONE }) } == 0 {
+      return Err("Windows не дал скрыть окно от записи экрана".into());
+    }
+  }
+  Ok(())
+}
+
+/// Streamer mode: every window of the app — the overlay and the pinned cards — stays on the screen but is
+/// left out of screen capture, so OBS, Discord and screenshots show the game without it.
+#[tauri::command]
+fn set_capture_hidden(app: AppHandle, hidden: bool) -> Result<(), String> {
+  CAPTURE_HIDDEN.store(hidden, Ordering::Relaxed);
+  for window in app.webview_windows().values() {
+    capture_hidden(window, hidden)?;
+  }
   Ok(())
 }
 
@@ -376,6 +410,7 @@ pub fn run() {
       pin_toast,
       pin_toast_done,
       launched_at_startup,
+      set_capture_hidden,
       sign_in::sign_in_listen,
       sign_in::sign_in_cancel
     ])

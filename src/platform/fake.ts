@@ -23,6 +23,8 @@ export interface FakePlatform extends PlatformAdapter {
     toast: Toast | null;
     /** Started with Windows at logon. */
     autostart: boolean;
+    /** Streamer mode: left out of screen capture. */
+    captureHidden: boolean;
     clipboard: string;
     /** What the releases offer: a newer version, none, or no connection. */
     update: AppUpdate | null | 'offline';
@@ -66,6 +68,7 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     laws: new Map(Object.entries(options.laws ?? {})),
     toast: null,
     autostart: false,
+    captureHidden: false,
     clipboard: '',
     update: options.update ?? null,
     updateInstalled: false,
@@ -206,6 +209,10 @@ export function createFakePlatform(options: FakeOptions = {}): FakePlatform {
     async setAutostart(on) {
       record('setAutostart', on);
       state.autostart = on;
+    },
+    async setCaptureHidden(hidden) {
+      record('setCaptureHidden', hidden);
+      state.captureHidden = hidden;
     },
 
     async writeClipboard(text) {

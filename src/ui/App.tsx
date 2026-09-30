@@ -4,7 +4,7 @@ import { useAppearance } from './appearance';
 import { Onboarding } from './Onboarding';
 import { useLaws } from './laws';
 import { Overlay } from './Overlay';
-import { DEFAULT_HOTKEY } from './overlaySettings';
+import { DEFAULT_HOTKEY, STREAMER_KEY } from './overlaySettings';
 import { PROFILE_KEY, type Profile } from './profile';
 
 const FIRST_PROFILE: Profile = { server: 'tverskoi', organization: 'none', hotkey: DEFAULT_HOTKEY };
@@ -28,6 +28,13 @@ export function App() {
     void platform.readSetting<Profile>(PROFILE_KEY).then((saved) => {
       setProfile(saved ?? null);
       if (!saved) setNewUser(true);
+    });
+  }, [platform]);
+
+  // Streamer mode lives with the windows, not in Windows: set again at every start.
+  useEffect(() => {
+    void platform.readSetting<boolean>(STREAMER_KEY).then((on) => {
+      if (on) void platform.setCaptureHidden(true).catch(() => undefined);
     });
   }, [platform]);
 
