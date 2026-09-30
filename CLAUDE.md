@@ -39,7 +39,7 @@ the bot, README and PRIVACY; «хелпер» in players' texts became «асс�
 
 ### Releases — the owner's
 - The version is only in `package.json`; «Что нового» is a `## <version>` section at the top of `CHANGELOG.md`
-  (the build fails without one). A pushed tag `v*` builds a **draft** release; the owner installs it from the
+  (the build fails without one). A pushed tag `v*` builds a **draft** release titled «Release X.Y.Z» (and that is how versions are called when talking to the owner: «Release 2.4.0»); the owner installs it from the
   draft, tries it, and publishes it — only then do installed copies update. Tags are pushed by the owner only:
   a tag signs an update with the owner's key.
 
