@@ -268,6 +268,7 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
       await emitTo(PIN_LABEL, PIN_LOOK_EVENT, look);
     },
     showToast: (toast) => invoke('pin_toast', { toast }),
+    setCaptureHidden: (hidden) => invoke('set_capture_hidden', { hidden }),
     async download(url) {
       const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) throw new Error(`${response.status} ${url}`);
