@@ -100,7 +100,7 @@ the bot, README and PRIVACY; «хелпер» in players' texts became «асс�
 
 ## The AI helper (AidenArokij's part)
 
-- «ИИ» in the side column (Ctrl+7) and in the settings: situation analysis, documents, the exam trainer, the lawyer's
+- «ИИ» in the side column (Ctrl+7) and in the settings: situation analysis, documents, the exam trainer, the review of a detention, the lawyer's
   demands, voice (🎤 and push-to-talk over the game, Alt+W), the history of analyses.
 - `src/protocol` — the pipeline, pure TypeScript like `src/core` (its own boundary test). **The AI is never a source
   of law**: it gets only the articles the search found, under ids, answers in JSON, and `validate.ts` checks every
