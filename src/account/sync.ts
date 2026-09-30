@@ -30,6 +30,19 @@ export interface SyncRules {
 
 export type SyncStatus = { kind: 'off' } | { kind: 'syncing' } | { kind: 'synced'; at: string } | { kind: 'offline'; at?: string };
 
+/** Keys in one order, at every depth: the account keeps values as jsonb, which gives an object's keys back reordered. */
+const canonical = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map((key) => [key, canonical((value as Record<string, unknown>)[key])]),
+  );
+};
+/** One value, however its keys are ordered: a setting back from the account is not a change (issue #9). */
+const same = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+
 /** Changes not yet in the account, by key: kept in the settings, so they reach it after a restart too. */
 const PENDING_KEY = 'sync.pending';
 /** The newest change pulled from the account. */
@@ -99,7 +112,7 @@ export function createSync(platform: Pick<PlatformAdapter, 'readSetting' | 'writ
       if (mine && mine.updated_at >= row.updated_at) continue;
       const local = await platform.readSetting(row.key);
       const value = rules.fromRemote(row.key, row.value, local);
-      if (JSON.stringify(value) === JSON.stringify(local)) continue;
+      if (same(value, local)) continue;
       await platform.writeSetting(row.key, value);
       changed = true;
     }
@@ -157,11 +170,11 @@ export function createSync(platform: Pick<PlatformAdapter, 'readSetting' | 'writ
       }
       const joined = rules.merge(key, theirs.value, local);
       const kept = rules.fromRemote(key, joined, local);
-      if (JSON.stringify(kept) !== JSON.stringify(local)) {
+      if (!same(kept, local)) {
         await platform.writeSetting(key, kept);
         changed = true;
       }
-      if (JSON.stringify(rules.toRemote(key, kept)) !== JSON.stringify(theirs.value)) upload[key] = { key, value: rules.toRemote(key, kept), updated_at: at };
+      if (!same(rules.toRemote(key, kept), theirs.value)) upload[key] = { key, value: rules.toRemote(key, kept), updated_at: at };
     }
     // Keys only the account has come in with the first pull.
     await changePending((waiting) => {
