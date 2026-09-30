@@ -3,7 +3,7 @@
 export { AnswerFormatError, parseAnswer, type AnswerNorm, type Clarification, type LegalAnswer, type Stage } from './answer';
 export { PERSPECTIVE_FOCUS, buildContext, labelSources, type CaseState, type ContextInput, type Perspective, type Source } from './context';
 export { analysisPrompt, type Depth } from './prompt';
-export { AiError, geminiProvider, serverProvider, type AiErrorKind, type AiProvider, type AiRequest, type Turn } from './provider';
+export { AiError, geminiProvider, openaiProvider, serverProvider, type AiErrorKind, type AiProvider, type AiRequest, type CustomAi, type Turn } from './provider';
 export {
   STATUS_LABELS,
   articleExists,
