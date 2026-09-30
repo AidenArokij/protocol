@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { emitTo, listen } from '@tauri-apps/api/event';
 import { PhysicalPosition, PhysicalSize, availableMonitors, currentMonitor, getCurrentWindow, primaryMonitor } from '@tauri-apps/api/window';
+import { disable as disableAutostart, enable as enableAutostart, isEnabled as autostartEnabled } from '@tauri-apps/plugin-autostart';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { isRegistered, register, unregister } from '@tauri-apps/plugin-global-shortcut';
 import { openUrl } from '@tauri-apps/plugin-opener';
@@ -268,6 +269,8 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
       await emitTo(PIN_LABEL, PIN_LOOK_EVENT, look);
     },
     showToast: (toast) => invoke('pin_toast', { toast }),
+    getAutostart: () => autostartEnabled(),
+    setAutostart: (on) => (on ? enableAutostart() : disableAutostart()),
     setCaptureHidden: (hidden) => invoke('set_capture_hidden', { hidden }),
     async download(url) {
       const response = await fetch(url, { cache: 'no-store' });
@@ -333,6 +336,7 @@ export async function createTauriPlatform(): Promise<PlatformAdapter> {
     },
   };
 
-  await showOverlay();
+  // Started with Windows, the app waits in the tray for the hotkey; started by the player, it shows itself.
+  if (!(await invoke<boolean>('launched_at_startup'))) await showOverlay();
   return platform;
 }
