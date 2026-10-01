@@ -1,5 +1,7 @@
 import { screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import { packLabel } from '../core';
+import { TVERSKOI_PACK } from '../data';
 import { renderApp } from '../test/renderApp';
 
 const results = () => within(screen.getByRole('list', { name: 'Результаты поиска' })).getAllByRole('listitem');
@@ -97,6 +99,14 @@ describe('finding an article by number', () => {
 
     await user.type(search(), ' ч 1');
     expect(current()).toBe(0);
+  });
+
+  it('shows the version of the laws in the settings (roadmap 1Б)', async () => {
+    const { user } = await renderApp();
+    await user.click(screen.getByRole('button', { name: 'Настройки' }));
+    const laws = screen.getByRole('region', { name: 'Законы' });
+    expect(laws).toHaveTextContent('Версия законов');
+    expect(laws).toHaveTextContent(packLabel(TVERSKOI_PACK));
   });
 
   it('says so when nothing matches', async () => {

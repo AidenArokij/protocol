@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
-import type { Organization, ServerPack } from '../core';
+import { packLabel, type Organization, type ServerPack } from '../core';
 import { usePlatform } from '../platform/PlatformContext';
 import { USAGE_SHARE_KEY } from '../account/usage';
 import { AccountCard, AccountSection } from './ProfileView';
@@ -878,6 +878,7 @@ export function SettingsView({
       <div className="settings__part" id={sectionId('laws')}>
       <Block title="Законы">
         <Row label="Актуально на" value={formatDate(pack.version)} />
+        <Row label="Версия законов" value={packLabel(pack)} />
         <button className="settings__button" type="button" onClick={onChanges}>
           Что изменилось в законах
         </button>

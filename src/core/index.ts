@@ -28,6 +28,7 @@ export {
   type Choice,
   type Offender,
 } from './administrative';
+export { articleFingerprint, changedSince, packLabel, snapshotOf, type PackSnapshot } from './snapshot';
 export { explainEmpty, type EmptySearch, type Try } from './empty';
 export { calculateDetention, type Charge, type DetentionOptions, type DetentionResult, type DetentionStars } from './detention';
 export {

@@ -407,13 +407,19 @@ export function Overlay({
   const [pinsReady, setPinsReady] = useState(false);
   const pins = pinsKey(pack.server.id);
   const surface = () => surfaceNow(platform.kind === 'browser');
+  const groupsNow = useRef(groups);
+  groupsNow.current = groups;
   useEffect(() => {
     let active = true;
     setPinsReady(false);
+    // What is on screen now is of the server before; what gets pinned while the saved ones are read is not.
+    const before = new Set(groupsNow.current.map((group) => group.id));
     void platform.readSetting<PinGroup[]>(pins).then((saved) => {
       if (!active) return;
       // The calculator's card belongs to a detention that is long over.
-      setGroups(Array.isArray(saved) ? keepableGroups(restoreGroups(saved)) : []);
+      const restored = Array.isArray(saved) ? keepableGroups(restoreGroups(saved)) : [];
+      // The quick search can pin the calculator before the saved cards are read: it stays, beside them.
+      setGroups((now) => [...restored, ...now.filter((group) => !before.has(group.id) && !restored.some((r) => r.id === group.id))]);
       setPinsReady(true);
     });
     return () => {
