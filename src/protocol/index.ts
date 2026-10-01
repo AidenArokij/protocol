@@ -2,6 +2,7 @@
 // Pure TypeScript like the law core: no React, Tauri or UI (a boundary test enforces it).
 export { AnswerFormatError, parseAnswer, readAnswer, type AnswerNorm, type Claim, type Clarification, type LegalAnswer, type Stage } from './answer';
 export { ANSWERED_BY_APP, classify, type Classification, type QuestionType } from './classify';
+export { groundItems, idsOf, strayArticles, strayFigures, textIssues, type GroundedItem } from './check';
 export { PERSPECTIVE_FOCUS, buildContext, sourcesBlock, type CaseState, type ContextInput, type Perspective } from './context';
 export { analysisPrompt, coreRules, playerData, type Depth } from './prompt';
 export { AiError, geminiProvider, openaiProvider, serverProvider, type AiErrorKind, type AiProvider, type AiRequest, type CustomAi, type Turn } from './provider';
