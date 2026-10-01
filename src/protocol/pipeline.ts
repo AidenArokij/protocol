@@ -228,7 +228,13 @@ export async function answerQuestion(input: QuestionInput): Promise<Outcome> {
   if (classification.type === 'nonsense') return system('nonsense', classification);
   if (classification.type === 'out_of_scope') return system(/РФ/.test(classification.why) ? 'real_law' : 'out_of_scope', classification);
   if (classification.type === 'article_lookup') {
-    return system('article_lookup', classification, { hits: searchArticles(pack, `${message.trim()} `, { limit: 3 }) });
+    // The search finds an article part by part: one button an article.
+    const seen = new Set<string>();
+    const hits = searchArticles(pack, `${message.trim()} `, { limit: 12 })
+      .filter((hit) => !seen.has(hit.article.id) && seen.add(hit.article.id))
+      .map(({ document, article }) => ({ document, article }))
+      .slice(0, 3);
+    return system('article_lookup', classification, { hits });
   }
 
   // Not told by the words: the AI's first call says what it is, and gives the search phrases at the same time.

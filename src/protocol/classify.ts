@@ -1,7 +1,7 @@
 // What a question is, decided before any AI is asked — so a greeting, a question about the weather or the real
 // laws of Russia, gibberish, or a bare article number costs no AI call and never reaches the model at all. Plain
 // rules over the words; when they cannot tell, the AI's first call (the search phrases) also says what it is.
-import type { ServerPack } from '../core';
+import { unknownWords, type ServerPack } from '../core';
 import type { Scope, ScopeChoice } from './sources';
 
 export type QuestionType =
@@ -94,6 +94,12 @@ export function classify(pack: ServerPack, raw: string, choice: ScopeChoice = 'a
   const synonyms = synonymsCache.get(pack);
   const rule = RULE_WORDS.test(text);
   const law = LAW_WORDS.test(text) || !!synonyms?.test(text);
+  // Not one word the server's documents hold, nor a word of the laws or rules: «ывапролдж», «трактор весит» —
+  // nothing the base could answer, so nothing to ask the AI about.
+  if (!rule && !law && !/\d/.test(text)) {
+    const { known, unknown } = unknownWords(pack, text);
+    if (!known && unknown.length) return { type: 'nonsense', why: 'ни одного слова из базы сервера' };
+  }
   const said: Scope | null = rule && law ? 'mixed' : rule ? 'server_rule' : law ? 'law' : null;
   const why = said === 'mixed' ? 'слова и закона, и правил сервера' : said === 'server_rule' ? 'слова правил сервера' : said === 'law' ? 'слова закона' : 'ни слов закона, ни слов правил';
 
